@@ -1,5 +1,6 @@
 import {
   Prisma,
+  ClientStatus as PrismaClientStatus,
   MaintenanceContactFlowStatus,
   ContactMessageDirection,
 } from "@prisma/client";
@@ -152,7 +153,7 @@ export async function listPendingFlowsForExecution(referenceDate: Date) {
       client: {
         whatsapp_opt_in: true,
         auto_contact_enabled: true,
-        client_status: "active",
+        client_status: PrismaClientStatus.ACTIVE,
       },
     },
     include: {

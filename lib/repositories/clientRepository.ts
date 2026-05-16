@@ -1,8 +1,16 @@
+import { ClientStatus as PrismaClientStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  normalizeClientStatus,
+  normalizeClientStatusFilter,
+  type ClientStatus,
+} from "@/lib/clients/clientStatus";
+
+type ClientStatusInput = ClientStatus | string | null | undefined;
 
 type FindClientsParams = {
   search?: string;
-  status?: string;
+  status?: ClientStatusInput;
 };
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
@@ -43,7 +51,7 @@ export type CreateClientData = {
   latitude?: number | string | null;
   longitude?: number | string | null;
 
-  client_status?: string;
+  client_status?: ClientStatusInput;
 
   whatsapp_opt_in?: boolean;
   whatsapp_opt_in_at?: Date | string | null;
@@ -104,7 +112,7 @@ export type UpdateClientData = Partial<{
   latitude: number | string | null;
   longitude: number | string | null;
 
-  client_status: string;
+  client_status: ClientStatusInput;
 
   whatsapp_opt_in: boolean;
   whatsapp_opt_in_at: Date | string | null;
@@ -131,10 +139,21 @@ export type UpdateClientData = Partial<{
   data_consent_source: string | null;
 }>;
 
+function shouldReturnAllStatuses(status: ClientStatusInput) {
+  return normalizeClientStatusFilter(status) === "all";
+}
+
 export async function findClients({ search, status }: FindClientsParams) {
+  const normalizedStatus = normalizeClientStatus(status);
+
   return prisma.client.findMany({
     where: {
-      client_status: status || "active",
+      ...(shouldReturnAllStatuses(status)
+        ? {}
+        : {
+            client_status: normalizedStatus ?? PrismaClientStatus.ACTIVE,
+          }),
+
       ...(search
         ? {
             OR: [
@@ -192,16 +211,35 @@ export async function findClientById(id: string) {
 }
 
 export async function createClient(data: CreateClientData) {
+  const normalizedStatus =
+    normalizeClientStatus(data.client_status) ?? PrismaClientStatus.ACTIVE;
+
   return prisma.client.create({
-    data,
+    data: {
+      ...data,
+      client_status: normalizedStatus,
+    },
   });
 }
 
 export async function updateClient(id: string, data: UpdateClientData) {
+  const { client_status: clientStatusInput, ...restData } = data;
+
+  const normalizedStatus = normalizeClientStatus(clientStatusInput);
+
+  const updateData: Prisma.ClientUpdateInput = {
+    ...restData,
+    ...(clientStatusInput !== undefined && normalizedStatus
+      ? {
+          client_status: normalizedStatus,
+        }
+      : {}),
+  };
+
   return prisma.client.update({
     where: {
       client_id: id,
     },
-    data,
+    data: updateData,
   });
 }

@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { provincias } from "@/lib/data/costa-rica-locations";
+import {
+  CLIENT_STATUS_OPTIONS,
+  normalizeClientStatus,
+  type ClientStatus,
+} from "@/lib/clients/clientStatus";
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
 type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
@@ -32,7 +37,7 @@ type ClientFormData = {
   admin_level_1?: string | null;
   admin_level_2?: string | null;
   admin_level_3?: string | null;
-  client_status?: string | null;
+  client_status?: ClientStatus | string | null;
   whatsapp_opt_in?: boolean | null;
   default_payment_term?: "CASH" | "CREDIT" | null;
   default_credit_days?: number | string | null;
@@ -221,6 +226,9 @@ function getReadableFieldName(field?: string) {
     case "compliance_profile":
       return "Perfil de validación";
 
+    case "client_status":
+      return "Estado del cliente";
+
     default:
       return "Campo";
   }
@@ -305,7 +313,7 @@ export default function ClientForm({
   const [adminLevel2, setAdminLevel2] = useState("");
   const [adminLevel3, setAdminLevel3] = useState("");
 
-  const [clientStatus, setClientStatus] = useState("active");
+  const [clientStatus, setClientStatus] = useState<ClientStatus>("ACTIVE");
   const [whatsappOptIn, setWhatsappOptIn] = useState(true);
 
   const [paymentTerm, setPaymentTerm] = useState<"CASH" | "CREDIT">("CASH");
@@ -368,7 +376,9 @@ export default function ClientForm({
     setAdminLevel2(initialData.admin_level_2 ?? "");
     setAdminLevel3(initialData.admin_level_3 ?? "");
 
-    setClientStatus(initialData.client_status ?? "active");
+    setClientStatus(
+      normalizeClientStatus(initialData.client_status) ?? "ACTIVE",
+    );
     setWhatsappOptIn(initialData.whatsapp_opt_in ?? true);
 
     setPaymentTerm(initialData.default_payment_term ?? "CASH");
@@ -562,7 +572,7 @@ export default function ClientForm({
         admin_level_2: adminLevel2 || null,
         admin_level_3: adminLevel3 || null,
 
-        client_status: mode === "create" ? "active" : clientStatus,
+        client_status: mode === "create" ? "ACTIVE" : clientStatus,
         whatsapp_opt_in: whatsappOptIn,
 
         default_payment_term: paymentTerm,
@@ -888,11 +898,16 @@ export default function ClientForm({
                   </label>
                   <select
                     value={clientStatus}
-                    onChange={(e) => setClientStatus(e.target.value)}
+                    onChange={(e) =>
+                      setClientStatus(e.target.value as ClientStatus)
+                    }
                     className={selectClass}
                   >
-                    <option value="active">Activo</option>
-                    <option value="inactive">Inactivo</option>
+                    {CLIENT_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}

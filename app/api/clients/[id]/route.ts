@@ -4,6 +4,10 @@ import {
   updateClientByIdService,
   inactivateClientByIdService,
 } from "@/lib/services/clientService";
+import {
+  normalizeClientStatus,
+  type ClientStatus,
+} from "@/lib/clients/clientStatus";
 
 type RouteContext = {
   params: Promise<{
@@ -52,7 +56,40 @@ export async function PUT(req: Request, context: RouteContext) {
     const { id } = await context.params;
     const body = await req.json();
 
-    const result = await updateClientByIdService(id, body);
+    const normalizedStatus =
+      body.client_status !== undefined
+        ? normalizeClientStatus(body.client_status)
+        : null;
+
+    if (
+      body.client_status !== undefined &&
+      body.client_status !== null &&
+      body.client_status !== "" &&
+      !normalizedStatus
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid client status",
+          errors: [
+            {
+              field: "client_status",
+              error: "invalid",
+            },
+          ],
+        },
+        { status: 400 },
+      );
+    }
+
+    const result = await updateClientByIdService(id, {
+      ...body,
+      ...(body.client_status !== undefined
+        ? {
+            client_status: normalizedStatus,
+          }
+        : {}),
+    });
 
     if (result === null) {
       return NextResponse.json(
@@ -67,6 +104,7 @@ export async function PUT(req: Request, context: RouteContext) {
     return NextResponse.json(
       {
         success: true,
+        message: "Client updated",
         data: result.client,
       },
       { status: 200 },

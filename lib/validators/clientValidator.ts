@@ -1,3 +1,9 @@
+import {
+  CLIENT_STATUSES,
+  normalizeClientStatus,
+  type ClientStatus,
+} from "@/lib/clients/clientStatus";
+
 type ValidationError = {
   field: string;
   error: string;
@@ -9,6 +15,7 @@ type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
 type CreateClientInput = {
   client_type?: ClientType | string | null;
   compliance_profile?: ClientComplianceProfile | string | null;
+  client_status?: ClientStatus | string | null;
 
   first_name?: string | null;
   last_name_1?: string | null;
@@ -50,6 +57,10 @@ const COSTA_RICA_IDENTIFICATION_TYPES = [
 
 function normalizeText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeUpperText(value: unknown): string {
+  return normalizeText(value).toUpperCase();
 }
 
 function normalizeIdentifier(value: unknown): string {
@@ -145,10 +156,15 @@ export function validateCreateClient(
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  const clientType = normalizeText(body.client_type || "PERSON") as ClientType;
-  const complianceProfile = normalizeText(
+  const clientType = normalizeUpperText(
+    body.client_type || "PERSON",
+  ) as ClientType;
+
+  const complianceProfile = normalizeUpperText(
     body.compliance_profile || "COSTA_RICA",
   ) as ClientComplianceProfile;
+
+  const clientStatus = normalizeClientStatus(body.client_status);
 
   const identificationType = normalizeText(body.identification_type);
   const identificationNumber = normalizeIdentifier(
@@ -161,6 +177,15 @@ export function validateCreateClient(
 
   if (!VALID_COMPLIANCE_PROFILES.includes(complianceProfile)) {
     errors.push({ field: "compliance_profile", error: "invalid" });
+  }
+
+  if (
+    body.client_status !== undefined &&
+    body.client_status !== null &&
+    body.client_status !== "" &&
+    (!clientStatus || !CLIENT_STATUSES.includes(clientStatus))
+  ) {
+    errors.push({ field: "client_status", error: "invalid" });
   }
 
   if (clientType === "PERSON") {

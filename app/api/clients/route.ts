@@ -3,13 +3,14 @@ import {
   getClientsService,
   createClientService,
 } from "@/lib/services/clientService";
+import { normalizeClientStatusFilter } from "@/lib/clients/clientStatus";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
     const search = searchParams.get("search")?.trim() || undefined;
-    const status = searchParams.get("status")?.trim() || undefined;
+    const status = normalizeClientStatusFilter(searchParams.get("status"));
 
     const clients = await getClientsService({ search, status });
 
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
       { status: 200 },
     );
   } catch (error) {
-    console.error(error);
+    console.error("GET /api/clients error:", error);
 
     return NextResponse.json(
       {
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error(error);
+    console.error("POST /api/clients error:", error);
 
     return NextResponse.json(
       {

@@ -92,6 +92,13 @@ enum ClientComplianceProfile {
   COSTA_RICA
 }
 
+enum ClientStatus {
+  ACTIVE
+  PROSPECT
+  ON_HOLD
+  INACTIVE
+}
+
 enum WorkBillingStatus {
   PENDING
   INVOICED
@@ -219,10 +226,10 @@ model Client {
   latitude        Decimal? @db.Decimal(10, 7)
   longitude       Decimal? @db.Decimal(10, 7)
 
-  client_status                   String    @default("active")
-  whatsapp_opt_in                 Boolean   @default(false)
+  client_status                   ClientStatus @default(ACTIVE)
+  whatsapp_opt_in                 Boolean      @default(false)
   whatsapp_opt_in_at              DateTime?
-  auto_contact_enabled            Boolean   @default(true)
+  auto_contact_enabled            Boolean      @default(true)
   maintenance_contact_days_before Int?
 
   data_consent_at     DateTime?

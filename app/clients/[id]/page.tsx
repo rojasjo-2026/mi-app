@@ -2,11 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { getFullName } from "@/lib/utils/getFullName";
+import {
+  getClientStatusBadgeClass,
+  getClientStatusLabel,
+  type ClientStatus,
+} from "@/lib/clients/clientStatus";
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
 type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
-import { useParams, useRouter } from "next/navigation";
 
 type ClientFollowUp = {
   follow_up_id: string;
@@ -111,7 +116,7 @@ type ClientDetail = {
   admin_level_1?: string | null;
   admin_level_2?: string | null;
   admin_level_3?: string | null;
-  client_status?: string | null;
+  client_status?: ClientStatus | string | null;
   whatsapp_opt_in?: boolean | null;
 
   default_payment_term?: "CASH" | "CREDIT" | null;
@@ -192,16 +197,6 @@ function formatOptionalNumber(value?: number | string | null) {
   if (value === null || value === undefined || value === "") return "-";
 
   return String(value);
-}
-
-function getStatusBadgeClass(status?: string | null) {
-  return status === "inactive"
-    ? "border border-slate-200 bg-slate-100 text-slate-700"
-    : "border border-emerald-200 bg-emerald-50 text-emerald-700";
-}
-
-function getStatusLabel(status?: string | null) {
-  return status === "inactive" ? "Inactivo" : "Activo";
 }
 
 function getWhatsAppBadgeClass(enabled?: boolean | null) {
@@ -459,8 +454,12 @@ function getActivityFieldLabel(fieldName?: string | null) {
   return labels[fieldName] ?? fieldName;
 }
 
-function formatActivityValue(value?: string | null) {
+function formatActivityValue(value?: string | null, fieldName?: string | null) {
   if (!value) return "—";
+
+  if (fieldName === "client_status") {
+    return getClientStatusLabel(value);
+  }
 
   const parsedDate = new Date(value);
 
@@ -780,11 +779,11 @@ export default function ClientDetailPage() {
                 </h1>
 
                 <span
-                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(
+                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getClientStatusBadgeClass(
                     client.client_status,
                   )}`}
                 >
-                  {getStatusLabel(client.client_status)}
+                  {getClientStatusLabel(client.client_status)}
                 </span>
 
                 <span
@@ -992,7 +991,7 @@ export default function ClientDetailPage() {
             />
             <InfoRow
               label="Estado"
-              value={getStatusLabel(client.client_status)}
+              value={getClientStatusLabel(client.client_status)}
             />
             <InfoRow label="Teléfono principal" value={client.phone_primary} />
             <InfoRow
@@ -1474,7 +1473,7 @@ function ClientActivityHistory({
                   Antes
                 </p>
                 <p className="mt-2 break-words text-sm font-semibold text-slate-800">
-                  {formatActivityValue(activity.old_value)}
+                  {formatActivityValue(activity.old_value, activity.field_name)}
                 </p>
               </div>
 
@@ -1483,7 +1482,7 @@ function ClientActivityHistory({
                   Después
                 </p>
                 <p className="mt-2 break-words text-sm font-semibold text-slate-800">
-                  {formatActivityValue(activity.new_value)}
+                  {formatActivityValue(activity.new_value, activity.field_name)}
                 </p>
               </div>
             </div>

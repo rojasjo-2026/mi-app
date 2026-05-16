@@ -1,8 +1,9 @@
-import type {
-  ActivityLogAction,
-  ActivityLogCategory,
-  ActivityLogVisibility,
-  Prisma,
+import {
+  ClientStatus as PrismaClientStatus,
+  type ActivityLogAction,
+  type ActivityLogCategory,
+  type ActivityLogVisibility,
+  type Prisma,
 } from "@prisma/client";
 
 import {
@@ -20,9 +21,11 @@ import {
 import { validateCreateClient } from "@/lib/validators/clientValidator";
 import { toTrimmedStringOrFallback } from "@/lib/utils/string.utils";
 import { toNumberOrFallback } from "@/lib/utils/number.utils";
+import { normalizeClientStatus } from "@/lib/clients/clientStatus";
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
 type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
+type ClientStatusInput = PrismaClientStatus | string | null;
 
 type CreateClientInput = {
   client_type?: ClientType | string | null;
@@ -54,7 +57,7 @@ type CreateClientInput = {
   zone?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
-  client_status?: string | null;
+  client_status?: ClientStatusInput;
   whatsapp_opt_in?: boolean;
   whatsapp_opt_in_at?: string | Date | null;
   auto_contact_enabled?: boolean;
@@ -712,7 +715,7 @@ export async function getClientsService({
   status,
 }: {
   search?: string;
-  status?: string;
+  status?: ClientStatusInput;
 }) {
   return findClients({ search, status });
 }
@@ -806,7 +809,8 @@ export async function createClientService(body: CreateClientInput) {
     latitude: toNumberOrFallback(body.latitude, null),
     longitude: toNumberOrFallback(body.longitude, null),
 
-    client_status: "active",
+    client_status:
+      normalizeClientStatus(body.client_status) ?? PrismaClientStatus.ACTIVE,
 
     whatsapp_opt_in: whatsappOptIn,
     whatsapp_opt_in_at: whatsappOptIn
@@ -886,6 +890,14 @@ export async function updateClientByIdService(
     body.compliance_profile !== undefined
       ? normalizeComplianceProfile(body.compliance_profile, countryCode)
       : existing.compliance_profile;
+
+  const nextClientStatus =
+    body.client_status !== undefined
+      ? (normalizeClientStatus(body.client_status) ??
+        normalizeClientStatus(existing.client_status) ??
+        PrismaClientStatus.ACTIVE)
+      : (normalizeClientStatus(existing.client_status) ??
+        PrismaClientStatus.ACTIVE);
 
   const names = resolveClientNames({
     ...body,
@@ -1020,10 +1032,7 @@ export async function updateClientByIdService(
           ? Number(existing.longitude)
           : null,
 
-    client_status:
-      body.client_status !== undefined
-        ? body.client_status?.trim() || existing.client_status
-        : existing.client_status,
+    client_status: nextClientStatus,
 
     whatsapp_opt_in: nextWhatsappOptIn,
     whatsapp_opt_in_at:
@@ -1127,12 +1136,15 @@ export async function inactivateClientByIdService(id: string) {
     return null;
   }
 
-  if (existing.client_status === "inactive") {
+  const existingStatus =
+    normalizeClientStatus(existing.client_status) ?? PrismaClientStatus.ACTIVE;
+
+  if (existingStatus === PrismaClientStatus.INACTIVE) {
     return { success: true, client: existing };
   }
 
   const client = await updateClient(id, {
-    client_status: "inactive",
+    client_status: PrismaClientStatus.INACTIVE,
   });
 
   await recordClientActivityChangesSafely({

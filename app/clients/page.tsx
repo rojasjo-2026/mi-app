@@ -2,6 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  normalizeClientStatus,
+  getClientStatusLabel,
+  getClientStatusBadgeClass,
+  type ClientStatus,
+} from "@/lib/clients/clientStatus";
 
 type Client = {
   client_id: string;
@@ -10,7 +16,7 @@ type Client = {
   last_name_2?: string | null;
   phone_primary: string;
   email?: string | null;
-  client_status?: string | null;
+  client_status?: ClientStatus | string | null;
   whatsapp_opt_in?: boolean | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
@@ -19,7 +25,7 @@ type Client = {
   last_contact?: string | null;
 };
 
-type StatusFilter = "all" | "active" | "inactive";
+type StatusFilter = "all" | ClientStatus;
 type WhatsAppFilter = "all" | "with" | "without";
 type SortType = "name" | "recent";
 
@@ -32,16 +38,6 @@ function getClientFullName(client: Client) {
   return [client.first_name, client.last_name_1, client.last_name_2]
     .filter(Boolean)
     .join(" ");
-}
-
-function getStatusLabel(status?: string | null) {
-  return status === "inactive" ? "Inactivo" : "Activo";
-}
-
-function getStatusClasses(status?: string | null) {
-  return status === "inactive"
-    ? "border border-gray-200 bg-gray-100 text-gray-700"
-    : "border border-emerald-200 bg-emerald-50 text-emerald-700";
 }
 
 function getLocationLabel(client: Client) {
@@ -136,7 +132,7 @@ export default function ClientsPage() {
       const email = client.email?.toLowerCase() || "";
       const province = client.admin_level_1?.toLowerCase() || "";
       const canton = client.admin_level_2?.toLowerCase() || "";
-      const status = client.client_status || "active";
+      const status = normalizeClientStatus(client.client_status);
 
       const matchesSearch =
         !term ||
@@ -171,8 +167,9 @@ export default function ClientsPage() {
   }, [clients, search, statusFilter, whatsFilter, sort]);
 
   async function toggleStatus(client: Client) {
-    const newStatus =
-      client.client_status === "inactive" ? "active" : "inactive";
+    const currentStatus = normalizeClientStatus(client.client_status);
+    const newStatus: ClientStatus =
+      currentStatus === "INACTIVE" ? "ACTIVE" : "INACTIVE";
 
     try {
       const res = await fetch(`/api/clients/${client.client_id}`, {
@@ -198,7 +195,7 @@ export default function ClientsPage() {
       setToast({
         type: "success",
         message:
-          newStatus === "inactive" ? "Cliente desactivado" : "Cliente activado",
+          newStatus === "INACTIVE" ? "Cliente desactivado" : "Cliente activado",
       });
     } catch {
       setToast({
@@ -295,16 +292,32 @@ export default function ClientsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setStatusFilter("active")}
-                    className={getFilterButtonClass(statusFilter === "active")}
+                    onClick={() => setStatusFilter("ACTIVE")}
+                    className={getFilterButtonClass(statusFilter === "ACTIVE")}
                   >
                     Activos
                   </button>
                   <button
                     type="button"
-                    onClick={() => setStatusFilter("inactive")}
+                    onClick={() => setStatusFilter("PROSPECT")}
                     className={getFilterButtonClass(
-                      statusFilter === "inactive",
+                      statusFilter === "PROSPECT",
+                    )}
+                  >
+                    Prospectos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("ON_HOLD")}
+                    className={getFilterButtonClass(statusFilter === "ON_HOLD")}
+                  >
+                    En espera
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("INACTIVE")}
+                    className={getFilterButtonClass(
+                      statusFilter === "INACTIVE",
                     )}
                   >
                     Inactivos
@@ -389,7 +402,7 @@ export default function ClientsPage() {
             {filteredClients.map((client) => {
               const fullName = getClientFullName(client);
               const locationLabel = getLocationLabel(client);
-              const status = client.client_status || "active";
+              const status = normalizeClientStatus(client.client_status);
               const formattedLastMaintenance = formatDateLabel(
                 client.last_maintenance,
               );
@@ -415,11 +428,11 @@ export default function ClientsPage() {
 
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getClientStatusBadgeClass(
                                 status,
                               )}`}
                             >
-                              {getStatusLabel(status)}
+                              {getClientStatusLabel(status)}
                             </span>
 
                             <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
@@ -508,7 +521,7 @@ export default function ClientsPage() {
                         onClick={() => toggleStatus(client)}
                         className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
-                        {status === "inactive" ? "Activar" : "Desactivar"}
+                        {status === "INACTIVE" ? "Activar" : "Desactivar"}
                       </button>
                     </div>
                   </div>

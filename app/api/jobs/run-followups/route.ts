@@ -12,10 +12,33 @@ import {
   updateContactFlow,
 } from "@/lib/repositories/contactFlowRepository";
 
+type PendingFlowForExecution = Awaited<
+  ReturnType<typeof listPendingFlowsForExecution>
+>[number] & {
+  client?: {
+    client_id: string;
+    first_name?: string | null;
+    last_name_1?: string | null;
+    phone_primary?: string | null;
+    whatsapp_opt_in?: boolean | null;
+    auto_contact_enabled?: boolean | null;
+  } | null;
+  installation?: {
+    installation_id: string;
+    description?: string | null;
+    service_type?: {
+      name?: string | null;
+    } | null;
+  } | null;
+};
+
 export async function POST() {
   try {
     const now = new Date();
-    const flows = await listPendingFlowsForExecution(now);
+
+    const flows = (await listPendingFlowsForExecution(
+      now,
+    )) as PendingFlowForExecution[];
 
     if (!flows.length) {
       return NextResponse.json({
