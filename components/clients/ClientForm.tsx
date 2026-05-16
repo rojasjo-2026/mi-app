@@ -17,6 +17,9 @@ import {
   getReadableFieldName,
   getReadableValidationError,
 } from "@/lib/clients/clientForm.utils";
+import FormSection from "@/components/clients/form/FormSection";
+import FormInput from "@/components/clients/form/FormInput";
+import AlertMessage from "@/components/clients/form/AlertMessage";
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
 type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
@@ -1017,92 +1020,5 @@ export default function ClientForm({
         </form>
       </div>
     </main>
-  );
-}
-
-function FormSection({
-  title,
-  isOpen,
-  onToggle,
-  children,
-}: {
-  title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-slate-50"
-      >
-        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
-          {isOpen ? "Ocultar" : "Mostrar"}
-        </span>
-      </button>
-
-      {isOpen && (
-        <div className="border-t border-slate-200 p-6">{children}</div>
-      )}
-    </section>
-  );
-}
-
-function FormInput({
-  label,
-  value,
-  onChange,
-  inputClass,
-  required = false,
-  full = false,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  inputClass: string;
-  required?: boolean;
-  full?: boolean;
-  placeholder?: string;
-  type?: string;
-}) {
-  return (
-    <div className={full ? "md:col-span-2" : ""}>
-      <label className="mb-1 block text-sm font-semibold text-slate-700">
-        {label}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={inputClass}
-        required={required}
-        placeholder={placeholder}
-      />
-    </div>
-  );
-}
-
-function AlertMessage({
-  type,
-  text,
-}: {
-  type: "success" | "error";
-  text: string;
-}) {
-  return (
-    <div
-      className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
-        type === "success"
-          ? "border-green-200 bg-green-50 text-green-700"
-          : "border-red-200 bg-red-50 text-red-700"
-      }`}
-    >
-      {text}
-    </div>
   );
 }
