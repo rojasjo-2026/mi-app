@@ -12,9 +12,13 @@ import {
   getClientFullName,
   getLocationLabel,
   getFilterButtonClass,
-  getToastClass,
   formatDateLabel,
 } from "@/lib/clients/clientList.utils";
+import { ClientListToast } from "@/components/clients/list/ClientListToast";
+import { ClientListLoadingState } from "@/components/clients/list/ClientListLoadingState";
+import { ClientListErrorState } from "@/components/clients/list/ClientListErrorState";
+import { ClientListHeader } from "@/components/clients/list/ClientListHeader";
+import { ClientListEmptyState } from "@/components/clients/list/ClientListEmptyState";
 
 type Client = {
   client_id: string;
@@ -168,65 +172,22 @@ export default function ClientsPage() {
   }
 
   if (loading) {
-    return (
-      <main className="p-6 md:p-8">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-medium text-slate-600">
-            Cargando clientes...
-          </p>
-        </div>
-      </main>
-    );
+    return <ClientListLoadingState />;
   }
 
   if (error) {
-    return (
-      <main className="p-6 md:p-8">
-        <div className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-medium text-red-600">{error}</p>
-        </div>
-      </main>
-    );
+    return <ClientListErrorState message={error} />;
   }
 
   return (
     <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-      {toast && (
-        <div className="fixed right-6 top-6 z-50">
-          <div
-            className={`rounded-2xl border px-4 py-3 text-sm font-semibold shadow-lg ${getToastClass(
-              toast.type,
-            )}`}
-          >
-            {toast.message}
-          </div>
-        </div>
-      )}
+      <ClientListToast toast={toast} />
 
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
-            <div className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Gestión de clientes
-            </div>
-
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-                Clientes
-              </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                {filteredClients.length} de {clients.length} clientes
-              </p>
-            </div>
-          </div>
-
-          <Link
-            href="/clients/new"
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-          >
-            + Nuevo cliente
-          </Link>
-        </section>
+        <ClientListHeader
+          filteredCount={filteredClients.length}
+          totalCount={clients.length}
+        />
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
           <div className="space-y-5">
@@ -344,21 +305,7 @@ export default function ClientsPage() {
         </section>
 
         {filteredClients.length === 0 ? (
-          <section className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <p className="text-base font-semibold text-slate-800">
-              No se encontraron clientes
-            </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Prueba con otra búsqueda o cambia los filtros.
-            </p>
-
-            <Link
-              href="/clients/new"
-              className="mt-5 inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Crear nuevo cliente
-            </Link>
-          </section>
+          <ClientListEmptyState />
         ) : (
           <ul className="space-y-4">
             {filteredClients.map((client) => {
