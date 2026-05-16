@@ -4,6 +4,7 @@ import {
   createClientService,
 } from "@/lib/services/clientService";
 import { normalizeClientStatusFilter } from "@/lib/clients/clientStatus";
+import { getFriendlyPrismaDuplicateError } from "@/lib/utils/prismaError.utils";
 
 export async function GET(req: Request) {
   try {
@@ -60,6 +61,19 @@ export async function POST(req: Request) {
       { status: 201 },
     );
   } catch (error) {
+    const duplicateError = getFriendlyPrismaDuplicateError(error, "Client");
+
+    if (duplicateError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: duplicateError.message,
+          errors: duplicateError.errors,
+        },
+        { status: duplicateError.status },
+      );
+    }
+
     console.error("POST /api/clients error:", error);
 
     return NextResponse.json(

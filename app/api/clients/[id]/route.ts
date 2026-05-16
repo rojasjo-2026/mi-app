@@ -8,6 +8,7 @@ import {
   normalizeClientStatus,
   type ClientStatus,
 } from "@/lib/clients/clientStatus";
+import { getFriendlyPrismaDuplicateError } from "@/lib/utils/prismaError.utils";
 
 type RouteContext = {
   params: Promise<{
@@ -110,6 +111,19 @@ export async function PUT(req: Request, context: RouteContext) {
       { status: 200 },
     );
   } catch (error) {
+    const duplicateError = getFriendlyPrismaDuplicateError(error, "Client");
+
+    if (duplicateError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: duplicateError.message,
+          errors: duplicateError.errors,
+        },
+        { status: duplicateError.status },
+      );
+    }
+
     console.error("PUT /api/clients/[id] error:", error);
 
     return NextResponse.json(
