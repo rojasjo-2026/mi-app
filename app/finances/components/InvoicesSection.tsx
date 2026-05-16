@@ -32,18 +32,121 @@ export default function InvoicesSection({
   onRefresh,
 }: InvoicesSectionProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [notification, setNotification] = useState<
+    | { type: "success"; message: string }
+    | { type: "error"; message: string }
+    | null
+  >(null);
+  const [submittingInvoiceId, setSubmittingInvoiceId] = useState<string | null>(
+    null,
+  );
+
+  const cancelableStatuses = new Set<string>(["PENDING", "OVERDUE"]);
+
+  const canCancelInvoice = (invoice: FinanceInvoice) => {
+    const status = invoice.status ?? "";
+
+    return (
+      cancelableStatuses.has(status) && toSafeNumber(invoice.paid_amount) === 0
+    );
+  };
+
+  const handleCancelInvoice = async (invoice: FinanceInvoice) => {
+    if (!canCancelInvoice(invoice)) {
+      return;
+    }
+
+    const invoiceId =
+      typeof invoice.invoice_id === "string" ? invoice.invoice_id.trim() : "";
+
+    if (!invoiceId) {
+      setNotification({
+        type: "error",
+        message: "ID de factura no disponible.",
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "¿Seguro que quieres cancelar esta factura?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const reason = window.prompt("Ingrese el motivo de la cancelación", "");
+
+    if (reason === null) {
+      return;
+    }
+
+    const trimmedReason = reason.trim();
+
+    if (!trimmedReason) {
+      setNotification({
+        type: "error",
+        message: "La razón de cancelación no puede estar vacía.",
+      });
+      return;
+    }
+
+    setSubmittingInvoiceId(invoiceId);
+    setNotification(null);
+
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cancelled_reason: trimmedReason,
+          changed_by: "Jose",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.message || "Error al cancelar la factura.");
+      }
+
+      setNotification({
+        type: "success",
+        message: "Factura cancelada exitosamente.",
+      });
+
+      onRefresh();
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "No se pudo cancelar la factura.",
+      });
+    } finally {
+      setSubmittingInvoiceId(null);
+    }
+  };
 
   const toggleExpand = (invoiceId: string) => {
+    if (!invoiceId) {
+      return;
+    }
+
     setExpandedIds((prev) => {
       const next = new Set(prev);
+
       if (next.has(invoiceId)) {
         next.delete(invoiceId);
       } else {
         next.add(invoiceId);
       }
+
       return next;
     });
   };
+
   const invoiceSummary = useMemo(() => {
     const totalInvoiced = invoices
       .filter((invoice) => invoice.status !== "CANCELLED")
@@ -130,6 +233,19 @@ export default function InvoicesSection({
         </div>
       )}
 
+      {notification && (
+        <div
+          className={`mt-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
+            {
+              success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+              error: "border-red-200 bg-red-50 text-red-700",
+            }[notification.type]
+          }`}
+        >
+          {notification.message}
+        </div>
+      )}
+
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <FinanceSummaryCard
           label="Total facturado"
@@ -182,12 +298,18 @@ export default function InvoicesSection({
         </div>
       ) : (
         <div className="mt-6 space-y-3">
-          {invoices.map((invoice) => {
-            const isExpanded = expandedIds.has(invoice.invoice_id);
+          {invoices.map((invoice, index) => {
+            const invoiceId =
+              typeof invoice.invoice_id === "string" ? invoice.invoice_id : "";
+
+            const isExpanded = invoiceId ? expandedIds.has(invoiceId) : false;
+
+            const isSubmittingCancellation =
+              invoiceId !== "" && submittingInvoiceId === invoiceId;
 
             return (
               <div
-                key={invoice.invoice_id}
+                key={invoiceId || invoice.invoice_number || index}
                 className={`rounded-2xl border p-4 ${
                   invoice.status === "OVERDUE"
                     ? "border-red-300 bg-red-50/80 shadow-sm"
@@ -247,7 +369,11 @@ export default function InvoicesSection({
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => toggleExpand(invoice.invoice_id)}
+                    onClick={() => {
+                      if (invoiceId) {
+                        toggleExpand(invoiceId);
+                      }
+                    }}
                     className="text-xs font-semibold text-slate-600 transition hover:text-slate-900"
                   >
                     {isExpanded ? "Ocultar detalle" : "Ver detalle"}
@@ -256,7 +382,7 @@ export default function InvoicesSection({
 
                 {/* Expandable Detail Section */}
                 {isExpanded && (
-                  <div className="mt-6 border-t border-slate-200 pt-6 space-y-6">
+                  <div className="mt-6 space-y-6 border-t border-slate-200 pt-6">
                     {/* General Information */}
                     <div>
                       <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
@@ -271,6 +397,7 @@ export default function InvoicesSection({
                             {formatPaymentTerm(invoice.payment_term)}
                           </p>
                         </div>
+
                         {invoice.credit_days !== null &&
                           invoice.credit_days !== undefined && (
                             <div className="rounded-lg bg-white p-3">
@@ -282,12 +409,14 @@ export default function InvoicesSection({
                               </p>
                             </div>
                           )}
+
                         <div className="rounded-lg bg-white p-3">
                           <p className="text-xs text-slate-500">Moneda</p>
                           <p className="mt-1 text-sm font-semibold text-slate-900">
                             {invoice.currency || "CRC"}
                           </p>
                         </div>
+
                         <div className="rounded-lg bg-white p-3">
                           <p className="text-xs text-slate-500">
                             Estado impuesto
@@ -304,6 +433,7 @@ export default function InvoicesSection({
                       <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
                         Desglose de montos
                       </h4>
+
                       <div className="space-y-2 rounded-lg bg-white p-4">
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-600">Subtotal</span>
@@ -311,6 +441,7 @@ export default function InvoicesSection({
                             {formatCurrency(invoice.subtotal_amount)}
                           </span>
                         </div>
+
                         {toSafeNumber(invoice.discount_amount) > 0 && (
                           <div>
                             <div className="flex justify-between text-sm">
@@ -324,6 +455,7 @@ export default function InvoicesSection({
                                 -{formatCurrency(invoice.discount_amount)}
                               </span>
                             </div>
+
                             {invoice.discount_reason && (
                               <p className="text-xs text-slate-500">
                                 Razón: {invoice.discount_reason}
@@ -331,6 +463,7 @@ export default function InvoicesSection({
                             )}
                           </div>
                         )}
+
                         {toSafeNumber(invoice.tax_amount) > 0 && (
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">
@@ -344,6 +477,7 @@ export default function InvoicesSection({
                             </span>
                           </div>
                         )}
+
                         <div className="border-t border-slate-200 pt-2">
                           <div className="flex justify-between text-sm font-bold">
                             <span className="text-slate-900">Total</span>
@@ -352,6 +486,7 @@ export default function InvoicesSection({
                             </span>
                           </div>
                         </div>
+
                         <div className="border-t border-slate-200 pt-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">Pagado</span>
@@ -359,6 +494,7 @@ export default function InvoicesSection({
                               {formatCurrency(invoice.paid_amount)}
                             </span>
                           </div>
+
                           <div className="mt-2 flex justify-between text-sm">
                             <span className="text-slate-600">
                               Saldo pendiente
@@ -383,6 +519,7 @@ export default function InvoicesSection({
                         <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
                           Partidas
                         </h4>
+
                         <div className="overflow-x-auto rounded-lg bg-white">
                           <table className="w-full text-sm">
                             <thead>
@@ -401,6 +538,7 @@ export default function InvoicesSection({
                                 </th>
                               </tr>
                             </thead>
+
                             <tbody>
                               {invoice.lines.map((line) => (
                                 <tr
@@ -432,6 +570,7 @@ export default function InvoicesSection({
                       <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
                         Historial de pagos
                       </h4>
+
                       {!invoice.payments || invoice.payments.length === 0 ? (
                         <div className="rounded-lg bg-slate-50 p-4 text-center">
                           <p className="text-sm text-slate-500">
@@ -450,15 +589,18 @@ export default function InvoicesSection({
                                   <p className="text-sm font-semibold text-slate-900">
                                     {formatCurrency(payment.amount)}
                                   </p>
+
                                   <p className="mt-1 text-xs text-slate-500">
                                     {formatPaymentMethod(payment.method)} ·{" "}
                                     {formatDateLabel(payment.payment_date)}
                                   </p>
+
                                   {payment.reference_number && (
                                     <p className="text-xs text-slate-500">
                                       Ref: {payment.reference_number}
                                     </p>
                                   )}
+
                                   {payment.notes && (
                                     <p className="mt-1 text-xs text-slate-600">
                                       Nota: {payment.notes}
@@ -478,7 +620,8 @@ export default function InvoicesSection({
                         <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
                           Información del cliente
                         </h4>
-                        <div className="rounded-lg bg-white p-4 space-y-3">
+
+                        <div className="space-y-3 rounded-lg bg-white p-4">
                           <div>
                             <p className="text-xs text-slate-500">
                               Nombre facturación
@@ -489,6 +632,7 @@ export default function InvoicesSection({
                                 "-"}
                             </p>
                           </div>
+
                           {invoice.client.billing_phone && (
                             <div>
                               <p className="text-xs text-slate-500">
@@ -499,6 +643,7 @@ export default function InvoicesSection({
                               </p>
                             </div>
                           )}
+
                           {invoice.client.billing_email && (
                             <div>
                               <p className="text-xs text-slate-500">
@@ -509,6 +654,7 @@ export default function InvoicesSection({
                               </p>
                             </div>
                           )}
+
                           {invoice.client.tax_id && (
                             <div>
                               <p className="text-xs text-slate-500">
@@ -529,10 +675,11 @@ export default function InvoicesSection({
                         <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
                           Trabajo relacionado
                         </h4>
+
                         <div className="rounded-lg bg-white p-4">
                           {invoice.installation && (
                             <div className="space-y-2">
-                              <p className="text-xs font-semibold text-slate-600 uppercase">
+                              <p className="text-xs font-semibold uppercase text-slate-600">
                                 Instalación
                               </p>
                               <p className="text-sm text-slate-900">
@@ -552,9 +699,10 @@ export default function InvoicesSection({
                               </p>
                             </div>
                           )}
+
                           {invoice.follow_up && (
                             <div className="space-y-2">
-                              <p className="text-xs font-semibold text-slate-600 uppercase">
+                              <p className="text-xs font-semibold uppercase text-slate-600">
                                 Mantenimiento
                               </p>
                               <p className="text-sm text-slate-900">
@@ -582,11 +730,27 @@ export default function InvoicesSection({
                         <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
                           Notas
                         </h4>
+
                         <div className="rounded-lg bg-white p-4">
-                          <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                          <p className="whitespace-pre-wrap text-sm text-slate-700">
                             {invoice.notes}
                           </p>
                         </div>
+                      </div>
+                    )}
+
+                    {canCancelInvoice(invoice) && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleCancelInvoice(invoice)}
+                          disabled={isSubmittingCancellation}
+                          className="mt-4 inline-flex items-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isSubmittingCancellation
+                            ? "Cancelando..."
+                            : "Cancelar factura"}
+                        </button>
                       </div>
                     )}
                   </div>
