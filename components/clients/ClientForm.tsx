@@ -21,6 +21,9 @@ import FormSection from "@/components/clients/form/FormSection";
 import FormInput from "@/components/clients/form/FormInput";
 import AlertMessage from "@/components/clients/form/AlertMessage";
 import ClientContactSection from "@/components/clients/form/ClientContactSection";
+import ClientLocationSection from "@/components/clients/form/ClientLocationSection";
+import ClientFinanceSection from "@/components/clients/form/ClientFinanceSection";
+import ClientBillingSection from "@/components/clients/form/ClientBillingSection";
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
 type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
@@ -699,249 +702,58 @@ export default function ClientForm({
             setWhatsappOptIn={setWhatsappOptIn}
           />
 
-          <FormSection
-            title="Ubicación"
+          <ClientLocationSection
             isOpen={openSections.location}
             onToggle={() => toggleSection("location")}
-          >
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Provincia
-                </label>
-                <select
-                  value={adminLevel1}
-                  onChange={(e) => handleProvinceChange(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">Seleccione provincia</option>
-                  {provinciaOptions.map((provincia) => (
-                    <option key={provincia} value={provincia}>
-                      {provincia}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            adminLevel1={adminLevel1}
+            adminLevel2={adminLevel2}
+            adminLevel3={adminLevel3}
+            addressLine={addressLine}
+            provinciaOptions={provinciaOptions}
+            cantonOptions={cantonOptions}
+            distritoOptions={distritoOptions}
+            handleProvinceChange={handleProvinceChange}
+            handleCantonChange={handleCantonChange}
+            setAdminLevel3={setAdminLevel3}
+            setAddressLine={setAddressLine}
+            selectClass={selectClass}
+            inputClass={inputClass}
+          />
 
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Cantón
-                </label>
-                <select
-                  value={adminLevel2}
-                  onChange={(e) => handleCantonChange(e.target.value)}
-                  disabled={!adminLevel1}
-                  className={selectClass}
-                >
-                  <option value="">Seleccione cantón</option>
-                  {cantonOptions.map((canton) => (
-                    <option key={canton.nombre} value={canton.nombre}>
-                      {canton.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Distrito
-                </label>
-                <select
-                  value={adminLevel3}
-                  onChange={(e) => setAdminLevel3(e.target.value)}
-                  disabled={!adminLevel1 || !adminLevel2}
-                  className={selectClass}
-                >
-                  <option value="">Seleccione distrito</option>
-                  {distritoOptions.map((distrito) => (
-                    <option key={distrito.nombre} value={distrito.nombre}>
-                      {distrito.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <FormInput
-                label="Dirección"
-                value={addressLine}
-                onChange={setAddressLine}
-                inputClass={inputClass}
-                placeholder="Detalle adicional de la dirección"
-                full
-              />
-            </div>
-          </FormSection>
-
-          <FormSection
-            title="Configuración financiera"
+          <ClientFinanceSection
             isOpen={openSections.finance}
             onToggle={() => toggleSection("finance")}
-          >
-            <p className="mb-5 text-sm text-slate-500">
-              Reglas comerciales opcionales para crédito, descuentos e
-              impuestos.
-            </p>
+            paymentTerm={paymentTerm}
+            creditDays={creditDays}
+            creditLimit={creditLimit}
+            discountRate={discountRate}
+            preferredCurrency={preferredCurrency}
+            taxExempt={taxExempt}
+            setPaymentTerm={setPaymentTerm}
+            setCreditDays={setCreditDays}
+            setCreditLimit={setCreditLimit}
+            setDiscountRate={setDiscountRate}
+            setPreferredCurrency={setPreferredCurrency}
+            setTaxExempt={setTaxExempt}
+            selectClass={selectClass}
+            inputClass={inputClass}
+          />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Tipo de pago
-                </label>
-                <select
-                  value={paymentTerm}
-                  onChange={(e) =>
-                    setPaymentTerm(e.target.value as "CASH" | "CREDIT")
-                  }
-                  className={selectClass}
-                >
-                  <option value="CASH">Contado</option>
-                  <option value="CREDIT">Crédito</option>
-                </select>
-              </div>
-
-              {paymentTerm === "CREDIT" && (
-                <>
-                  <FormInput
-                    label="Días de crédito *"
-                    value={creditDays}
-                    onChange={setCreditDays}
-                    inputClass={inputClass}
-                    type="number"
-                    placeholder="Ejemplo: 30"
-                    required
-                  />
-
-                  <FormInput
-                    label="Límite de crédito"
-                    value={creditLimit}
-                    onChange={setCreditLimit}
-                    inputClass={inputClass}
-                    type="number"
-                    placeholder="Ejemplo: 500000"
-                  />
-                </>
-              )}
-
-              <FormInput
-                label="Descuento por defecto (%)"
-                value={discountRate}
-                onChange={setDiscountRate}
-                inputClass={inputClass}
-                type="number"
-                placeholder="Ejemplo: 10"
-              />
-
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Moneda preferida
-                </label>
-                <select
-                  value={preferredCurrency}
-                  onChange={(e) =>
-                    setPreferredCurrency(e.target.value as "CRC" | "USD")
-                  }
-                  className={selectClass}
-                >
-                  <option value="CRC">Colones costarricenses</option>
-                  <option value="USD">Dólares estadounidenses</option>
-                </select>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <label
-                  htmlFor="tax_exempt"
-                  className="flex cursor-pointer items-center gap-3"
-                >
-                  <input
-                    id="tax_exempt"
-                    type="checkbox"
-                    checked={taxExempt}
-                    onChange={(e) => setTaxExempt(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      Exento de IVA
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Marque esta opción si al cliente no se le debe aplicar
-                      IVA.
-                    </p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </FormSection>
-
-          <FormSection
-            title="Datos de facturación"
+          <ClientBillingSection
             isOpen={openSections.billing}
             onToggle={() => toggleSection("billing")}
-          >
-            <p className="mb-5 text-sm text-slate-500">
-              Puede reutilizar los datos principales del cliente o registrar
-              datos de facturación diferentes.
-            </p>
-
-            <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <label
-                htmlFor="billing_same_as_client"
-                className="flex cursor-pointer items-center gap-3"
-              >
-                <input
-                  id="billing_same_as_client"
-                  type="checkbox"
-                  checked={billingSameAsClient}
-                  onChange={(e) => setBillingSameAsClient(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300"
-                />
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">
-                    Usar la misma información del cliente para facturación
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Si está marcado, se usará nombre, teléfono, email y
-                    dirección principal.
-                  </p>
-                </div>
-              </label>
-            </div>
-
-            {!billingSameAsClient && (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <FormInput
-                  label="Nombre de facturación"
-                  value={billingName}
-                  onChange={setBillingName}
-                  inputClass={inputClass}
-                  placeholder="Nombre que aparecerá en la factura"
-                />
-
-                <FormInput
-                  label="Email de facturación"
-                  value={billingEmail}
-                  onChange={setBillingEmail}
-                  inputClass={inputClass}
-                  type="email"
-                />
-
-                <FormInput
-                  label="Teléfono de facturación"
-                  value={billingPhone}
-                  onChange={setBillingPhone}
-                  inputClass={inputClass}
-                />
-
-                <FormInput
-                  label="Dirección de facturación"
-                  value={billingAddress}
-                  onChange={setBillingAddress}
-                  inputClass={inputClass}
-                  placeholder="Dirección que aparecerá en la factura"
-                />
-              </div>
-            )}
-          </FormSection>
+            billingSameAsClient={billingSameAsClient}
+            billingName={billingName}
+            billingEmail={billingEmail}
+            billingPhone={billingPhone}
+            billingAddress={billingAddress}
+            setBillingSameAsClient={setBillingSameAsClient}
+            setBillingName={setBillingName}
+            setBillingEmail={setBillingEmail}
+            setBillingPhone={setBillingPhone}
+            setBillingAddress={setBillingAddress}
+            inputClass={inputClass}
+          />
 
           {message && <AlertMessage type="success" text={message} />}
           {error && <AlertMessage type="error" text={error} />}
