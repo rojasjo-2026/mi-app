@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getFullName } from "@/lib/utils/getFullName";
 import {
@@ -9,6 +8,11 @@ import {
   getClientStatusLabel,
   type ClientStatus,
 } from "@/lib/clients/clientStatus";
+import { CollapsibleCard } from "@/components/clients/detail/CollapsibleCard";
+import { SummaryCard } from "@/components/clients/detail/SummaryCard";
+import { CommercialSummaryCard } from "@/components/clients/detail/CommercialSummaryCard";
+import { InfoRow } from "@/components/clients/detail/InfoRow";
+import { MiniInfoCard } from "@/components/clients/detail/MiniInfoCard";
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
 type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
@@ -1489,112 +1493,6 @@ function ClientActivityHistory({
           )}
         </div>
       ))}
-    </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  helper,
-}: {
-  label: string;
-  value: string;
-  helper: string;
-}) {
-  return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-        {label}
-      </p>
-      <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
-        {value}
-      </p>
-      <p className="mt-2 text-sm text-slate-500">{helper}</p>
-    </section>
-  );
-}
-
-function CommercialSummaryCard({
-  label,
-  value,
-  helper,
-}: {
-  label: string;
-  value: string;
-  helper: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </p>
-      <p className="mt-2 break-words text-lg font-bold tracking-tight text-slate-900">
-        {value}
-      </p>
-      <p className="mt-1 text-xs text-slate-500">{helper}</p>
-    </div>
-  );
-}
-
-function CollapsibleCard({
-  title,
-  children,
-  rightContent,
-  isOpen,
-  onToggle,
-}: {
-  title: string;
-  children: ReactNode;
-  rightContent?: ReactNode;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-5 md:flex-row md:items-center md:justify-between md:px-6">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900">
-          {title}
-        </h2>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {rightContent}
-
-          <button
-            type="button"
-            onClick={onToggle}
-            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100"
-          >
-            {isOpen ? "Ocultar" : "Mostrar"}
-          </button>
-        </div>
-      </div>
-
-      {isOpen && <div className="p-5 md:p-6">{children}</div>}
-    </section>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </p>
-      <p className="mt-2 break-words text-sm font-semibold text-slate-800">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function MiniInfoCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </p>
-      <p className="mt-2 text-sm font-semibold text-slate-800">{value}</p>
     </div>
   );
 }
