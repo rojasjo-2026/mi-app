@@ -17,9 +17,8 @@ import {
   getReadableFieldName,
   getReadableValidationError,
 } from "@/lib/clients/clientForm.utils";
-import FormSection from "@/components/clients/form/FormSection";
-import FormInput from "@/components/clients/form/FormInput";
 import AlertMessage from "@/components/clients/form/AlertMessage";
+import ClientBasicInfoSection from "@/components/clients/form/ClientBasicInfoSection";
 import ClientContactSection from "@/components/clients/form/ClientContactSection";
 import ClientLocationSection from "@/components/clients/form/ClientLocationSection";
 import ClientFinanceSection from "@/components/clients/form/ClientFinanceSection";
@@ -523,166 +522,38 @@ export default function ClientForm({
         </section>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FormSection
-            title="Información del cliente"
+          <ClientBasicInfoSection
             isOpen={openSections.personal}
             onToggle={() => toggleSection("personal")}
-          >
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Tipo de cliente *
-                </label>
-                <select
-                  value={clientType}
-                  onChange={(e) =>
-                    handleClientTypeChange(e.target.value as ClientType)
-                  }
-                  className={selectClass}
-                >
-                  <option value="PERSON">Persona física</option>
-                  <option value="COMPANY">Empresa / Persona jurídica</option>
-                  <option value="OTHER">Otro</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Perfil de validación *
-                </label>
-                <select
-                  value={complianceProfile}
-                  onChange={(e) =>
-                    handleComplianceProfileChange(
-                      e.target.value as ClientComplianceProfile,
-                    )
-                  }
-                  className={selectClass}
-                >
-                  <option value="COSTA_RICA">Costa Rica</option>
-                  <option value="GLOBAL">Global</option>
-                </select>
-              </div>
-
-              {clientType === "PERSON" && (
-                <>
-                  <FormInput
-                    label="Nombre *"
-                    value={firstName}
-                    onChange={setFirstName}
-                    required
-                    inputClass={inputClass}
-                  />
-
-                  <FormInput
-                    label="Primer apellido *"
-                    value={lastName1}
-                    onChange={setLastName1}
-                    required
-                    inputClass={inputClass}
-                  />
-
-                  <FormInput
-                    label="Segundo apellido"
-                    value={lastName2}
-                    onChange={setLastName2}
-                    inputClass={inputClass}
-                  />
-                </>
-              )}
-
-              {clientType === "COMPANY" && (
-                <>
-                  <FormInput
-                    label="Nombre de la empresa / razón social *"
-                    value={companyName}
-                    onChange={setCompanyName}
-                    required
-                    inputClass={inputClass}
-                  />
-
-                  <FormInput
-                    label="Nombre comercial"
-                    value={commercialName}
-                    onChange={setCommercialName}
-                    inputClass={inputClass}
-                  />
-
-                  <FormInput
-                    label="Contacto principal"
-                    value={mainContactName}
-                    onChange={setMainContactName}
-                    inputClass={inputClass}
-                    placeholder="Persona encargada o contacto operativo"
-                  />
-                </>
-              )}
-
-              {clientType === "OTHER" && (
-                <>
-                  <FormInput
-                    label="Nombre del cliente *"
-                    value={displayName}
-                    onChange={setDisplayName}
-                    required
-                    inputClass={inputClass}
-                  />
-
-                  <FormInput
-                    label="Nombre legal"
-                    value={legalName}
-                    onChange={setLegalName}
-                    inputClass={inputClass}
-                  />
-
-                  <FormInput
-                    label="Contacto principal"
-                    value={mainContactName}
-                    onChange={setMainContactName}
-                    inputClass={inputClass}
-                    placeholder="Persona encargada o contacto operativo"
-                  />
-                </>
-              )}
-
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Tipo de identificación *
-                </label>
-                <select
-                  value={identificationType}
-                  onChange={(e) => setIdentificationType(e.target.value)}
-                  className={selectClass}
-                  required
-                >
-                  {identificationOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <FormInput
-                  label="Cédula / identificación *"
-                  value={taxId}
-                  onChange={setTaxId}
-                  required
-                  inputClass={inputClass}
-                  placeholder={
-                    complianceProfile === "COSTA_RICA"
-                      ? "Sin guiones ni espacios"
-                      : "Número de identificación"
-                  }
-                />
-
-                <p className="mt-1 text-xs text-slate-500">
-                  {getIdentificationHelpText(identificationType)}
-                </p>
-              </div>
-            </div>
-          </FormSection>
+            clientType={clientType}
+            complianceProfile={complianceProfile}
+            identificationType={identificationType}
+            taxId={taxId}
+            firstName={firstName}
+            lastName1={lastName1}
+            lastName2={lastName2}
+            displayName={displayName}
+            legalName={legalName}
+            companyName={companyName}
+            commercialName={commercialName}
+            mainContactName={mainContactName}
+            identificationOptions={identificationOptions}
+            inputClass={inputClass}
+            selectClass={selectClass}
+            handleClientTypeChange={handleClientTypeChange}
+            handleComplianceProfileChange={handleComplianceProfileChange}
+            setFirstName={setFirstName}
+            setLastName1={setLastName1}
+            setLastName2={setLastName2}
+            setDisplayName={setDisplayName}
+            setLegalName={setLegalName}
+            setCompanyName={setCompanyName}
+            setCommercialName={setCommercialName}
+            setMainContactName={setMainContactName}
+            setIdentificationType={setIdentificationType}
+            setTaxId={setTaxId}
+            getIdentificationHelpText={getIdentificationHelpText}
+          />
 
           <ClientContactSection
             mode={mode}
