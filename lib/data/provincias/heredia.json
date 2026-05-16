@@ -1,0 +1,101 @@
+{
+  "nombre": "Heredia",
+  "cantones": [
+    {
+      "nombre": "Heredia",
+      "distritos": [
+        { "nombre": "Heredia" },
+        { "nombre": "Mercedes" },
+        { "nombre": "San Francisco" },
+        { "nombre": "Ulloa" },
+        { "nombre": "Varablanca" }
+      ]
+    },
+    {
+      "nombre": "Barva",
+      "distritos": [
+        { "nombre": "Barva" },
+        { "nombre": "San Pedro" },
+        { "nombre": "San Pablo" },
+        { "nombre": "San Roque" },
+        { "nombre": "Santa Lucía" },
+        { "nombre": "San José de la Montaña" }
+      ]
+    },
+    {
+      "nombre": "Santo Domingo",
+      "distritos": [
+        { "nombre": "Santo Domingo" },
+        { "nombre": "San Vicente" },
+        { "nombre": "San Miguel" },
+        { "nombre": "Paracito" },
+        { "nombre": "Santo Tomás" },
+        { "nombre": "Santa Rosa" },
+        { "nombre": "Tures" },
+        { "nombre": "Pará" }
+      ]
+    },
+    {
+      "nombre": "Santa Bárbara",
+      "distritos": [
+        { "nombre": "Santa Bárbara" },
+        { "nombre": "San Pedro" },
+        { "nombre": "San Juan" },
+        { "nombre": "Jesús" },
+        { "nombre": "Santo Domingo" },
+        { "nombre": "Purabá" }
+      ]
+    },
+    {
+      "nombre": "San Rafael",
+      "distritos": [
+        { "nombre": "San Rafael" },
+        { "nombre": "San Josecito" },
+        { "nombre": "Santiago" },
+        { "nombre": "Ángeles" },
+        { "nombre": "Concepción" }
+      ]
+    },
+    {
+      "nombre": "San Isidro",
+      "distritos": [
+        { "nombre": "San Isidro" },
+        { "nombre": "San José" },
+        { "nombre": "Concepción" }
+      ]
+    },
+    {
+      "nombre": "Belén",
+      "distritos": [
+        { "nombre": "San Antonio" },
+        { "nombre": "La Ribera" },
+        { "nombre": "La Asunción" }
+      ]
+    },
+    {
+      "nombre": "Flores",
+      "distritos": [
+        { "nombre": "San Joaquín" },
+        { "nombre": "Barrantes" },
+        { "nombre": "Llorente" }
+      ]
+    },
+    {
+      "nombre": "San Pablo",
+      "distritos": [
+        { "nombre": "San Pablo" },
+        { "nombre": "Rincón de Sabanilla" }
+      ]
+    },
+    {
+      "nombre": "Sarapiquí",
+      "distritos": [
+        { "nombre": "Puerto Viejo" },
+        { "nombre": "La Virgen" },
+        { "nombre": "Las Horquetas" },
+        { "nombre": "Llanuras del Gaspar" },
+        { "nombre": "Cureña" }
+      ]
+    }
+  ]
+}

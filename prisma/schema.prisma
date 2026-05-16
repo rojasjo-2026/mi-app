@@ -1,0 +1,847 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================================================
+// ENUMS
+// ======================================================
+
+enum StaffRole {
+  TECHNICIAN
+  SUPERVISOR
+  ADMINISTRATION
+  ADMIN
+}
+
+enum InstallationStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+  CANCELLED
+}
+
+enum InstallationComponentStatus {
+  OPERATIVE
+  REVIEW_REQUIRED
+  REPLACEMENT_SUGGESTED
+}
+
+enum MaintenanceContactFlowStatus {
+  PENDING
+  MESSAGE_SENT
+  WAITING_RESPONSE
+  OPTIONS_SENT
+  DATE_SELECTED
+  CONFIRMED
+  MANUAL_REQUIRED
+  NO_RESPONSE
+  REJECTED
+  CLOSED
+}
+
+enum ContactMessageDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum InvoiceSourceType {
+  INSTALLATION
+  FOLLOW_UP
+  MANUAL
+}
+
+enum InvoicePaymentTerm {
+  CASH
+  CREDIT
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  SINPE
+  BANK_TRANSFER
+  CARD
+  OTHER
+}
+
+enum CurrencyCode {
+  CRC
+  USD
+}
+
+enum ClientType {
+  PERSON
+  COMPANY
+  OTHER
+}
+
+enum ClientComplianceProfile {
+  GLOBAL
+  COSTA_RICA
+}
+
+enum WorkBillingStatus {
+  PENDING
+  INVOICED
+  PARTIALLY_PAID
+  PAID
+  NOT_BILLABLE
+  BILLING_ERROR
+  CANCELLED
+}
+
+enum ActivityLogCategory {
+  CLIENT
+  INSTALLATION
+  FOLLOW_UP
+  CONTACT
+  FILE
+  FINANCE
+  SYSTEM
+}
+
+enum ActivityLogVisibility {
+  PUBLIC_INTERNAL
+  STAFF_ONLY
+  ADMIN_ONLY
+  FINANCE_ONLY
+}
+
+enum ActivityLogAction {
+  CREATED
+  UPDATED
+  DELETED
+  STATUS_CHANGED
+  NOTE_ADDED
+
+  FILE_ADDED
+  FILE_REMOVED
+  FILE_REPLACED
+  FILE_PREVIEWED
+
+  CONTACT_FLOW_CREATED
+  CONTACT_REGISTERED
+  CONTACT_MESSAGE_SENT
+  CONTACT_MESSAGE_RECEIVED
+  CONTACT_STATUS_CHANGED
+  MAINTENANCE_SCHEDULED
+
+  INVOICE_CREATED
+  INVOICE_UPDATED
+  INVOICE_CANCELLED
+  INVOICE_PAID
+  INVOICE_OVERDUE
+  PAYMENT_REGISTERED
+  PAYMENT_REVERSED
+
+  CALENDAR_NOTE_ADDED
+  CALENDAR_BLOCKED_DATE
+  CALENDAR_UNBLOCKED_DATE
+
+  SYSTEM_EVENT
+}
+
+// ======================================================
+// USERS / STAFF
+// ======================================================
+
+model User {
+  user_id     String    @id @default(uuid()) @db.Uuid
+  first_name  String
+  last_name_1 String
+  last_name_2 String?
+  email       String?   @unique
+  phone       String?
+  role        StaffRole
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  installations_as_technician Installation[] @relation("InstallationTechnician")
+  follow_ups_as_technician    FollowUp[]     @relation("FollowUpTechnician")
+
+  @@index([first_name])
+  @@index([last_name_1])
+  @@index([role])
+  @@index([is_active])
+}
+
+// ======================================================
+// CLIENTS
+// ======================================================
+
+model Client {
+  client_id String @id @default(uuid()) @db.Uuid
+
+  // New flexible client structure. Kept optional/defaulted to avoid breaking existing data and screens.
+  client_type        ClientType              @default(PERSON)
+  compliance_profile ClientComplianceProfile @default(COSTA_RICA)
+
+  display_name String?
+  legal_name   String?
+
+  // Legacy/person fields kept required for current compatibility.
+  // Later, after frontend/API are migrated, first_name and last_name_1 can be made optional.
+  first_name  String
+  last_name_1 String
+  last_name_2 String?
+
+  // Company / organization fields.
+  company_name      String?
+  commercial_name   String?
+  main_contact_name String?
+
+  phone_primary   String
+  phone_secondary String?
+  email           String?
+
+  country_code  String  @default("CR")
+  admin_level_1 String?
+  admin_level_2 String?
+  admin_level_3 String?
+
+  address_line    String?
+  reference_point String?
+  location_notes  String?
+  zone            String?
+  latitude        Decimal? @db.Decimal(10, 7)
+  longitude       Decimal? @db.Decimal(10, 7)
+
+  client_status                   String    @default("active")
+  whatsapp_opt_in                 Boolean   @default(false)
+  whatsapp_opt_in_at              DateTime?
+  auto_contact_enabled            Boolean   @default(true)
+  maintenance_contact_days_before Int?
+
+  data_consent_at     DateTime?
+  data_consent_source String?
+
+  default_payment_term  InvoicePaymentTerm @default(CASH)
+  default_credit_days   Int?
+  default_discount_rate Decimal?           @db.Decimal(5, 2)
+  credit_limit          Decimal?           @db.Decimal(12, 2)
+
+  billing_same_as_client Boolean @default(true)
+  billing_name           String?
+  billing_email          String?
+  billing_phone          String?
+  billing_address        String?
+
+  // Legacy field kept for compatibility with current finance/billing logic.
+  // New client identification should use identification_country/type/number.
+  tax_id String?
+
+  identification_country String  @default("CR")
+  identification_type    String?
+  identification_number  String?
+
+  tax_exempt         Boolean      @default(false)
+  preferred_currency CurrencyCode @default(CRC)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client_notes              ClientNote[]
+  installations             Installation[]
+  follow_ups                FollowUp[]
+  contact_attempts          ContactAttempt[]
+  maintenance_contact_flows MaintenanceContactFlow[]
+  invoices                  Invoice[]
+  activity_logs             ActivityLog[]
+
+  @@unique([identification_country, identification_type, identification_number])
+  @@index([client_type])
+  @@index([compliance_profile])
+  @@index([display_name])
+  @@index([legal_name])
+  @@index([first_name])
+  @@index([last_name_1])
+  @@index([company_name])
+  @@index([commercial_name])
+  @@index([phone_primary])
+  @@index([country_code])
+  @@index([admin_level_1])
+  @@index([admin_level_2])
+  @@index([admin_level_3])
+  @@index([tax_id])
+  @@index([identification_country])
+  @@index([identification_type])
+  @@index([identification_number])
+}
+
+model ClientNote {
+  note_id    String   @id @default(uuid()) @db.Uuid
+  client_id  String   @db.Uuid
+  note_text  String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client Client @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+
+  @@index([client_id])
+}
+
+model ActivityLog {
+  activity_id String @id @default(uuid()) @db.Uuid
+
+  client_id String @db.Uuid
+
+  entity_type String
+  entity_id   String
+
+  category   ActivityLogCategory
+  action     ActivityLogAction
+  visibility ActivityLogVisibility @default(PUBLIC_INTERNAL)
+
+  field_name String?
+  old_value  String?
+  new_value  String?
+
+  title       String
+  description String?
+
+  metadata Json?
+
+  created_by String?
+  created_at DateTime @default(now())
+
+  client Client @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+
+  @@index([client_id])
+  @@index([entity_type])
+  @@index([entity_id])
+  @@index([entity_type, entity_id])
+  @@index([category])
+  @@index([action])
+  @@index([visibility])
+  @@index([created_at])
+}
+
+// ======================================================
+// SERVICE TYPES / COMPONENT TEMPLATES
+// ======================================================
+
+model ServiceType {
+  service_type_id Int     @id @default(autoincrement())
+  code            String  @unique
+  name            String
+  is_active       Boolean @default(true)
+
+  installations             Installation[]
+  component_template_groups ComponentTemplateGroup[]
+
+  @@index([is_active])
+}
+
+model ComponentTemplateGroup {
+  template_group_id String   @id @default(uuid()) @db.Uuid
+  service_type_id   Int
+  name              String
+  description       String?
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  service_type ServiceType             @relation(fields: [service_type_id], references: [service_type_id])
+  items        ComponentTemplateItem[]
+
+  @@index([service_type_id])
+  @@index([is_active])
+}
+
+model ComponentTemplateItem {
+  template_item_id  String   @id @default(uuid()) @db.Uuid
+  template_group_id String   @db.Uuid
+  name              String
+  subtitle          String?
+  category          String?
+  default_quantity  Decimal  @default(1) @db.Decimal(10, 2)
+  default_unit      String?
+  brand             String?
+  model             String?
+  required          Boolean  @default(false)
+  sort_order        Int      @default(0)
+  suggested_notes   String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  template_group ComponentTemplateGroup @relation(fields: [template_group_id], references: [template_group_id], onDelete: Cascade)
+
+  @@index([template_group_id])
+  @@index([sort_order])
+}
+
+// ======================================================
+// INSTALLATIONS
+// ======================================================
+
+model Installation {
+  installation_id        String             @id @default(uuid()) @db.Uuid
+  client_id              String             @db.Uuid
+  service_type_id        Int
+  installation_date      DateTime
+  description            String?
+  technical_observations String?
+  estimated_amount       Decimal?           @db.Decimal(12, 2)
+  final_amount           Decimal?           @db.Decimal(12, 2)
+  cost_amount            Decimal?           @db.Decimal(12, 2)
+  warranty_months        Int?
+  warranty_end_date      DateTime?
+  technician_name        String?
+  technician_id          String?            @db.Uuid
+  address_line           String?
+  zone                   String?
+  city                   String?
+  admin_level_1          String?
+  admin_level_2          String?
+  admin_level_3          String?
+  latitude               Decimal?           @db.Decimal(10, 7)
+  longitude              Decimal?           @db.Decimal(10, 7)
+  location_notes         String?
+  reference_point        String?
+  installation_status    InstallationStatus @default(OPEN)
+  is_active              Boolean            @default(true)
+
+  billing_status       WorkBillingStatus @default(PENDING)
+  billing_notes        String?
+  billing_block_reason String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client                    Client                   @relation(fields: [client_id], references: [client_id])
+  service_type              ServiceType              @relation(fields: [service_type_id], references: [service_type_id])
+  technician                User?                    @relation("InstallationTechnician", fields: [technician_id], references: [user_id])
+  follow_ups                FollowUp[]
+  technical_notes           TechnicalNote[]
+  components                InstallationComponent[]
+  maintenance_contact_flows MaintenanceContactFlow[]
+  change_logs               InstallationChangeLog[]
+  invoices                  Invoice[]
+
+  @@index([client_id])
+  @@index([service_type_id])
+  @@index([technician_id])
+  @@index([city])
+  @@index([zone])
+  @@index([installation_date])
+  @@index([installation_status])
+  @@index([is_active])
+  @@index([admin_level_1])
+  @@index([admin_level_2])
+  @@index([admin_level_3])
+}
+
+model InstallationChangeLog {
+  change_log_id   String   @id @default(uuid()) @db.Uuid
+  installation_id String   @db.Uuid
+  field_name      String
+  old_value       String?
+  new_value       String?
+  changed_by      String?
+  changed_at      DateTime @default(now())
+
+  installation Installation @relation(fields: [installation_id], references: [installation_id], onDelete: Cascade)
+
+  @@index([installation_id])
+  @@index([changed_by])
+  @@index([changed_at])
+}
+
+model InstallationComponent {
+  component_id            String                      @id @default(uuid()) @db.Uuid
+  installation_id         String                      @db.Uuid
+  name                    String
+  subtitle                String?
+  category                String?
+  quantity                Decimal                     @default(1) @db.Decimal(10, 2)
+  unit                    String?
+  brand                   String?
+  model                   String?
+  status                  InstallationComponentStatus @default(OPERATIVE)
+  installation_date       DateTime?
+  next_review_date        DateTime?
+  technical_notes         String?
+  source_template_item_id String?                     @db.Uuid
+  created_at              DateTime                    @default(now())
+  updated_at              DateTime                    @updatedAt
+
+  installation Installation @relation(fields: [installation_id], references: [installation_id], onDelete: Cascade)
+
+  @@index([installation_id])
+  @@index([status])
+  @@index([category])
+}
+
+model TechnicalNote {
+  technical_note_id String   @id @default(uuid()) @db.Uuid
+  installation_id   String   @db.Uuid
+  note_text         String
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  installation Installation @relation(fields: [installation_id], references: [installation_id], onDelete: Cascade)
+
+  @@index([installation_id])
+}
+
+// ======================================================
+// FOLLOW UPS / MAINTENANCE
+// ======================================================
+
+model FollowUpStatus {
+  follow_up_status_id Int     @id @default(autoincrement())
+  code                String  @unique
+  name                String
+  is_active           Boolean @default(true)
+
+  follow_ups FollowUp[]
+}
+
+model FollowUp {
+  follow_up_id        String    @id @default(uuid()) @db.Uuid
+  client_id           String    @db.Uuid
+  installation_id     String?   @db.Uuid
+  follow_up_status_id Int
+  target_date         DateTime
+  due_date            DateTime?
+  scheduled_date      DateTime?
+  reason              String?
+  priority            Int       @default(3)
+  notes               String?
+
+  estimated_amount Decimal? @db.Decimal(12, 2)
+  final_amount     Decimal? @db.Decimal(12, 2)
+  cost_amount      Decimal? @db.Decimal(12, 2)
+  maintenance_type String?
+  technician_id    String?  @db.Uuid
+
+  created_from String @default("manual")
+
+  billing_status       WorkBillingStatus @default(PENDING)
+  billing_notes        String?
+  billing_block_reason String?
+
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  completed_at DateTime?
+
+  client                    Client                   @relation(fields: [client_id], references: [client_id])
+  installation              Installation?            @relation(fields: [installation_id], references: [installation_id])
+  follow_up_status          FollowUpStatus           @relation(fields: [follow_up_status_id], references: [follow_up_status_id])
+  technician                User?                    @relation("FollowUpTechnician", fields: [technician_id], references: [user_id])
+  contact_attempts          ContactAttempt[]
+  maintenance_contact_flows MaintenanceContactFlow[]
+  follow_up_notes           FollowUpNote[]
+  invoices                  Invoice[]
+
+  @@index([client_id])
+  @@index([installation_id])
+  @@index([follow_up_status_id])
+  @@index([target_date])
+  @@index([technician_id])
+}
+
+model FollowUpNote {
+  follow_up_note_id String   @id @default(uuid()) @db.Uuid
+  follow_up_id      String   @db.Uuid
+  note_text         String
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  follow_up FollowUp @relation(fields: [follow_up_id], references: [follow_up_id], onDelete: Cascade)
+
+  @@index([follow_up_id])
+}
+
+// ======================================================
+// CONTACT FLOWS / WHATSAPP AUTOMATION
+// ======================================================
+
+model MaintenanceContactFlow {
+  contact_flow_id String @id @default(uuid()) @db.Uuid
+
+  follow_up_id    String  @db.Uuid
+  client_id       String  @db.Uuid
+  installation_id String? @db.Uuid
+
+  trigger_date DateTime
+  status       MaintenanceContactFlowStatus @default(PENDING)
+
+  first_message_sent_at DateTime?
+  last_message_at       DateTime?
+  selected_date         DateTime?
+
+  reminder_count Int @default(0)
+
+  requires_manual_action Boolean @default(false)
+  manual_reason          String?
+  contact_phone          String?
+  last_inbound_message   String?
+
+  closed_at  DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  follow_up    FollowUp                    @relation(fields: [follow_up_id], references: [follow_up_id], onDelete: Cascade)
+  client       Client                      @relation(fields: [client_id], references: [client_id])
+  installation Installation?               @relation(fields: [installation_id], references: [installation_id])
+  messages     MaintenanceContactMessage[]
+
+  @@index([follow_up_id])
+  @@index([client_id])
+  @@index([installation_id])
+  @@index([status])
+  @@index([trigger_date])
+  @@index([contact_phone])
+}
+
+model MaintenanceContactMessage {
+  message_id      String                  @id @default(uuid()) @db.Uuid
+  contact_flow_id String                  @db.Uuid
+  direction       ContactMessageDirection
+  message_text    String
+  wa_message_id   String?                 @unique
+  phone_number    String?
+  message_type    String?                 @default("text")
+  delivery_status String?
+  metadata        Json?
+  sent_at         DateTime?
+  received_at     DateTime?
+  created_at      DateTime                @default(now())
+
+  contact_flow MaintenanceContactFlow @relation(fields: [contact_flow_id], references: [contact_flow_id], onDelete: Cascade)
+
+  @@index([contact_flow_id])
+  @@index([direction])
+  @@index([phone_number])
+  @@index([message_type])
+  @@index([delivery_status])
+}
+
+// ======================================================
+// CONTACT ATTEMPTS
+// ======================================================
+
+model ContactChannel {
+  contact_channel_id Int     @id @default(autoincrement())
+  code               String  @unique
+  name               String
+  is_active          Boolean @default(true)
+
+  contact_attempts ContactAttempt[]
+}
+
+model ContactResult {
+  contact_result_id Int     @id @default(autoincrement())
+  code              String  @unique
+  name              String
+  is_active         Boolean @default(true)
+
+  contact_attempts ContactAttempt[]
+}
+
+model ContactAttempt {
+  contact_attempt_id String    @id @default(uuid()) @db.Uuid
+  follow_up_id       String    @db.Uuid
+  client_id          String    @db.Uuid
+  contact_channel_id Int
+  contact_result_id  Int
+  attempt_datetime   DateTime
+  note_text          String?
+  next_action        String?
+  next_target_date   DateTime?
+  created_at         DateTime  @default(now())
+
+  follow_up       FollowUp       @relation(fields: [follow_up_id], references: [follow_up_id])
+  client          Client         @relation(fields: [client_id], references: [client_id])
+  contact_channel ContactChannel @relation(fields: [contact_channel_id], references: [contact_channel_id])
+  contact_result  ContactResult  @relation(fields: [contact_result_id], references: [contact_result_id])
+
+  @@index([follow_up_id])
+  @@index([client_id])
+}
+
+// ======================================================
+// CALENDAR
+// ======================================================
+
+model CalendarNote {
+  calendar_note_id String   @id @default(uuid()) @db.Uuid
+  note_date        DateTime
+  title            String   @default("Nota")
+  note_text        String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@index([note_date])
+}
+
+model CalendarBlockedDate {
+  calendar_blocked_date_id String   @id @default(uuid()) @db.Uuid
+  blocked_date             DateTime
+  reason                   String?
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+
+  @@index([blocked_date])
+}
+
+// ======================================================
+// SYSTEM SETTINGS
+// ======================================================
+
+model AppSettings {
+  settings_id String @id @default(uuid()) @db.Uuid
+
+  company_name  String?
+  company_phone String?
+  company_email String?
+
+  country_code String @default("CR")
+  country_name String @default("Costa Rica")
+
+  default_client_compliance_profile   ClientComplianceProfile @default(COSTA_RICA)
+  country_specific_validation_enabled Boolean                 @default(true)
+
+  admin_level_1_label String  @default("Región / Provincia / Estado")
+  admin_level_2_label String  @default("Ciudad / Cantón / Municipio")
+  admin_level_3_label String? @default("Distrito / Zona")
+
+  timezone         String       @default("America/Costa_Rica")
+  default_currency CurrencyCode @default(CRC)
+  default_tax_rate Decimal      @default(13) @db.Decimal(5, 2)
+
+  whatsapp_enabled                Boolean @default(false)
+  auto_contact_enabled            Boolean @default(true)
+  maintenance_contact_days_before Int     @default(22)
+  automatic_send_hour             Int     @default(9)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+// ======================================================
+// FINANCE / INVOICES
+// ======================================================
+
+model Invoice {
+  invoice_id     String @id @default(uuid()) @db.Uuid
+  invoice_number String @unique
+
+  client_id       String  @db.Uuid
+  installation_id String? @db.Uuid
+  follow_up_id    String? @db.Uuid
+
+  source_type InvoiceSourceType
+  status      InvoiceStatus     @default(PENDING)
+
+  invoice_date DateTime  @default(now())
+  due_date     DateTime?
+
+  payment_term InvoicePaymentTerm @default(CASH)
+  credit_days  Int?
+
+  currency CurrencyCode @default(CRC)
+
+  subtotal_amount Decimal @db.Decimal(12, 2)
+
+  discount_rate   Decimal? @db.Decimal(5, 2)
+  discount_amount Decimal  @default(0) @db.Decimal(12, 2)
+  discount_reason String?
+
+  tax_rate   Decimal? @db.Decimal(5, 2)
+  tax_amount Decimal  @default(0) @db.Decimal(12, 2)
+  tax_exempt Boolean  @default(false)
+
+  total_amount Decimal @db.Decimal(12, 2)
+
+  paid_amount    Decimal @default(0) @db.Decimal(12, 2)
+  balance_amount Decimal @db.Decimal(12, 2)
+
+  customer_snapshot_name       String
+  customer_snapshot_phone      String?
+  service_snapshot_description String?
+  location_snapshot            String?
+
+  notes            String?
+  cancelled_reason String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client       Client           @relation(fields: [client_id], references: [client_id])
+  installation Installation?    @relation(fields: [installation_id], references: [installation_id])
+  follow_up    FollowUp?        @relation(fields: [follow_up_id], references: [follow_up_id])
+  payments     InvoicePayment[]
+  lines        InvoiceLine[]
+
+  @@index([client_id])
+  @@index([installation_id])
+  @@index([follow_up_id])
+  @@index([status])
+  @@index([invoice_date])
+  @@index([due_date])
+}
+
+model InvoiceLine {
+  invoice_line_id String   @id @default(uuid()) @db.Uuid
+  invoice_id      String   @db.Uuid
+  description     String
+  quantity        Decimal  @default(1) @db.Decimal(10, 2)
+  unit_price      Decimal  @db.Decimal(12, 2)
+  total           Decimal  @db.Decimal(12, 2)
+  created_at      DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoice_id], references: [invoice_id], onDelete: Cascade)
+
+  @@index([invoice_id])
+}
+
+model InvoicePayment {
+  payment_id       String        @id @default(uuid()) @db.Uuid
+  invoice_id       String        @db.Uuid
+  payment_date     DateTime      @default(now())
+  amount           Decimal       @db.Decimal(12, 2)
+  method           PaymentMethod
+  reference_number String?
+  notes            String?
+  created_at       DateTime      @default(now())
+
+  invoice Invoice @relation(fields: [invoice_id], references: [invoice_id], onDelete: Cascade)
+
+  @@index([invoice_id])
+  @@index([payment_date])
+  @@index([method])
+}
+
+// ======================================================
+// FILES / ATTACHMENTS
+// ======================================================
+
+model File {
+  file_id     String @id @default(uuid()) @db.Uuid
+  entity_type String
+  entity_id   String @db.Uuid
+
+  file_name  String
+  file_url   String
+  file_path  String?
+  file_type  String
+  created_at DateTime @default(now())
+
+  @@index([entity_type])
+  @@index([entity_id])
+}

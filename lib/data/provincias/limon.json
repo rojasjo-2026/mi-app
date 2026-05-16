@@ -1,0 +1,64 @@
+{
+  "nombre": "Limón",
+  "cantones": [
+    {
+      "nombre": "Limón",
+      "distritos": [
+        { "nombre": "Limón" },
+        { "nombre": "Valle La Estrella" },
+        { "nombre": "Río Blanco" },
+        { "nombre": "Matama" }
+      ]
+    },
+    {
+      "nombre": "Pococí",
+      "distritos": [
+        { "nombre": "Guápiles" },
+        { "nombre": "Jiménez" },
+        { "nombre": "La Rita" },
+        { "nombre": "Roxana" },
+        { "nombre": "Cariari" },
+        { "nombre": "Colorado" },
+        { "nombre": "La Colonia" }
+      ]
+    },
+    {
+      "nombre": "Siquirres",
+      "distritos": [
+        { "nombre": "Siquirres" },
+        { "nombre": "Pacuarito" },
+        { "nombre": "Florida" },
+        { "nombre": "Germania" },
+        { "nombre": "Cairo" },
+        { "nombre": "Alegría" }
+      ]
+    },
+    {
+      "nombre": "Talamanca",
+      "distritos": [
+        { "nombre": "Bratsi" },
+        { "nombre": "Sixaola" },
+        { "nombre": "Cahuita" },
+        { "nombre": "Telire" }
+      ]
+    },
+    {
+      "nombre": "Matina",
+      "distritos": [
+        { "nombre": "Matina" },
+        { "nombre": "Batán" },
+        { "nombre": "Carrandi" }
+      ]
+    },
+    {
+      "nombre": "Guácimo",
+      "distritos": [
+        { "nombre": "Guácimo" },
+        { "nombre": "Mercedes" },
+        { "nombre": "Pocora" },
+        { "nombre": "Río Jiménez" },
+        { "nombre": "Duacarí" }
+      ]
+    }
+  ]
+}

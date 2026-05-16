@@ -1,0 +1,205 @@
+{
+  "nombre": "San José",
+  "cantones": [
+    {
+      "nombre": "San José",
+      "distritos": [
+        { "nombre": "Carmen" },
+        { "nombre": "Merced" },
+        { "nombre": "Hospital" },
+        { "nombre": "Catedral" },
+        { "nombre": "Zapote" },
+        { "nombre": "San Francisco de Dos Ríos" },
+        { "nombre": "Uruca" },
+        { "nombre": "Mata Redonda" },
+        { "nombre": "Pavas" },
+        { "nombre": "Hatillo" },
+        { "nombre": "San Sebastián" }
+      ]
+    },
+    {
+      "nombre": "Escazú",
+      "distritos": [
+        { "nombre": "Escazú" },
+        { "nombre": "San Antonio" },
+        { "nombre": "San Rafael" }
+      ]
+    },
+    {
+      "nombre": "Desamparados",
+      "distritos": [
+        { "nombre": "Desamparados" },
+        { "nombre": "San Miguel" },
+        { "nombre": "San Juan de Dios" },
+        { "nombre": "San Rafael Arriba" },
+        { "nombre": "San Antonio" },
+        { "nombre": "Frailes" },
+        { "nombre": "Patarrá" },
+        { "nombre": "San Cristóbal" },
+        { "nombre": "Rosario" },
+        { "nombre": "Damas" },
+        { "nombre": "San Rafael Abajo" },
+        { "nombre": "Gravilias" },
+        { "nombre": "Los Guido" }
+      ]
+    },
+    {
+      "nombre": "Aserrí",
+      "distritos": [
+        { "nombre": "Aserrí" },
+        { "nombre": "Tarbaca" },
+        { "nombre": "Vuelta de Jorco" },
+        { "nombre": "San Gabriel" },
+        { "nombre": "Legua" },
+        { "nombre": "Monterrey" },
+        { "nombre": "Salitrillos" }
+      ]
+    },
+    {
+      "nombre": "Mora",
+      "distritos": [
+        { "nombre": "Colón" },
+        { "nombre": "Guayabo" },
+        { "nombre": "Tabarcia" },
+        { "nombre": "Piedras Negras" },
+        { "nombre": "Picagres" },
+        { "nombre": "Jaris" },
+        { "nombre": "Quitirrisí" }
+      ]
+    },
+    {
+      "nombre": "Goicoechea",
+      "distritos": [
+        { "nombre": "Guadalupe" },
+        { "nombre": "San Francisco" },
+        { "nombre": "Calle Blancos" },
+        { "nombre": "Mata de Plátano" },
+        { "nombre": "Ipís" },
+        { "nombre": "Rancho Redondo" },
+        { "nombre": "Purral" }
+      ]
+    },
+    {
+      "nombre": "Santa Ana",
+      "distritos": [
+        { "nombre": "Santa Ana" },
+        { "nombre": "Salitral" },
+        { "nombre": "Pozos" },
+        { "nombre": "Uruca" },
+        { "nombre": "Piedades" },
+        { "nombre": "Brasil" }
+      ]
+    },
+    {
+      "nombre": "Alajuelita",
+      "distritos": [
+        { "nombre": "Alajuelita" },
+        { "nombre": "San Josecito" },
+        { "nombre": "San Antonio" },
+        { "nombre": "Concepción" },
+        { "nombre": "San Felipe" }
+      ]
+    },
+    {
+      "nombre": "Vásquez de Coronado",
+      "distritos": [
+        { "nombre": "San Isidro" },
+        { "nombre": "San Rafael" },
+        { "nombre": "Dulce Nombre de Jesús" },
+        { "nombre": "Patalillo" },
+        { "nombre": "Cascajal" }
+      ]
+    },
+    {
+      "nombre": "Acosta",
+      "distritos": [
+        { "nombre": "San Ignacio" },
+        { "nombre": "Guaitil" },
+        { "nombre": "Palmichal" },
+        { "nombre": "Cangrejal" },
+        { "nombre": "Sabanillas" }
+      ]
+    },
+    {
+      "nombre": "Tibás",
+      "distritos": [
+        { "nombre": "San Juan" },
+        { "nombre": "Cinco Esquinas" },
+        { "nombre": "Anselmo Llorente" },
+        { "nombre": "León XIII" },
+        { "nombre": "Colima" }
+      ]
+    },
+    {
+      "nombre": "Moravia",
+      "distritos": [
+        { "nombre": "San Vicente" },
+        { "nombre": "San Jerónimo" },
+        { "nombre": "La Trinidad" }
+      ]
+    },
+    {
+      "nombre": "Montes de Oca",
+      "distritos": [
+        { "nombre": "San Pedro" },
+        { "nombre": "Sabanilla" },
+        { "nombre": "Mercedes" },
+        { "nombre": "San Rafael" }
+      ]
+    },
+    {
+      "nombre": "Turrubares",
+      "distritos": [
+        { "nombre": "San Pablo" },
+        { "nombre": "San Pedro" },
+        { "nombre": "San Juan de Mata" },
+        { "nombre": "San Luis" },
+        { "nombre": "Carara" }
+      ]
+    },
+    {
+      "nombre": "Dota",
+      "distritos": [
+        { "nombre": "Santa María" },
+        { "nombre": "Jardín" },
+        { "nombre": "Copey" }
+      ]
+    },
+    {
+      "nombre": "Curridabat",
+      "distritos": [
+        { "nombre": "Curridabat" },
+        { "nombre": "Granadilla" },
+        { "nombre": "Sánchez" },
+        { "nombre": "Tirrases" }
+      ]
+    },
+    {
+      "nombre": "Pérez Zeledón",
+      "distritos": [
+        { "nombre": "San Isidro de El General" },
+        { "nombre": "El General" },
+        { "nombre": "Daniel Flores" },
+        { "nombre": "Rivas" },
+        { "nombre": "San Pedro" },
+        { "nombre": "Platanares" },
+        { "nombre": "Pejibaye" },
+        { "nombre": "Cajón" },
+        { "nombre": "Barú" },
+        { "nombre": "Río Nuevo" },
+        { "nombre": "Páramo" }
+      ]
+    },
+    {
+      "nombre": "León Cortés Castro",
+      "distritos": [
+        { "nombre": "San Pablo" },
+        { "nombre": "San Andrés" },
+        { "nombre": "Llano Bonito" },
+        { "nombre": "San Isidro" },
+        { "nombre": "Santa Cruz" },
+        { "nombre": "San Antonio" }
+      ]
+    }
+  ]
+}

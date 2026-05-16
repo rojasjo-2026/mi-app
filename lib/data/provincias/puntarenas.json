@@ -1,0 +1,109 @@
+{
+  "nombre": "Puntarenas",
+  "cantones": [
+    {
+      "nombre": "Puntarenas",
+      "distritos": [
+        { "nombre": "Puntarenas" },
+        { "nombre": "Pitahaya" },
+        { "nombre": "Chomes" },
+        { "nombre": "Lepanto" },
+        { "nombre": "Paquera" },
+        { "nombre": "Manzanillo" },
+        { "nombre": "Guacimal" },
+        { "nombre": "Barranca" },
+        { "nombre": "Monte Verde" },
+        { "nombre": "Isla del Coco" },
+        { "nombre": "Cóbano" },
+        { "nombre": "Chacarita" },
+        { "nombre": "Chira" },
+        { "nombre": "Acapulco" },
+        { "nombre": "El Roble" },
+        { "nombre": "Arancibia" }
+      ]
+    },
+    {
+      "nombre": "Esparza",
+      "distritos": [
+        { "nombre": "Espíritu Santo" },
+        { "nombre": "San Juan Grande" },
+        { "nombre": "Macacona" },
+        { "nombre": "San Rafael" },
+        { "nombre": "San Jerónimo" }
+      ]
+    },
+    {
+      "nombre": "Buenos Aires",
+      "distritos": [
+        { "nombre": "Buenos Aires" },
+        { "nombre": "Volcán" },
+        { "nombre": "Potrero Grande" },
+        { "nombre": "Boruca" },
+        { "nombre": "Pilas" },
+        { "nombre": "Colinas" },
+        { "nombre": "Chánguena" },
+        { "nombre": "Biolley" },
+        { "nombre": "Brunka" }
+      ]
+    },
+    {
+      "nombre": "Montes de Oro",
+      "distritos": [
+        { "nombre": "Miramar" },
+        { "nombre": "La Unión" },
+        { "nombre": "San Isidro" }
+      ]
+    },
+    {
+      "nombre": "Osa",
+      "distritos": [
+        { "nombre": "Puerto Cortés" },
+        { "nombre": "Palmar" },
+        { "nombre": "Sierpe" },
+        { "nombre": "Bahía Ballena" },
+        { "nombre": "Piedras Blancas" }
+      ]
+    },
+    {
+      "nombre": "Quepos",
+      "distritos": [
+        { "nombre": "Quepos" },
+        { "nombre": "Savegre" },
+        { "nombre": "Naranjito" }
+      ]
+    },
+    {
+      "nombre": "Golfito",
+      "distritos": [
+        { "nombre": "Golfito" },
+        { "nombre": "Puerto Jiménez" },
+        { "nombre": "Guaycará" },
+        { "nombre": "Pavón" }
+      ]
+    },
+    {
+      "nombre": "Coto Brus",
+      "distritos": [
+        { "nombre": "San Vito" },
+        { "nombre": "Sabalito" },
+        { "nombre": "Aguabuena" },
+        { "nombre": "Limoncito" },
+        { "nombre": "Pittier" }
+      ]
+    },
+    { "nombre": "Parrita", "distritos": [{ "nombre": "Parrita" }] },
+    {
+      "nombre": "Corredores",
+      "distritos": [
+        { "nombre": "Corredor" },
+        { "nombre": "La Cuesta" },
+        { "nombre": "Canoas" },
+        { "nombre": "Laurel" }
+      ]
+    },
+    {
+      "nombre": "Garabito",
+      "distritos": [{ "nombre": "Jacó" }, { "nombre": "Tárcoles" }]
+    }
+  ]
+}

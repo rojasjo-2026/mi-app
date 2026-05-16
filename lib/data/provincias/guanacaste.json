@@ -1,0 +1,120 @@
+{
+  "nombre": "Guanacaste",
+  "cantones": [
+    {
+      "nombre": "Liberia",
+      "distritos": [
+        { "nombre": "Liberia" },
+        { "nombre": "Cañas Dulces" },
+        { "nombre": "Mayorga" },
+        { "nombre": "Nacascolo" },
+        { "nombre": "Curubandé" }
+      ]
+    },
+    {
+      "nombre": "Nicoya",
+      "distritos": [
+        { "nombre": "Nicoya" },
+        { "nombre": "Mansión" },
+        { "nombre": "San Antonio" },
+        { "nombre": "Quebrada Honda" },
+        { "nombre": "Sámara" },
+        { "nombre": "Nosara" },
+        { "nombre": "Belén de Nosarita" }
+      ]
+    },
+    {
+      "nombre": "Santa Cruz",
+      "distritos": [
+        { "nombre": "Santa Cruz" },
+        { "nombre": "Bolsón" },
+        { "nombre": "Veintisiete de Abril" },
+        { "nombre": "Tempate" },
+        { "nombre": "Cartagena" },
+        { "nombre": "Cuajiniquil" },
+        { "nombre": "Diriá" },
+        { "nombre": "Cabo Velas" },
+        { "nombre": "Tamarindo" }
+      ]
+    },
+    {
+      "nombre": "Bagaces",
+      "distritos": [
+        { "nombre": "Bagaces" },
+        { "nombre": "La Fortuna" },
+        { "nombre": "Mogote" },
+        { "nombre": "Río Naranjo" }
+      ]
+    },
+    {
+      "nombre": "Carrillo",
+      "distritos": [
+        { "nombre": "Filadelfia" },
+        { "nombre": "Palmira" },
+        { "nombre": "Sardinal" },
+        { "nombre": "Belén" }
+      ]
+    },
+    {
+      "nombre": "Cañas",
+      "distritos": [
+        { "nombre": "Cañas" },
+        { "nombre": "Palmira" },
+        { "nombre": "San Miguel" },
+        { "nombre": "Bebedero" },
+        { "nombre": "Porozal" }
+      ]
+    },
+    {
+      "nombre": "Abangares",
+      "distritos": [
+        { "nombre": "Las Juntas" },
+        { "nombre": "Sierra" },
+        { "nombre": "San Juan" },
+        { "nombre": "Colorado" }
+      ]
+    },
+    {
+      "nombre": "Tilarán",
+      "distritos": [
+        { "nombre": "Tilarán" },
+        { "nombre": "Quebrada Grande" },
+        { "nombre": "Tronadora" },
+        { "nombre": "Santa Rosa" },
+        { "nombre": "Líbano" },
+        { "nombre": "Tierras Morenas" },
+        { "nombre": "Arenal" },
+        { "nombre": "Cabeceras" }
+      ]
+    },
+    {
+      "nombre": "Nandayure",
+      "distritos": [
+        { "nombre": "Carmona" },
+        { "nombre": "Santa Rita" },
+        { "nombre": "Zapotal" },
+        { "nombre": "San Pablo" },
+        { "nombre": "Porvenir" },
+        { "nombre": "Bejuco" }
+      ]
+    },
+    {
+      "nombre": "La Cruz",
+      "distritos": [
+        { "nombre": "La Cruz" },
+        { "nombre": "Santa Cecilia" },
+        { "nombre": "La Garita" },
+        { "nombre": "Santa Elena" }
+      ]
+    },
+    {
+      "nombre": "Hojancha",
+      "distritos": [
+        { "nombre": "Hojancha" },
+        { "nombre": "Monte Romo" },
+        { "nombre": "Puerto Carrillo" },
+        { "nombre": "Huacas" }
+      ]
+    }
+  ]
+}

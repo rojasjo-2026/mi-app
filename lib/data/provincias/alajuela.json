@@ -1,0 +1,192 @@
+{
+  "nombre": "Alajuela",
+  "cantones": [
+    {
+      "nombre": "Alajuela",
+      "distritos": [
+        { "nombre": "Alajuela" },
+        { "nombre": "San José" },
+        { "nombre": "Carrizal" },
+        { "nombre": "San Antonio" },
+        { "nombre": "Guácima" },
+        { "nombre": "San Isidro" },
+        { "nombre": "Sabanilla" },
+        { "nombre": "San Rafael" },
+        { "nombre": "Río Segundo" },
+        { "nombre": "Desamparados" },
+        { "nombre": "Turrúcares" },
+        { "nombre": "Tambor" },
+        { "nombre": "Garita" },
+        { "nombre": "Sarapiquí" }
+      ]
+    },
+    {
+      "nombre": "San Ramón",
+      "distritos": [
+        { "nombre": "San Ramón" },
+        { "nombre": "Santiago" },
+        { "nombre": "San Juan" },
+        { "nombre": "Piedades Norte" },
+        { "nombre": "Piedades Sur" },
+        { "nombre": "San Rafael" },
+        { "nombre": "San Isidro" },
+        { "nombre": "Ángeles" },
+        { "nombre": "Alfaro" },
+        { "nombre": "Volio" },
+        { "nombre": "Concepción" },
+        { "nombre": "Zapotal" },
+        { "nombre": "Peñas Blancas" }
+      ]
+    },
+    {
+      "nombre": "Grecia",
+      "distritos": [
+        { "nombre": "Grecia" },
+        { "nombre": "San Isidro" },
+        { "nombre": "San José" },
+        { "nombre": "San Roque" },
+        { "nombre": "Tacares" },
+        { "nombre": "Río Cuarto" },
+        { "nombre": "Puente de Piedra" },
+        { "nombre": "Bolívar" }
+      ]
+    },
+    {
+      "nombre": "San Mateo",
+      "distritos": [
+        { "nombre": "San Mateo" },
+        { "nombre": "Desmonte" },
+        { "nombre": "Jesús María" },
+        { "nombre": "Labrador" }
+      ]
+    },
+    {
+      "nombre": "Atenas",
+      "distritos": [
+        { "nombre": "Atenas" },
+        { "nombre": "Jesús" },
+        { "nombre": "Mercedes" },
+        { "nombre": "San Isidro" },
+        { "nombre": "Concepción" },
+        { "nombre": "San José" },
+        { "nombre": "Santa Eulalia" },
+        { "nombre": "Escobal" }
+      ]
+    },
+    {
+      "nombre": "Naranjo",
+      "distritos": [
+        { "nombre": "Naranjo" },
+        { "nombre": "San Miguel" },
+        { "nombre": "San José" },
+        { "nombre": "Cirrí Sur" },
+        { "nombre": "San Jerónimo" },
+        { "nombre": "San Juan" },
+        { "nombre": "El Rosario" },
+        { "nombre": "Palmitos" }
+      ]
+    },
+    {
+      "nombre": "Palmares",
+      "distritos": [
+        { "nombre": "Palmares" },
+        { "nombre": "Zaragoza" },
+        { "nombre": "Buenos Aires" },
+        { "nombre": "Santiago" },
+        { "nombre": "Candelaria" },
+        { "nombre": "Esquipulas" },
+        { "nombre": "La Granja" }
+      ]
+    },
+    {
+      "nombre": "Poás",
+      "distritos": [
+        { "nombre": "San Pedro" },
+        { "nombre": "San Juan" },
+        { "nombre": "San Rafael" },
+        { "nombre": "Carrillos" },
+        { "nombre": "Sabana Redonda" }
+      ]
+    },
+    {
+      "nombre": "Orotina",
+      "distritos": [
+        { "nombre": "Orotina" },
+        { "nombre": "El Mastate" },
+        { "nombre": "Hacienda Vieja" },
+        { "nombre": "Coyolar" },
+        { "nombre": "La Ceiba" }
+      ]
+    },
+    {
+      "nombre": "San Carlos",
+      "distritos": [
+        { "nombre": "Quesada" },
+        { "nombre": "Florencia" },
+        { "nombre": "Buenavista" },
+        { "nombre": "Aguas Zarcas" },
+        { "nombre": "Venecia" },
+        { "nombre": "Pital" },
+        { "nombre": "La Fortuna" },
+        { "nombre": "La Tigra" },
+        { "nombre": "La Palmera" },
+        { "nombre": "Venado" },
+        { "nombre": "Cutris" },
+        { "nombre": "Monterrey" },
+        { "nombre": "Pocosol" }
+      ]
+    },
+    {
+      "nombre": "Zarcero",
+      "distritos": [
+        { "nombre": "Zarcero" },
+        { "nombre": "Laguna" },
+        { "nombre": "Tapesco" },
+        { "nombre": "Guadalupe" },
+        { "nombre": "Palmira" },
+        { "nombre": "Zapote" },
+        { "nombre": "Brisas" }
+      ]
+    },
+    {
+      "nombre": "Valverde Vega",
+      "distritos": [
+        { "nombre": "Sarchí Norte" },
+        { "nombre": "Sarchí Sur" },
+        { "nombre": "Toro Amarillo" },
+        { "nombre": "San Pedro" },
+        { "nombre": "Rodríguez" }
+      ]
+    },
+    {
+      "nombre": "Upala",
+      "distritos": [
+        { "nombre": "Upala" },
+        { "nombre": "Aguas Claras" },
+        { "nombre": "San José (Upala)" },
+        { "nombre": "Bijagua" },
+        { "nombre": "Delicias" },
+        { "nombre": "Dos Ríos" },
+        { "nombre": "Yolillal" }
+      ]
+    },
+    {
+      "nombre": "Los Chiles",
+      "distritos": [
+        { "nombre": "Los Chiles" },
+        { "nombre": "Caño Negro" },
+        { "nombre": "El Amparo" },
+        { "nombre": "San Jorge" }
+      ]
+    },
+    {
+      "nombre": "Guatuso",
+      "distritos": [
+        { "nombre": "San Rafael" },
+        { "nombre": "Buenavista" },
+        { "nombre": "Cote" },
+        { "nombre": "Katira" }
+      ]
+    }
+  ]
+}

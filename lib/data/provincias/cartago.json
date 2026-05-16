@@ -1,0 +1,95 @@
+{
+  "nombre": "Cartago",
+  "cantones": [
+    {
+      "nombre": "Cartago",
+      "distritos": [
+        { "nombre": "Oriental" },
+        { "nombre": "Occidental" },
+        { "nombre": "Carmen" },
+        { "nombre": "San Nicolás" },
+        { "nombre": "Aguacaliente" },
+        { "nombre": "Guadalupe" },
+        { "nombre": "Corralillo" },
+        { "nombre": "Tierra Blanca" },
+        { "nombre": "Dulce Nombre" },
+        { "nombre": "Llano Grande" },
+        { "nombre": "Quebradilla" }
+      ]
+    },
+    {
+      "nombre": "Paraíso",
+      "distritos": [
+        { "nombre": "Paraíso" },
+        { "nombre": "Santiago" },
+        { "nombre": "Orosi" },
+        { "nombre": "Cachí" },
+        { "nombre": "Llanos de Santa Lucía" }
+      ]
+    },
+    {
+      "nombre": "La Unión",
+      "distritos": [
+        { "nombre": "Tres Ríos" },
+        { "nombre": "San Diego" },
+        { "nombre": "San Juan" },
+        { "nombre": "San Rafael" },
+        { "nombre": "Concepción" },
+        { "nombre": "Dulce Nombre" },
+        { "nombre": "San Ramón" },
+        { "nombre": "Río Azul" }
+      ]
+    },
+    {
+      "nombre": "Jiménez",
+      "distritos": [
+        { "nombre": "Juan Viñas" },
+        { "nombre": "Tucurrique" },
+        { "nombre": "Pejibaye" }
+      ]
+    },
+    {
+      "nombre": "Turrialba",
+      "distritos": [
+        { "nombre": "Turrialba" },
+        { "nombre": "La Suiza" },
+        { "nombre": "Peralta" },
+        { "nombre": "Santa Cruz" },
+        { "nombre": "Santa Rosa" },
+        { "nombre": "Pavones" },
+        { "nombre": "Tuis" },
+        { "nombre": "Tayutic" },
+        { "nombre": "Santa Teresita" },
+        { "nombre": "La Isabel" },
+        { "nombre": "Chirripó" }
+      ]
+    },
+    {
+      "nombre": "Alvarado",
+      "distritos": [
+        { "nombre": "Pacayas" },
+        { "nombre": "Cervantes" },
+        { "nombre": "Capellades" }
+      ]
+    },
+    {
+      "nombre": "Oreamuno",
+      "distritos": [
+        { "nombre": "San Rafael" },
+        { "nombre": "Cot" },
+        { "nombre": "Potrero Cerrado" },
+        { "nombre": "Cipreses" },
+        { "nombre": "Santa Rosa" }
+      ]
+    },
+    {
+      "nombre": "El Guarco",
+      "distritos": [
+        { "nombre": "Tejar" },
+        { "nombre": "San Isidro" },
+        { "nombre": "Tobosi" },
+        { "nombre": "Patio de Agua" }
+      ]
+    }
+  ]
+}
