@@ -162,9 +162,9 @@ export default function ReportsSection() {
           <p className="font-semibold">Cobro prioritario</p>
           <p className="mt-1">
             Tienes {reportSummary.overdueCount} factura
-            {reportSummary.overdueCount === 1 ? "" : "s"} vencida{reportSummary.overdueCount === 1 ? "" : "s"} por un total de {formatCurrency(
-              reportSummary.overdueAmount,
-            )}.
+            {reportSummary.overdueCount === 1 ? "" : "s"} vencida
+            {reportSummary.overdueCount === 1 ? "" : "s"} por un total de{" "}
+            {formatCurrency(reportSummary.overdueAmount)}.
           </p>
         </div>
       )}

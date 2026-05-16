@@ -120,12 +120,12 @@ export default function InvoicesSection({
         <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
           <p className="font-semibold">
             {invoiceSummary.overdueCount} factura
-            {invoiceSummary.overdueCount === 1 ? "" : "s"} vencida{invoiceSummary.overdueCount === 1 ? "" : "s"}.
+            {invoiceSummary.overdueCount === 1 ? "" : "s"} vencida
+            {invoiceSummary.overdueCount === 1 ? "" : "s"}.
           </p>
           <p className="mt-1">
-            Cobro urgente: saldo vencido total {formatCurrency(
-              invoiceSummary.overdueAmount,
-            )}.
+            Cobro urgente: saldo vencido total{" "}
+            {formatCurrency(invoiceSummary.overdueAmount)}.
           </p>
         </div>
       )}
@@ -264,7 +264,9 @@ export default function InvoicesSection({
                       </h4>
                       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-lg bg-white p-3">
-                          <p className="text-xs text-slate-500">Término de pago</p>
+                          <p className="text-xs text-slate-500">
+                            Término de pago
+                          </p>
                           <p className="mt-1 text-sm font-semibold text-slate-900">
                             {formatPaymentTerm(invoice.payment_term)}
                           </p>
@@ -287,7 +289,9 @@ export default function InvoicesSection({
                           </p>
                         </div>
                         <div className="rounded-lg bg-white p-3">
-                          <p className="text-xs text-slate-500">Estado impuesto</p>
+                          <p className="text-xs text-slate-500">
+                            Estado impuesto
+                          </p>
                           <p className="mt-1 text-sm font-semibold text-slate-900">
                             {invoice.tax_exempt ? "Exento" : "Aplicable"}
                           </p>
@@ -331,7 +335,9 @@ export default function InvoicesSection({
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">
                               Impuesto
-                              {invoice.tax_rate ? ` (${invoice.tax_rate}%)` : ""}
+                              {invoice.tax_rate
+                                ? ` (${invoice.tax_rate}%)`
+                                : ""}
                             </span>
                             <span className="font-semibold text-slate-900">
                               +{formatCurrency(invoice.tax_amount)}
@@ -354,7 +360,9 @@ export default function InvoicesSection({
                             </span>
                           </div>
                           <div className="mt-2 flex justify-between text-sm">
-                            <span className="text-slate-600">Saldo pendiente</span>
+                            <span className="text-slate-600">
+                              Saldo pendiente
+                            </span>
                             <span
                               className={`font-semibold ${
                                 toSafeNumber(invoice.balance_amount) > 0
@@ -472,7 +480,9 @@ export default function InvoicesSection({
                         </h4>
                         <div className="rounded-lg bg-white p-4 space-y-3">
                           <div>
-                            <p className="text-xs text-slate-500">Nombre facturación</p>
+                            <p className="text-xs text-slate-500">
+                              Nombre facturación
+                            </p>
                             <p className="text-sm font-semibold text-slate-900">
                               {invoice.client.billing_name ||
                                 getClientName(invoice.client) ||
@@ -481,7 +491,9 @@ export default function InvoicesSection({
                           </div>
                           {invoice.client.billing_phone && (
                             <div>
-                              <p className="text-xs text-slate-500">Teléfono facturación</p>
+                              <p className="text-xs text-slate-500">
+                                Teléfono facturación
+                              </p>
                               <p className="text-sm font-semibold text-slate-900">
                                 {invoice.client.billing_phone}
                               </p>
@@ -489,7 +501,9 @@ export default function InvoicesSection({
                           )}
                           {invoice.client.billing_email && (
                             <div>
-                              <p className="text-xs text-slate-500">Correo facturación</p>
+                              <p className="text-xs text-slate-500">
+                                Correo facturación
+                              </p>
                               <p className="text-sm font-semibold text-slate-900">
                                 {invoice.client.billing_email}
                               </p>
@@ -497,7 +511,9 @@ export default function InvoicesSection({
                           )}
                           {invoice.client.tax_id && (
                             <div>
-                              <p className="text-xs text-slate-500">Cédula / ID fiscal</p>
+                              <p className="text-xs text-slate-500">
+                                Cédula / ID fiscal
+                              </p>
                               <p className="text-sm font-semibold text-slate-900">
                                 {invoice.client.tax_id}
                               </p>
