@@ -10,7 +10,6 @@ import { buildClientCommercialSummary } from "@/lib/clients/clientCommercialSumm
 import { buildClientInvoiceFinanceSummary } from "@/lib/clients/clientInvoiceFinanceSummary";
 import {
   countClientMaintenances,
-  countCompletedClientMaintenances,
   filterClientInstallations,
   getNextClientMaintenance,
 } from "@/lib/clients/clientInstallations.utils";
@@ -98,10 +97,6 @@ export default function ClientDetailPage() {
     return countClientMaintenances(installations);
   }, [installations]);
 
-  const completedMaintenancesCount = useMemo(() => {
-    return countCompletedClientMaintenances(installations);
-  }, [installations]);
-
   const nextMaintenance = useMemo(() => {
     return getNextClientMaintenance(installations);
   }, [installations]);
@@ -146,7 +141,8 @@ export default function ClientDetailPage() {
         <ClientDetailSummaryCards
           installationsCount={installations.length}
           totalMaintenances={totalMaintenances}
-          completedMaintenancesCount={completedMaintenancesCount}
+          pendingBalance={invoiceFinanceSummary.pendingBalance}
+          pendingInvoiceCount={invoiceFinanceSummary.pendingInvoiceCount}
           nextMaintenance={nextMaintenance}
         />
 

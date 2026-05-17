@@ -1,20 +1,35 @@
 "use client";
 
 import type { ClientNextMaintenance } from "@/lib/clients/clientInstallations.utils";
-import { formatDateLabel } from "@/lib/clients/clientDetail.utils";
+import {
+  formatCurrency,
+  formatDateLabel,
+} from "@/lib/clients/clientDetail.utils";
 import { SummaryCard } from "@/components/clients/detail/SummaryCard";
 
 type ClientDetailSummaryCardsProps = {
   installationsCount: number;
   totalMaintenances: number;
-  completedMaintenancesCount: number;
+  pendingBalance: number;
+  pendingInvoiceCount: number;
   nextMaintenance: ClientNextMaintenance | null;
 };
+
+function getPendingBalanceHelper(pendingInvoiceCount: number) {
+  if (pendingInvoiceCount <= 0) {
+    return "Sin saldo pendiente";
+  }
+
+  return `${pendingInvoiceCount} factura${
+    pendingInvoiceCount === 1 ? "" : "s"
+  } pendiente${pendingInvoiceCount === 1 ? "" : "s"}`;
+}
 
 export function ClientDetailSummaryCards({
   installationsCount,
   totalMaintenances,
-  completedMaintenancesCount,
+  pendingBalance,
+  pendingInvoiceCount,
   nextMaintenance,
 }: ClientDetailSummaryCardsProps) {
   return (
@@ -32,9 +47,9 @@ export function ClientDetailSummaryCards({
       />
 
       <SummaryCard
-        label="Completados"
-        value={String(completedMaintenancesCount)}
-        helper="Historial cerrado"
+        label="Saldo pendiente"
+        value={formatCurrency(pendingBalance)}
+        helper={getPendingBalanceHelper(pendingInvoiceCount)}
       />
 
       <SummaryCard
