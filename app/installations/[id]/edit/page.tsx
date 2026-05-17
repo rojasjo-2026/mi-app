@@ -4,11 +4,26 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import InstallationForm from "@/components/installations/InstallationForm";
 
+type TechnicianOption = {
+  user_id: string;
+  first_name: string;
+  last_name_1: string;
+  last_name_2?: string | null;
+  role?: "TECHNICIAN" | "SUPERVISOR" | "ADMINISTRATION" | "ADMIN" | string;
+  is_active?: boolean | null;
+};
+
 type InstallationDetail = {
   installation_id: string;
   description?: string | null;
   technician_name?: string | null;
-  warranty_months?: number | null;
+  technician_id?: string | null;
+  technician?: TechnicianOption | null;
+  warranty_months?: number | string | null;
+  estimated_amount?: number | string | null;
+  cost_amount?: number | string | null;
+  billing_status?: string | null;
+  billing_notes?: string | null;
   address_line?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
@@ -19,7 +34,8 @@ type InstallationDetail = {
 
 export default function EditInstallationPage() {
   const params = useParams();
-  const id = params?.id as string;
+  const rawId = params?.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
 
   const [installation, setInstallation] = useState<InstallationDetail | null>(
     null,
@@ -47,8 +63,12 @@ export default function EditInstallationPage() {
         }
 
         setInstallation(result.data);
-      } catch {
-        setError("No se pudo cargar la instalación");
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo cargar la instalación",
+        );
       } finally {
         setLoading(false);
       }
