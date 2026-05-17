@@ -16,6 +16,34 @@ type InstallationOption = {
   } | null;
 };
 
+type TechnicianOption = {
+  user_id: string;
+  first_name?: string | null;
+  last_name_1?: string | null;
+  last_name_2?: string | null;
+  email?: string | null;
+  is_active?: boolean;
+};
+
+const billingStatusOptions = [
+  { value: "PENDING", label: "Pendiente por facturar" },
+  { value: "INVOICED", label: "Facturado" },
+  { value: "PARTIALLY_PAID", label: "Parcialmente pagado" },
+  { value: "PAID", label: "Pagado" },
+  { value: "NOT_BILLABLE", label: "No facturable" },
+  { value: "BILLING_ERROR", label: "Error de facturación" },
+  { value: "CANCELLED", label: "Cancelado" },
+];
+
+const maintenanceTypeOptions = [
+  { value: "", label: "Sin tipo definido" },
+  { value: "PREVENTIVE", label: "Preventivo" },
+  { value: "CORRECTIVE", label: "Correctivo" },
+  { value: "WARRANTY", label: "Garantía" },
+  { value: "INSPECTION", label: "Inspección" },
+  { value: "OTHER", label: "Otro" },
+];
+
 function getClientName(client?: InstallationOption["client"]) {
   const composedName = [
     client?.first_name,
@@ -27,6 +55,19 @@ function getClientName(client?: InstallationOption["client"]) {
     .trim();
 
   return composedName || "Cliente sin nombre";
+}
+
+function getTechnicianName(technician?: TechnicianOption | null) {
+  const composedName = [
+    technician?.first_name,
+    technician?.last_name_1,
+    technician?.last_name_2,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return composedName || technician?.email || "Técnico sin nombre";
 }
 
 function formatDateLabel(value?: string | null) {
@@ -43,14 +84,41 @@ function formatDateLabel(value?: string | null) {
   });
 }
 
+function formatMoneyPreview(value: string) {
+  if (!value) return "-";
+
+  const parsed = Number(value);
+
+  if (Number.isNaN(parsed)) return "-";
+
+  return new Intl.NumberFormat("es-CR", {
+    style: "currency",
+    currency: "CRC",
+    maximumFractionDigits: 0,
+  }).format(parsed);
+}
+
+function getOptionLabel(
+  options: Array<{ value: string; label: string }>,
+  value: string,
+) {
+  return options.find((option) => option.value === value)?.label || "-";
+}
+
 export default function FollowUpNewClientPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const installationIdFromQuery = searchParams.get("installationId") || "";
+  const installationIdFromQuery =
+    searchParams.get("installationId") ||
+    searchParams.get("installation_id") ||
+    "";
 
   const [installations, setInstallations] = useState<InstallationOption[]>([]);
+  const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
+
   const [loadingInstallations, setLoadingInstallations] = useState(true);
+  const [loadingTechnicians, setLoadingTechnicians] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [error, setError] = useState("");
 
@@ -58,29 +126,59 @@ export default function FollowUpNewClientPage() {
   const [targetDate, setTargetDate] = useState("");
   const [priority, setPriority] = useState("2");
   const [reason, setReason] = useState("");
+  const [technicianId, setTechnicianId] = useState("");
+
+  const [maintenanceType, setMaintenanceType] = useState("");
+  const [estimatedAmount, setEstimatedAmount] = useState("");
+  const [costAmount, setCostAmount] = useState("");
+  const [billingStatus, setBillingStatus] = useState("PENDING");
+  const [billingNotes, setBillingNotes] = useState("");
 
   useEffect(() => {
-    async function loadInstallations() {
+    async function loadPageData() {
       try {
-        const res = await fetch("/api/installations", {
-          cache: "no-store",
-        });
+        const [installationsRes, techniciansRes] = await Promise.all([
+          fetch("/api/installations", {
+            cache: "no-store",
+          }),
+          fetch("/api/users?role=TECHNICIAN&is_active=true", {
+            cache: "no-store",
+          }),
+        ]);
 
-        const result = await res.json();
+        const installationsResult = await installationsRes.json();
+        const techniciansResult = await techniciansRes.json();
 
-        if (!res.ok || !result.success) {
+        if (!installationsRes.ok || !installationsResult.success) {
           throw new Error("No se pudieron cargar las instalaciones");
         }
 
-        setInstallations(Array.isArray(result.data) ? result.data : []);
-      } catch {
-        setError("No se pudieron cargar las instalaciones");
+        if (!techniciansRes.ok || !techniciansResult.success) {
+          throw new Error("No se pudieron cargar los técnicos");
+        }
+
+        setInstallations(
+          Array.isArray(installationsResult.data)
+            ? installationsResult.data
+            : [],
+        );
+
+        setTechnicians(
+          Array.isArray(techniciansResult.data) ? techniciansResult.data : [],
+        );
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "No se pudo cargar la información inicial",
+        );
       } finally {
         setLoadingInstallations(false);
+        setLoadingTechnicians(false);
       }
     }
 
-    loadInstallations();
+    loadPageData();
   }, []);
 
   const selectedInstallation = useMemo(() => {
@@ -89,6 +187,10 @@ export default function FollowUpNewClientPage() {
       null
     );
   }, [installations, installationId]);
+
+  const selectedTechnician = useMemo(() => {
+    return technicians.find((item) => item.user_id === technicianId) || null;
+  }, [technicians, technicianId]);
 
   const clientId = selectedInstallation?.client_id || "";
 
@@ -121,6 +223,12 @@ export default function FollowUpNewClientPage() {
         target_date: targetDate,
         priority: Number(priority),
         reason: reason.trim() || null,
+        technician_id: technicianId || null,
+        maintenance_type: maintenanceType || null,
+        estimated_amount: estimatedAmount ? Number(estimatedAmount) : null,
+        cost_amount: costAmount ? Number(costAmount) : null,
+        billing_status: billingStatus || "PENDING",
+        billing_notes: billingNotes.trim() || null,
       };
 
       const res = await fetch("/api/follow-ups", {
@@ -181,77 +289,210 @@ export default function FollowUpNewClientPage() {
 
         <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Instalación
-                </label>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <section className="space-y-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Información general
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Define la instalación, fecha, prioridad, técnico y motivo
+                    del mantenimiento.
+                  </p>
+                </div>
 
-                <select
-                  value={installationId}
-                  onChange={(e) => setInstallationId(e.target.value)}
-                  disabled={loadingInstallations}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                >
-                  <option value="">
-                    {loadingInstallations
-                      ? "Cargando instalaciones..."
-                      : "Selecciona una instalación"}
-                  </option>
-
-                  {installations.map((item) => (
-                    <option
-                      key={item.installation_id}
-                      value={item.installation_id}
-                    >
-                      {getClientName(item.client)} —{" "}
-                      {item.description || "Instalación sin descripción"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Fecha objetivo
+                    Instalación
                   </label>
-                  <input
-                    type="date"
-                    value={targetDate}
-                    onChange={(e) => setTargetDate(e.target.value)}
+
+                  <select
+                    value={installationId}
+                    onChange={(e) => setInstallationId(e.target.value)}
+                    disabled={loadingInstallations}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                  >
+                    <option value="">
+                      {loadingInstallations
+                        ? "Cargando instalaciones..."
+                        : "Selecciona una instalación"}
+                    </option>
+
+                    {installations.map((item) => (
+                      <option
+                        key={item.installation_id}
+                        value={item.installation_id}
+                      >
+                        {getClientName(item.client)} —{" "}
+                        {item.description || "Instalación sin descripción"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Fecha objetivo
+                    </label>
+                    <input
+                      type="date"
+                      value={targetDate}
+                      onChange={(e) => setTargetDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Prioridad
+                    </label>
+                    <select
+                      value={priority}
+                      onChange={(e) => setPriority(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    >
+                      <option value="1">1 - Alta</option>
+                      <option value="2">2 - Media</option>
+                      <option value="3">3 - Baja</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    Técnico asignado
+                  </label>
+                  <select
+                    value={technicianId}
+                    onChange={(e) => setTechnicianId(e.target.value)}
+                    disabled={loadingTechnicians}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                  >
+                    <option value="">
+                      {loadingTechnicians
+                        ? "Cargando técnicos..."
+                        : "Sin técnico asignado"}
+                    </option>
+
+                    {technicians.map((item) => (
+                      <option key={item.user_id} value={item.user_id}>
+                        {getTechnicianName(item)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Este campo es opcional y puede ajustarse después.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    Motivo o detalle
+                  </label>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={5}
+                    placeholder="Ejemplo: revisión preventiva, limpieza, ajuste o control de garantía"
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
                   />
                 </div>
+              </section>
+
+              <section className="space-y-5 rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Información comercial
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Campos opcionales para preparar el mantenimiento para
+                    facturación.
+                  </p>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Tipo de mantenimiento
+                    </label>
+                    <select
+                      value={maintenanceType}
+                      onChange={(e) => setMaintenanceType(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    >
+                      {maintenanceTypeOptions.map((option) => (
+                        <option
+                          key={option.value || "empty"}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Estado de facturación
+                    </label>
+                    <select
+                      value={billingStatus}
+                      onChange={(e) => setBillingStatus(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    >
+                      {billingStatusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Monto estimado
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={estimatedAmount}
+                      onChange={(e) => setEstimatedAmount(e.target.value)}
+                      placeholder="Ej: 50000"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Costo interno
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={costAmount}
+                      onChange={(e) => setCostAmount(e.target.value)}
+                      placeholder="Ej: 30000"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    />
+                  </div>
+                </div>
 
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Prioridad
+                    Notas de facturación
                   </label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
+                  <textarea
+                    value={billingNotes}
+                    onChange={(e) => setBillingNotes(e.target.value)}
+                    rows={3}
+                    placeholder="Notas internas para facturación, cobro o condiciones comerciales."
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                  >
-                    <option value="1">1 - Alta</option>
-                    <option value="2">2 - Media</option>
-                    <option value="3">3 - Baja</option>
-                  </select>
+                  />
                 </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Motivo o detalle
-                </label>
-                <textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  rows={5}
-                  placeholder="Ejemplo: revisión preventiva, limpieza, ajuste o control de garantía"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                />
-              </div>
+              </section>
 
               {error ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -262,7 +503,9 @@ export default function FollowUpNewClientPage() {
               <div className="flex flex-wrap gap-3">
                 <button
                   type="submit"
-                  disabled={loadingSubmit || loadingInstallations}
+                  disabled={
+                    loadingSubmit || loadingInstallations || loadingTechnicians
+                  }
                   className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loadingSubmit ? "Guardando..." : "Crear mantenimiento"}
@@ -307,20 +550,51 @@ export default function FollowUpNewClientPage() {
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Client ID
+                      Técnico asignado
                     </p>
-                    <p className="mt-2 break-all text-sm font-medium text-slate-800">
-                      {clientId || "No disponible"}
+                    <p className="mt-2 text-sm font-medium text-slate-800">
+                      {selectedTechnician
+                        ? getTechnicianName(selectedTechnician)
+                        : "Sin técnico asignado"}
                     </p>
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Installation ID
+                      Tipo de mantenimiento
                     </p>
-                    <p className="mt-2 break-all text-sm font-medium text-slate-800">
-                      {selectedInstallation.installation_id}
+                    <p className="mt-2 text-sm font-medium text-slate-800">
+                      {getOptionLabel(maintenanceTypeOptions, maintenanceType)}
                     </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                      Estado de facturación
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-800">
+                      {getOptionLabel(billingStatusOptions, billingStatus)}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                        Monto estimado
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-slate-800">
+                        {formatMoneyPreview(estimatedAmount)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                        Costo interno
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-slate-800">
+                        {formatMoneyPreview(costAmount)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -337,9 +611,9 @@ export default function FollowUpNewClientPage() {
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-600">
                 Este formulario crea el mantenimiento directamente en el listado
-                general. Si una instalación no aparece o no tiene cliente
-                asociado, primero corrige esa información desde la sección de
-                instalaciones.
+                general. Los datos comerciales y el técnico asignado son
+                opcionales y pueden ajustarse después desde el detalle del
+                mantenimiento.
               </p>
             </div>
           </aside>

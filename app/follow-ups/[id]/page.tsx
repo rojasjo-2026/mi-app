@@ -14,6 +14,7 @@ import FollowUpNotesSection from "./components/FollowUpNotesSection";
 import FollowUpCollapsibleSection from "./components/FollowUpCollapsibleSection";
 import FollowUpCommercialSection, {
   formatBillingStatus,
+  formatMaintenanceType,
   formatMoney,
 } from "./components/FollowUpCommercialSection";
 import {
@@ -24,16 +25,58 @@ import {
   getClientFullName,
   getPriorityClasses,
   getStatusClasses,
+  getTechnicianName,
   getTimingMeta,
   toDateInputValue,
 } from "./utils";
+
+type TechnicianOption = {
+  user_id: string;
+  first_name?: string | null;
+  last_name_1?: string | null;
+  last_name_2?: string | null;
+  email?: string | null;
+};
+
+function getNumberInputValue(value?: number | null) {
+  return value !== null && value !== undefined ? String(value) : "";
+}
+
+function getFollowUpTechnicianLabel(followUp: FollowUpDetail) {
+  const assignedTechnicianName = getTechnicianName(followUp.technician);
+
+  if (assignedTechnicianName !== "-") {
+    return assignedTechnicianName;
+  }
+
+  return followUp.installation?.technician_name || "-";
+}
+
+function buildEditFormFromFollowUp(followUp: FollowUpDetail): FollowUpEditForm {
+  return {
+    reason: followUp.reason || "",
+    priority: followUp.priority ?? 3,
+    target_date: toDateInputValue(followUp.target_date),
+    due_date: toDateInputValue(followUp.due_date),
+    estimated_amount: getNumberInputValue(followUp.estimated_amount),
+    final_amount: getNumberInputValue(followUp.final_amount),
+    cost_amount: getNumberInputValue(followUp.cost_amount),
+    billing_status: followUp.billing_status || "PENDING",
+    billing_notes: followUp.billing_notes || "",
+    maintenance_type: followUp.maintenance_type || "",
+    technician_id: followUp.technician_id || "",
+  };
+}
 
 export default function FollowUpDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
   const [followUp, setFollowUp] = useState<FollowUpDetail | null>(null);
+  const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
+
   const [loading, setLoading] = useState(true);
+  const [loadingTechnicians, setLoadingTechnicians] = useState(true);
   const [error, setError] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [postponing, setPostponing] = useState(false);
@@ -46,9 +89,12 @@ export default function FollowUpDetailPage() {
     target_date: "",
     due_date: "",
     estimated_amount: "",
+    final_amount: "",
     cost_amount: "",
     billing_status: "PENDING",
     billing_notes: "",
+    maintenance_type: "",
+    technician_id: "",
   });
 
   useEffect(() => {
@@ -82,25 +128,33 @@ export default function FollowUpDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    async function loadTechnicians() {
+      try {
+        const res = await fetch("/api/users?role=TECHNICIAN&is_active=true", {
+          cache: "no-store",
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+          throw new Error("Failed to load technicians");
+        }
+
+        setTechnicians(Array.isArray(result.data) ? result.data : []);
+      } catch {
+        setTechnicians([]);
+      } finally {
+        setLoadingTechnicians(false);
+      }
+    }
+
+    loadTechnicians();
+  }, []);
+
+  useEffect(() => {
     if (!followUp) return;
 
-    setEditForm({
-      reason: followUp.reason || "",
-      priority: followUp.priority ?? 3,
-      target_date: toDateInputValue(followUp.target_date),
-      due_date: toDateInputValue(followUp.due_date),
-      estimated_amount:
-        followUp.estimated_amount !== null &&
-        followUp.estimated_amount !== undefined
-          ? String(followUp.estimated_amount)
-          : "",
-      cost_amount:
-        followUp.cost_amount !== null && followUp.cost_amount !== undefined
-          ? String(followUp.cost_amount)
-          : "",
-      billing_status: followUp.billing_status || "PENDING",
-      billing_notes: followUp.billing_notes || "",
-    });
+    setEditForm(buildEditFormFromFollowUp(followUp));
   }, [followUp]);
 
   async function handleCompleteFollowUp() {
@@ -175,23 +229,7 @@ export default function FollowUpDetailPage() {
       return;
     }
 
-    setEditForm({
-      reason: followUp.reason || "",
-      priority: followUp.priority ?? 3,
-      target_date: toDateInputValue(followUp.target_date),
-      due_date: toDateInputValue(followUp.due_date),
-      estimated_amount:
-        followUp.estimated_amount !== null &&
-        followUp.estimated_amount !== undefined
-          ? String(followUp.estimated_amount)
-          : "",
-      cost_amount:
-        followUp.cost_amount !== null && followUp.cost_amount !== undefined
-          ? String(followUp.cost_amount)
-          : "",
-      billing_status: followUp.billing_status || "PENDING",
-      billing_notes: followUp.billing_notes || "",
-    });
+    setEditForm(buildEditFormFromFollowUp(followUp));
     setIsEditing(false);
   }
 
@@ -214,11 +252,16 @@ export default function FollowUpDetailPage() {
           estimated_amount: editForm.estimated_amount
             ? Number(editForm.estimated_amount)
             : null,
+          final_amount: editForm.final_amount
+            ? Number(editForm.final_amount)
+            : null,
           cost_amount: editForm.cost_amount
             ? Number(editForm.cost_amount)
             : null,
           billing_status: editForm.billing_status || "PENDING",
           billing_notes: editForm.billing_notes || null,
+          maintenance_type: editForm.maintenance_type || null,
+          technician_id: editForm.technician_id || null,
         }),
       });
 
@@ -289,6 +332,7 @@ export default function FollowUpDetailPage() {
   const installationDescription =
     followUp.installation?.description || "Sin instalación asociada";
   const timingMeta = getTimingMeta(followUp.target_date);
+  const technicianLabel = getFollowUpTechnicianLabel(followUp);
 
   return (
     <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
@@ -332,9 +376,16 @@ export default function FollowUpDetailPage() {
             isEditing={isEditing}
             form={editForm}
             estimatedAmountLabel={formatMoney(followUp.estimated_amount)}
+            finalAmountLabel={formatMoney(followUp.final_amount)}
             costAmountLabel={formatMoney(followUp.cost_amount)}
             billingStatusLabel={formatBillingStatus(followUp.billing_status)}
             billingNotesLabel={followUp.billing_notes || "-"}
+            maintenanceTypeLabel={formatMaintenanceType(
+              followUp.maintenance_type,
+            )}
+            technicianLabel={technicianLabel}
+            technicians={technicians}
+            loadingTechnicians={loadingTechnicians}
             onChange={updateEditField}
           />
         </FollowUpCollapsibleSection>

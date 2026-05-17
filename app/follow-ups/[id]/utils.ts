@@ -9,9 +9,12 @@ export type FollowUpDetail = {
   completed_at?: string | null;
 
   estimated_amount?: number | null;
+  final_amount?: number | null;
   cost_amount?: number | null;
   billing_status?: string | null;
   billing_notes?: string | null;
+  maintenance_type?: string | null;
+  technician_id?: string | null;
 
   client?: {
     client_id: string;
@@ -21,17 +24,30 @@ export type FollowUpDetail = {
     phone_primary?: string | null;
     email?: string | null;
   } | null;
+
   installation?: {
     installation_id: string;
     description?: string | null;
     installation_date?: string | null;
     technician_name?: string | null;
   } | null;
+
+  technician?: {
+    user_id?: string;
+    id?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    full_name?: string | null;
+    name?: string | null;
+    email?: string | null;
+  } | null;
+
   follow_up_status?: {
     follow_up_status_id: number;
     code: string;
     name: string;
   } | null;
+
   contact_attempts?: Array<{
     contact_attempt_id: string;
     attempt_datetime: string;
@@ -47,9 +63,12 @@ export type FollowUpEditForm = {
   target_date: string;
   due_date: string;
   estimated_amount: string;
+  final_amount: string;
   cost_amount: string;
   billing_status: string;
   billing_notes: string;
+  maintenance_type: string;
+  technician_id: string;
 };
 
 export function getClientFullName(client: FollowUpDetail["client"]) {
@@ -58,6 +77,20 @@ export function getClientFullName(client: FollowUpDetail["client"]) {
   return [client.first_name, client.last_name_1, client.last_name_2]
     .filter(Boolean)
     .join(" ");
+}
+
+export function getTechnicianName(technician: FollowUpDetail["technician"]) {
+  if (!technician) return "-";
+
+  if (technician.full_name) return technician.full_name;
+  if (technician.name) return technician.name;
+
+  const composedName = [technician.first_name, technician.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return composedName || technician.email || "-";
 }
 
 export function getStatusClasses(status?: string) {

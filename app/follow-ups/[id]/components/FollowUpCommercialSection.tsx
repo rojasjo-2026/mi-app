@@ -1,12 +1,25 @@
 import type { FollowUpEditForm } from "../utils";
 
+type TechnicianOption = {
+  user_id: string;
+  first_name?: string | null;
+  last_name_1?: string | null;
+  last_name_2?: string | null;
+  email?: string | null;
+};
+
 type FollowUpCommercialSectionProps = {
   isEditing: boolean;
   form: FollowUpEditForm;
   estimatedAmountLabel: string;
+  finalAmountLabel?: string;
   costAmountLabel: string;
   billingStatusLabel: string;
   billingNotesLabel: string;
+  maintenanceTypeLabel?: string;
+  technicianLabel?: string;
+  technicians?: TechnicianOption[];
+  loadingTechnicians?: boolean;
   onChange: <K extends keyof FollowUpEditForm>(
     field: K,
     value: FollowUpEditForm[K],
@@ -22,6 +35,28 @@ const billingStatusOptions = [
   { value: "BILLING_ERROR", label: "Error de facturación" },
   { value: "CANCELLED", label: "Cancelado" },
 ];
+
+const maintenanceTypeOptions = [
+  { value: "", label: "Sin tipo definido" },
+  { value: "PREVENTIVE", label: "Preventivo" },
+  { value: "CORRECTIVE", label: "Correctivo" },
+  { value: "WARRANTY", label: "Garantía" },
+  { value: "INSPECTION", label: "Inspección" },
+  { value: "OTHER", label: "Otro" },
+];
+
+function getTechnicianName(technician?: TechnicianOption | null) {
+  const composedName = [
+    technician?.first_name,
+    technician?.last_name_1,
+    technician?.last_name_2,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return composedName || technician?.email || "Técnico sin nombre";
+}
 
 export function formatMoney(value?: number | null) {
   if (value === null || value === undefined) return "-";
@@ -42,15 +77,33 @@ export function formatBillingStatus(value?: string | null) {
   );
 }
 
+export function formatMaintenanceType(value?: string | null) {
+  if (!value) return "-";
+
+  return (
+    maintenanceTypeOptions.find((option) => option.value === value)?.label ??
+    value
+  );
+}
+
 export default function FollowUpCommercialSection({
   isEditing,
   form,
   estimatedAmountLabel,
+  finalAmountLabel = "-",
   costAmountLabel,
   billingStatusLabel,
   billingNotesLabel,
+  maintenanceTypeLabel = "-",
+  technicianLabel = "-",
+  technicians = [],
+  loadingTechnicians = false,
   onChange,
 }: FollowUpCommercialSectionProps) {
+  const hasCurrentTechnicianOutsideList =
+    Boolean(form.technician_id) &&
+    !technicians.some((item) => item.user_id === form.technician_id);
+
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -59,7 +112,7 @@ export default function FollowUpCommercialSection({
             Información comercial
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Datos financieros asociados a este mantenimiento.
+            Datos financieros y operativos asociados a este mantenimiento.
           </p>
         </div>
 
@@ -69,6 +122,69 @@ export default function FollowUpCommercialSection({
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Tipo de mantenimiento
+          </p>
+
+          {isEditing ? (
+            <select
+              value={form.maintenance_type}
+              onChange={(e) => onChange("maintenance_type", e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+            >
+              {maintenanceTypeOptions.map((option) => (
+                <option key={option.value || "empty"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="mt-2 text-sm font-semibold text-slate-800">
+              {maintenanceTypeLabel}
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Técnico asignado
+          </p>
+
+          {isEditing ? (
+            <select
+              value={form.technician_id}
+              onChange={(e) => onChange("technician_id", e.target.value)}
+              disabled={loadingTechnicians}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="">
+                {loadingTechnicians
+                  ? "Cargando técnicos..."
+                  : "Sin técnico asignado"}
+              </option>
+
+              {hasCurrentTechnicianOutsideList ? (
+                <option value={form.technician_id}>
+                  {technicianLabel !== "-"
+                    ? technicianLabel
+                    : "Técnico asignado actual"}
+                </option>
+              ) : null}
+
+              {technicians.map((item) => (
+                <option key={item.user_id} value={item.user_id}>
+                  {getTechnicianName(item)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="mt-2 text-sm font-semibold text-slate-800">
+              {technicianLabel}
+            </p>
+          )}
+        </div>
+
         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
             Monto estimado
@@ -86,6 +202,27 @@ export default function FollowUpCommercialSection({
           ) : (
             <p className="mt-2 text-sm font-semibold text-slate-800">
               {estimatedAmountLabel}
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Monto final
+          </p>
+
+          {isEditing ? (
+            <input
+              type="number"
+              min="0"
+              value={form.final_amount}
+              onChange={(e) => onChange("final_amount", e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              placeholder="Ej: 65000"
+            />
+          ) : (
+            <p className="mt-2 text-sm font-semibold text-slate-800">
+              {finalAmountLabel}
             </p>
           )}
         </div>
