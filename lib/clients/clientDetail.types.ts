@@ -73,6 +73,7 @@ export type ActivityLogsResponse = {
 
 export type DetailSectionKey =
   | "commercial"
+  | "financeHistory"
   | "main"
   | "identification"
   | "business"

@@ -7,6 +7,7 @@ import type {
   InstallationFilter,
 } from "@/lib/clients/clientDetail.types";
 import { buildClientCommercialSummary } from "@/lib/clients/clientCommercialSummary";
+import { buildClientInvoiceFinanceSummary } from "@/lib/clients/clientInvoiceFinanceSummary";
 import {
   countClientMaintenances,
   countCompletedClientMaintenances,
@@ -15,11 +16,13 @@ import {
 } from "@/lib/clients/clientInstallations.utils";
 import { useClientActivityLogs } from "@/hooks/clients/useClientActivityLogs";
 import { useClientDetail } from "@/hooks/clients/useClientDetail";
+import { useClientInvoices } from "@/hooks/clients/useClientInvoices";
 import { CollapsibleCard } from "@/components/clients/detail/CollapsibleCard";
 import { ClientActivityHistory } from "@/components/clients/detail/ClientActivityHistory";
 import { ClientCommercialSection } from "@/components/clients/detail/ClientCommercialSection";
 import { ClientDetailHeader } from "@/components/clients/detail/ClientDetailHeader";
 import { ClientDetailSummaryCards } from "@/components/clients/detail/ClientDetailSummaryCards";
+import { ClientFinanceHistorySection } from "@/components/clients/detail/ClientFinanceHistorySection";
 import { ClientInformationSections } from "@/components/clients/detail/ClientInformationSections";
 import { ClientInstallationsSection } from "@/components/clients/detail/ClientInstallationsSection";
 
@@ -38,6 +41,13 @@ export default function ClientDetailPage() {
     reloadActivityLogs,
   } = useClientActivityLogs(clientId);
 
+  const {
+    invoices,
+    loading: invoicesLoading,
+    error: invoicesError,
+    reloadInvoices,
+  } = useClientInvoices(clientId);
+
   const [installationSearch, setInstallationSearch] = useState("");
   const [installationFilter, setInstallationFilter] =
     useState<InstallationFilter>("all");
@@ -46,6 +56,7 @@ export default function ClientDetailPage() {
     Record<DetailSectionKey, boolean>
   >({
     commercial: true,
+    financeHistory: true,
     main: true,
     identification: true,
     business: false,
@@ -70,6 +81,10 @@ export default function ClientDetailPage() {
   const commercialSummary = useMemo(() => {
     return buildClientCommercialSummary(installations);
   }, [installations]);
+
+  const invoiceFinanceSummary = useMemo(() => {
+    return buildClientInvoiceFinanceSummary(invoices);
+  }, [invoices]);
 
   const filteredInstallations = useMemo(() => {
     return filterClientInstallations(
@@ -139,6 +154,16 @@ export default function ClientDetailPage() {
           commercialSummary={commercialSummary}
           isOpen={openSections.commercial}
           onToggle={() => toggleDetailSection("commercial")}
+        />
+
+        <ClientFinanceHistorySection
+          invoices={invoices}
+          summary={invoiceFinanceSummary}
+          loading={invoicesLoading}
+          error={invoicesError}
+          isOpen={openSections.financeHistory}
+          onToggle={() => toggleDetailSection("financeHistory")}
+          onRefresh={() => void reloadInvoices()}
         />
 
         <ClientInformationSections
