@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import {
   InstallationStatus,
+  WorkBillingStatus,
   type ActivityLogAction,
   type ActivityLogCategory,
   type ActivityLogVisibility,
@@ -35,12 +36,27 @@ type UpdateInstallationInput = {
   description?: string | null;
   technical_observations?: string | null;
   estimated_amount?: number | string | null;
+  final_amount?: number | string | null;
+  cost_amount?: number | string | null;
   warranty_months?: number | string | null;
   warranty_end_date?: string | null;
   technician_name?: string | null;
   technician_id?: string | null;
+  address_line?: string | null;
+  zone?: string | null;
+  city?: string | null;
+  admin_level_1?: string | null;
+  admin_level_2?: string | null;
+  admin_level_3?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  location_notes?: string | null;
+  reference_point?: string | null;
   installation_status?: string;
   is_active?: boolean;
+  billing_status?: string | null;
+  billing_notes?: string | null;
+  billing_block_reason?: string | null;
   changed_by?: string | null;
 };
 
@@ -49,11 +65,17 @@ type CreateInstallationInput = {
   service_type_id?: number | string;
   installation_date?: string;
   description?: string | null;
+  technical_observations?: string | null;
   estimated_amount?: number | string | null;
+  final_amount?: number | string | null;
+  cost_amount?: number | string | null;
+  warranty_months?: number | string | null;
+  warranty_end_date?: string | null;
   technician_name?: string | null;
   technician_id?: string | null;
   address_line?: string | null;
   zone?: string | null;
+  city?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
   admin_level_3?: string | null;
@@ -61,6 +83,9 @@ type CreateInstallationInput = {
   longitude?: number | string | null;
   location_notes?: string | null;
   reference_point?: string | null;
+  billing_status?: string | null;
+  billing_notes?: string | null;
+  billing_block_reason?: string | null;
 };
 
 type ActivitySourceRecord = Record<string, unknown>;
@@ -235,6 +260,52 @@ function normalizeForActivityComparison(value: unknown) {
   return toActivityValue(value) ?? "";
 }
 
+function hasProvidedValue(value: unknown) {
+  return value !== undefined && value !== null && value !== "";
+}
+
+function parseNullableNumber(value: unknown): number | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+function parseUpdateNumber(
+  value: unknown,
+  fallback: number | null,
+): number | null {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (value === null || value === "") {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+}
+
+function isInvalidProvidedNumber(value: unknown, parsedValue: number | null) {
+  return hasProvidedValue(value) && parsedValue === null;
+}
+
+function toNullableStringOnUpdate(
+  value: string | null | undefined,
+  fallback: string | null,
+) {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  return toTrimmedStringOrFallback(value, null);
+}
+
 function toInstallationStatusOrFallback(
   value: unknown,
   fallback: InstallationStatus,
@@ -249,6 +320,23 @@ function toInstallationStatusOrFallback(
     normalizedValue as InstallationStatus,
   )
     ? (normalizedValue as InstallationStatus)
+    : fallback;
+}
+
+function toWorkBillingStatusOrFallback(
+  value: unknown,
+  fallback: WorkBillingStatus,
+): WorkBillingStatus {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+
+  const normalizedValue = String(value).trim().toUpperCase();
+
+  return Object.values(WorkBillingStatus).includes(
+    normalizedValue as WorkBillingStatus,
+  )
+    ? (normalizedValue as WorkBillingStatus)
     : fallback;
 }
 
@@ -372,9 +460,13 @@ export async function createInstallationService(body: CreateInstallationInput) {
   const clientId = String(body.client_id).trim();
   const parsedServiceTypeId = toNumberOrFallback(body.service_type_id, null);
   const parsedInstallationDate = toDateOrFallback(body.installation_date, null);
-  const parsedEstimatedAmount = toNumberOrFallback(body.estimated_amount, null);
-  const parsedLatitude = toNumberOrFallback(body.latitude, null);
-  const parsedLongitude = toNumberOrFallback(body.longitude, null);
+  const parsedEstimatedAmount = parseNullableNumber(body.estimated_amount);
+  const parsedFinalAmount = parseNullableNumber(body.final_amount);
+  const parsedCostAmount = parseNullableNumber(body.cost_amount);
+  const parsedWarrantyMonths = parseNullableNumber(body.warranty_months);
+  const parsedLatitude = parseNullableNumber(body.latitude);
+  const parsedLongitude = parseNullableNumber(body.longitude);
+  const parsedWarrantyEndDate = toDateOrFallback(body.warranty_end_date, null);
 
   if (parsedServiceTypeId === null) {
     return {
@@ -390,15 +482,45 @@ export async function createInstallationService(body: CreateInstallationInput) {
     };
   }
 
-  if (
-    body.estimated_amount !== undefined &&
-    body.estimated_amount !== null &&
-    body.estimated_amount !== "" &&
-    parsedEstimatedAmount === null
-  ) {
+  if (isInvalidProvidedNumber(body.estimated_amount, parsedEstimatedAmount)) {
     return {
       success: false,
       errors: [{ field: "estimated_amount", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.final_amount, parsedFinalAmount)) {
+    return {
+      success: false,
+      errors: [{ field: "final_amount", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.cost_amount, parsedCostAmount)) {
+    return {
+      success: false,
+      errors: [{ field: "cost_amount", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.warranty_months, parsedWarrantyMonths)) {
+    return {
+      success: false,
+      errors: [{ field: "warranty_months", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.latitude, parsedLatitude)) {
+    return {
+      success: false,
+      errors: [{ field: "latitude", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.longitude, parsedLongitude)) {
+    return {
+      success: false,
+      errors: [{ field: "longitude", error: "invalid" }],
     };
   }
 
@@ -417,6 +539,8 @@ export async function createInstallationService(body: CreateInstallationInput) {
   const adminLevel1 = toTrimmedStringOrFallback(body.admin_level_1, null);
   const adminLevel2 = toTrimmedStringOrFallback(body.admin_level_2, null);
   const adminLevel3 = toTrimmedStringOrFallback(body.admin_level_3, null);
+  const city =
+    toTrimmedStringOrFallback(body.city, null) || adminLevel3 || adminLevel2;
 
   let fullAddress = "";
 
@@ -447,21 +571,38 @@ export async function createInstallationService(body: CreateInstallationInput) {
     service_type_id: parsedServiceTypeId,
     installation_date: parsedInstallationDate,
     description: toTrimmedStringOrFallback(body.description, null),
+    technical_observations: toTrimmedStringOrFallback(
+      body.technical_observations,
+      null,
+    ),
     estimated_amount: parsedEstimatedAmount,
+    final_amount: parsedFinalAmount,
+    cost_amount: parsedCostAmount,
+    warranty_months: parsedWarrantyMonths,
+    warranty_end_date: parsedWarrantyEndDate,
     technician_name: toTrimmedStringOrFallback(body.technician_name, null),
     technician_id: toTrimmedStringOrFallback(body.technician_id, null),
     address_line: addressLine,
     zone,
+    city: city || null,
     admin_level_1: adminLevel1,
     admin_level_2: adminLevel2,
     admin_level_3: adminLevel3,
-    city: adminLevel3 || adminLevel2 || null,
     latitude: finalLatitude,
     longitude: finalLongitude,
     location_notes: toTrimmedStringOrFallback(body.location_notes, null),
     reference_point: toTrimmedStringOrFallback(body.reference_point, null),
-    installation_status: "OPEN",
+    installation_status: InstallationStatus.OPEN,
     is_active: true,
+    billing_status: toWorkBillingStatusOrFallback(
+      body.billing_status,
+      WorkBillingStatus.PENDING,
+    ),
+    billing_notes: toTrimmedStringOrFallback(body.billing_notes, null),
+    billing_block_reason: toTrimmedStringOrFallback(
+      body.billing_block_reason,
+      null,
+    ),
   };
 
   const installation = await createInstallation(data);
@@ -501,22 +642,97 @@ export async function updateInstallationByIdService(
     return { success: false, errors };
   }
 
-  const parsedEstimatedAmount = toNumberOrFallback(
+  const parsedEstimatedAmount = parseUpdateNumber(
     body.estimated_amount,
     decimalToNumber(existing.estimated_amount),
   );
 
-  if (
-    body.estimated_amount !== undefined &&
-    body.estimated_amount !== null &&
-    body.estimated_amount !== "" &&
-    parsedEstimatedAmount === null
-  ) {
+  const parsedFinalAmount = parseUpdateNumber(
+    body.final_amount,
+    decimalToNumber(existing.final_amount),
+  );
+
+  const parsedCostAmount = parseUpdateNumber(
+    body.cost_amount,
+    decimalToNumber(existing.cost_amount),
+  );
+
+  const parsedWarrantyMonths = parseUpdateNumber(
+    body.warranty_months,
+    existing.warranty_months,
+  );
+
+  const parsedLatitude = parseUpdateNumber(
+    body.latitude,
+    decimalToNumber(existing.latitude),
+  );
+
+  const parsedLongitude = parseUpdateNumber(
+    body.longitude,
+    decimalToNumber(existing.longitude),
+  );
+
+  if (isInvalidProvidedNumber(body.estimated_amount, parsedEstimatedAmount)) {
     return {
       success: false,
       errors: [{ field: "estimated_amount", error: "invalid" }],
     };
   }
+
+  if (isInvalidProvidedNumber(body.final_amount, parsedFinalAmount)) {
+    return {
+      success: false,
+      errors: [{ field: "final_amount", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.cost_amount, parsedCostAmount)) {
+    return {
+      success: false,
+      errors: [{ field: "cost_amount", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.warranty_months, parsedWarrantyMonths)) {
+    return {
+      success: false,
+      errors: [{ field: "warranty_months", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.latitude, parsedLatitude)) {
+    return {
+      success: false,
+      errors: [{ field: "latitude", error: "invalid" }],
+    };
+  }
+
+  if (isInvalidProvidedNumber(body.longitude, parsedLongitude)) {
+    return {
+      success: false,
+      errors: [{ field: "longitude", error: "invalid" }],
+    };
+  }
+
+  const adminLevel1 = toNullableStringOnUpdate(
+    body.admin_level_1,
+    existing.admin_level_1,
+  );
+
+  const adminLevel2 = toNullableStringOnUpdate(
+    body.admin_level_2,
+    existing.admin_level_2,
+  );
+
+  const adminLevel3 = toNullableStringOnUpdate(
+    body.admin_level_3,
+    existing.admin_level_3,
+  );
+
+  const city =
+    body.city !== undefined
+      ? toTrimmedStringOrFallback(body.city, null)
+      : adminLevel3 || adminLevel2 || existing.city;
 
   const data: UpdateInstallationData = {
     client_id: body.client_id ?? existing.client_id,
@@ -535,10 +751,9 @@ export async function updateInstallationByIdService(
       existing.technical_observations,
     ),
     estimated_amount: parsedEstimatedAmount,
-    warranty_months: toNumberOrFallback(
-      body.warranty_months,
-      existing.warranty_months,
-    ),
+    final_amount: parsedFinalAmount,
+    cost_amount: parsedCostAmount,
+    warranty_months: parsedWarrantyMonths,
     warranty_end_date: toDateOrFallback(
       body.warranty_end_date,
       existing.warranty_end_date,
@@ -551,6 +766,25 @@ export async function updateInstallationByIdService(
       body.technician_id !== undefined
         ? toTrimmedStringOrFallback(body.technician_id, null)
         : existing.technician_id,
+    address_line: toNullableStringOnUpdate(
+      body.address_line,
+      existing.address_line,
+    ),
+    zone: toNullableStringOnUpdate(body.zone, existing.zone),
+    city,
+    admin_level_1: adminLevel1,
+    admin_level_2: adminLevel2,
+    admin_level_3: adminLevel3,
+    latitude: parsedLatitude,
+    longitude: parsedLongitude,
+    location_notes: toNullableStringOnUpdate(
+      body.location_notes,
+      existing.location_notes,
+    ),
+    reference_point: toNullableStringOnUpdate(
+      body.reference_point,
+      existing.reference_point,
+    ),
     installation_status:
       body.installation_status !== undefined
         ? toInstallationStatusOrFallback(
@@ -560,6 +794,21 @@ export async function updateInstallationByIdService(
         : existing.installation_status,
     is_active:
       body.is_active !== undefined ? body.is_active : existing.is_active,
+    billing_status:
+      body.billing_status !== undefined
+        ? toWorkBillingStatusOrFallback(
+            body.billing_status,
+            existing.billing_status,
+          )
+        : existing.billing_status,
+    billing_notes: toNullableStringOnUpdate(
+      body.billing_notes,
+      existing.billing_notes,
+    ),
+    billing_block_reason: toNullableStringOnUpdate(
+      body.billing_block_reason,
+      existing.billing_block_reason,
+    ),
   };
 
   const updated = await updateInstallation(id, data);

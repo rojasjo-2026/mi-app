@@ -1,4 +1,4 @@
-import { InstallationStatus } from "@prisma/client";
+import { InstallationStatus, WorkBillingStatus } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -40,12 +40,27 @@ export type UpdateInstallationData = Partial<{
   description: string | null;
   technical_observations: string | null;
   estimated_amount: number | null;
+  final_amount: number | null;
+  cost_amount: number | null;
   warranty_months: number | null;
   warranty_end_date: Date | null;
   technician_name: string | null;
   technician_id: string | null;
+  address_line: string | null;
+  zone: string | null;
+  city: string | null;
+  admin_level_1: string | null;
+  admin_level_2: string | null;
+  admin_level_3: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  location_notes: string | null;
+  reference_point: string | null;
   installation_status: InstallationStatus;
   is_active: boolean;
+  billing_status: WorkBillingStatus;
+  billing_notes: string | null;
+  billing_block_reason: string | null;
 }>;
 
 export type CreateInstallationData = {
@@ -53,21 +68,29 @@ export type CreateInstallationData = {
   service_type_id: number;
   installation_date: Date;
   description: string | null;
+  technical_observations: string | null;
   estimated_amount: number | null;
+  final_amount: number | null;
+  cost_amount: number | null;
+  warranty_months: number | null;
+  warranty_end_date: Date | null;
   technician_name: string | null;
   technician_id: string | null;
   address_line: string | null;
   zone: string | null;
+  city: string | null;
   admin_level_1: string | null;
   admin_level_2: string | null;
   admin_level_3: string | null;
-  city: string | null;
   latitude: number | null;
   longitude: number | null;
   location_notes: string | null;
   reference_point: string | null;
   installation_status: InstallationStatus;
   is_active: boolean;
+  billing_status: WorkBillingStatus;
+  billing_notes: string | null;
+  billing_block_reason: string | null;
 };
 
 export type FindInstallationsParams = {
