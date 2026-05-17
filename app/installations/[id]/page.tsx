@@ -33,6 +33,15 @@ import {
 } from "@/lib/installations/installation-detail.utils";
 import InstallationComponentsSection from "@/components/installations/InstallationComponentsSection";
 
+type InstallationCommercialInfo = {
+  estimated_amount?: number | string | null;
+  final_amount?: number | string | null;
+  cost_amount?: number | string | null;
+  billing_status?: string | null;
+  billing_notes?: string | null;
+  warranty_months?: number | string | null;
+};
+
 function getInstallationStatusBadge(status?: string | null) {
   if (status === "OPEN") {
     return (
@@ -71,6 +80,50 @@ function getInstallationStatusBadge(status?: string | null) {
       {status || "Sin estado"}
     </span>
   );
+}
+
+function formatCurrencyLabel(value?: number | string | null) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return "-";
+  }
+
+  return new Intl.NumberFormat("es-CR", {
+    style: "currency",
+    currency: "CRC",
+    maximumFractionDigits: 0,
+  }).format(numericValue);
+}
+
+function formatOptionalCurrencyLabel(value?: number | string | null) {
+  const formattedValue = formatCurrencyLabel(value);
+
+  return formattedValue === "-" ? undefined : formattedValue;
+}
+
+function getBillingStatusLabel(status?: string | null) {
+  if (status === "PENDING") return "Pendiente por facturar";
+  if (status === "INVOICED") return "Facturado";
+  if (status === "PARTIALLY_PAID") return "Parcialmente pagado";
+  if (status === "PAID") return "Pagado";
+  if (status === "NOT_BILLABLE") return "No facturable";
+  if (status === "BILLING_ERROR") return "Error de facturación";
+  if (status === "CANCELLED") return "Cancelado";
+
+  return status || undefined;
+}
+
+function formatWarrantyMonths(value?: number | string | null) {
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
+
+  return String(value);
 }
 
 export default function InstallationDetailPage() {
@@ -139,15 +192,19 @@ export default function InstallationDetailPage() {
     return <main className="p-8">{error || "Instalación no encontrada"}</main>;
   }
 
+  const commercialInfo = installation as InstallationCommercialInfo;
+
   const clientFullName = getClientFullName(
     installation.client as ClientNameParts | null | undefined,
   );
 
-  const estimatedAmount =
-    installation.estimated_amount !== null &&
-    installation.estimated_amount !== undefined
-      ? `₡${installation.estimated_amount}`
-      : "-";
+  const estimatedAmount = formatCurrencyLabel(commercialInfo.estimated_amount);
+  const costAmount = formatOptionalCurrencyLabel(commercialInfo.cost_amount);
+  const finalAmount = formatOptionalCurrencyLabel(commercialInfo.final_amount);
+  const billingStatusLabel = getBillingStatusLabel(
+    commercialInfo.billing_status,
+  );
+  const billingNotes = commercialInfo.billing_notes || undefined;
 
   const locationLabel = `${installation.city || "-"}${
     installation.zone ? ` · ${installation.zone}` : ""
@@ -199,6 +256,7 @@ export default function InstallationDetailPage() {
             label="Servicio"
             value={installation.service_type?.name || "-"}
           />
+
           <StaffMetricCard
             label="Técnico"
             name={technicianDisplayName}
@@ -206,6 +264,7 @@ export default function InstallationDetailPage() {
             isActive={installation.technician?.is_active}
             isLinked={Boolean(installation.technician)}
           />
+
           <MetricCard
             label="Garantía"
             value={
@@ -215,6 +274,7 @@ export default function InstallationDetailPage() {
                 : "-"
             }
           />
+
           <MetricCard
             label="Seguimientos"
             value={String(installation.follow_ups?.length || 0)}
@@ -235,6 +295,13 @@ export default function InstallationDetailPage() {
             )}
             estimatedAmount={estimatedAmount}
             description={installation.description || "-"}
+            costAmount={costAmount}
+            finalAmount={finalAmount}
+            billingStatusLabel={billingStatusLabel}
+            billingNotes={billingNotes}
+            warrantyMonths={formatWarrantyMonths(
+              commercialInfo.warranty_months,
+            )}
           />
 
           <InstallationClientSection
