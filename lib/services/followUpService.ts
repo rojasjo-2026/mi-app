@@ -63,6 +63,12 @@ type UpdateFollowUpInput = {
   technician_id?: string | null;
 };
 
+type ExistingFollowUp = NonNullable<
+  Awaited<ReturnType<typeof findFollowUpById>>
+>;
+
+type FollowUpValidationInput = Parameters<typeof validateCreateFollowUp>[0];
+
 const WORK_BILLING_STATUSES: readonly WorkBillingStatus[] = [
   "PENDING",
   "INVOICED",
@@ -109,6 +115,79 @@ function toWorkBillingStatusOrFallback(
   return WORK_BILLING_STATUSES.includes(normalizedValue as WorkBillingStatus)
     ? (normalizedValue as WorkBillingStatus)
     : fallback;
+}
+
+function decimalToNumber(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+      return null;
+    }
+
+    const parsedValue = Number(trimmedValue);
+
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  if (
+    typeof value === "object" &&
+    "toNumber" in value &&
+    typeof (value as { toNumber?: () => number }).toNumber === "function"
+  ) {
+    const parsedValue = (value as { toNumber: () => number }).toNumber();
+
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+function buildFollowUpUpdateValidationInput(
+  existing: ExistingFollowUp,
+  body: UpdateFollowUpInput,
+): FollowUpValidationInput {
+  return {
+    client_id: existing.client_id,
+    target_date:
+      body.target_date !== undefined ? body.target_date : existing.target_date,
+    due_date: body.due_date !== undefined ? body.due_date : existing.due_date,
+    priority: body.priority !== undefined ? body.priority : existing.priority,
+    estimated_amount:
+      body.estimated_amount !== undefined
+        ? body.estimated_amount
+        : decimalToNumber(existing.estimated_amount),
+    final_amount:
+      body.final_amount !== undefined
+        ? body.final_amount
+        : decimalToNumber(existing.final_amount),
+    cost_amount:
+      body.cost_amount !== undefined
+        ? body.cost_amount
+        : decimalToNumber(existing.cost_amount),
+    billing_status:
+      body.billing_status !== undefined
+        ? body.billing_status
+        : existing.billing_status,
+    maintenance_type:
+      body.maintenance_type !== undefined
+        ? body.maintenance_type
+        : existing.maintenance_type,
+    technician_id:
+      body.technician_id !== undefined
+        ? body.technician_id
+        : existing.technician_id,
+  };
 }
 
 async function createContactFlowSafelyFromFollowUp(
@@ -234,6 +313,10 @@ export async function createFollowUpService(body: CreateFollowUpInput) {
 
     if (!installation) {
       return { success: false, code: "installation_not_found" };
+    }
+
+    if (installation.client_id !== clientId) {
+      return { success: false, code: "installation_client_mismatch" };
     }
   }
 
@@ -512,7 +595,13 @@ export async function updateFollowUpByIdService(
     return null;
   }
 
-  const errors: Array<{ field: string; error: string }> = [];
+  const validationErrors = validateCreateFollowUp(
+    buildFollowUpUpdateValidationInput(existing, body),
+  ).filter((error) => error.field !== "client_id");
+
+  if (validationErrors.length > 0) {
+    return { success: false, errors: validationErrors };
+  }
 
   const nextTargetDate =
     body.target_date !== undefined
@@ -528,23 +617,6 @@ export async function updateFollowUpByIdService(
     body.priority !== undefined
       ? toNumberOrFallback(body.priority, null)
       : undefined;
-
-  if (body.target_date !== undefined && !nextTargetDate) {
-    errors.push({ field: "target_date", error: "invalid" });
-  }
-
-  if (
-    body.priority !== undefined &&
-    (nextPriority === null ||
-      nextPriority === undefined ||
-      ![1, 2, 3].includes(nextPriority))
-  ) {
-    errors.push({ field: "priority", error: "invalid" });
-  }
-
-  if (errors.length > 0) {
-    return { success: false, errors };
-  }
 
   const updateData: UpdateFollowUpData = {};
 
