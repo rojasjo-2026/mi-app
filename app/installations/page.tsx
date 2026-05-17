@@ -23,8 +23,16 @@ type InstallationItem = {
   } | null;
 };
 
-type FilterType = "all" | "active" | "inactive";
+type FilterType = "all" | "OPEN" | "IN_PROGRESS" | "CLOSED" | "CANCELLED";
 type SortType = "recent" | "oldest";
+
+const STATUS_FILTERS: { label: string; value: FilterType }[] = [
+  { label: "Todas", value: "all" },
+  { label: "Abiertas", value: "OPEN" },
+  { label: "En proceso", value: "IN_PROGRESS" },
+  { label: "Cerradas", value: "CLOSED" },
+  { label: "Canceladas", value: "CANCELLED" },
+];
 
 function getFilterButtonClass(isActive: boolean) {
   return isActive
@@ -32,18 +40,37 @@ function getFilterButtonClass(isActive: boolean) {
     : "rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50";
 }
 
-function getStatusBadgeClass(status: string) {
-  const normalized = status.toLowerCase();
+function getInstallationStatusLabel(status?: string | null) {
+  const normalized = String(status || "").toUpperCase();
 
-  if (normalized === "active") {
-    return "border border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (normalized === "OPEN") return "Abierta";
+  if (normalized === "IN_PROGRESS") return "En proceso";
+  if (normalized === "CLOSED") return "Cerrada";
+  if (normalized === "CANCELLED") return "Cancelada";
+
+  return status || "Sin estado";
+}
+
+function getStatusBadgeClass(status?: string | null) {
+  const normalized = String(status || "").toUpperCase();
+
+  if (normalized === "OPEN") {
+    return "border border-blue-200 bg-blue-50 text-blue-700";
   }
 
-  if (normalized === "inactive") {
-    return "border border-slate-200 bg-slate-100 text-slate-600";
+  if (normalized === "IN_PROGRESS") {
+    return "border border-amber-200 bg-amber-50 text-amber-700";
   }
 
-  return "border border-amber-200 bg-amber-50 text-amber-700";
+  if (normalized === "CLOSED") {
+    return "border border-slate-200 bg-slate-100 text-slate-700";
+  }
+
+  if (normalized === "CANCELLED") {
+    return "border border-red-200 bg-red-50 text-red-700";
+  }
+
+  return "border border-gray-200 bg-gray-50 text-gray-700";
 }
 
 function formatDateLabel(value?: string | null) {
@@ -140,12 +167,11 @@ export default function InstallationsPage() {
     const normalizedSearch = search.trim().toLowerCase();
 
     const filtered = installations.filter((item) => {
-      const matchesFilter =
-        filter === "all"
-          ? true
-          : filter === "active"
-            ? item.installation_status?.toLowerCase() === "active"
-            : item.installation_status?.toLowerCase() === "inactive";
+      const currentStatus = String(
+        item.installation_status || "",
+      ).toUpperCase();
+
+      const matchesFilter = filter === "all" ? true : currentStatus === filter;
 
       if (!matchesFilter) return false;
 
@@ -161,6 +187,7 @@ export default function InstallationsPage() {
         item.city,
         item.zone,
         item.address_line,
+        getInstallationStatusLabel(item.installation_status),
       ]
         .filter(Boolean)
         .join(" ")
@@ -242,7 +269,7 @@ export default function InstallationsPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por cliente, descripción o técnico"
+                placeholder="Buscar por cliente, descripción, técnico, servicio o ubicación"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-300"
               />
             </div>
@@ -250,33 +277,22 @@ export default function InstallationsPage() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                  Estado
+                  Estado de instalación
                 </p>
 
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFilter("all")}
-                    className={getFilterButtonClass(filter === "all")}
-                  >
-                    Todas
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFilter("active")}
-                    className={getFilterButtonClass(filter === "active")}
-                  >
-                    Activas
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFilter("inactive")}
-                    className={getFilterButtonClass(filter === "inactive")}
-                  >
-                    Inactivas
-                  </button>
+                  {STATUS_FILTERS.map((statusFilter) => (
+                    <button
+                      key={statusFilter.value}
+                      type="button"
+                      onClick={() => setFilter(statusFilter.value)}
+                      className={getFilterButtonClass(
+                        filter === statusFilter.value,
+                      )}
+                    >
+                      {statusFilter.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -329,10 +345,10 @@ export default function InstallationsPage() {
 
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(
-                          item.installation_status || "",
+                          item.installation_status,
                         )}`}
                       >
-                        {item.installation_status || "Sin estado"}
+                        {getInstallationStatusLabel(item.installation_status)}
                       </span>
                     </div>
 
