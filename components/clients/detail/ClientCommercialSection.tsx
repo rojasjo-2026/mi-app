@@ -24,53 +24,67 @@ export function ClientCommercialSection({
 }: ClientCommercialSectionProps) {
   return (
     <CollapsibleCard
-      title="Resumen comercial"
+      title="Resumen comercial operativo"
       rightContent={
         <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
           {commercialSummary.items.length} trabajo
+          {commercialSummary.items.length === 1 ? "" : "s"} operativo
           {commercialSummary.items.length === 1 ? "" : "s"}
         </div>
       }
       isOpen={isOpen}
       onToggle={onToggle}
     >
+      <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-3">
+        <p className="text-sm font-medium text-blue-900">
+          Esta sección resume el valor comercial de los trabajos registrados,
+          como instalaciones y mantenimientos. Las facturas y pagos reales se
+          muestran en la sección de Facturas y pagos.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
         <CommercialSummaryCard
-          label="Total vendido"
+          label="Valor de trabajos"
           value={formatCurrency(commercialSummary.totalEstimated)}
-          helper="Instalaciones y mantenimientos"
+          helper="Estimado desde trabajos"
         />
+
         <CommercialSummaryCard
-          label="Pendiente"
+          label="Por facturar"
           value={formatCurrency(commercialSummary.pendingAmount)}
-          helper="Pendiente por facturar"
+          helper="Trabajos pendientes"
         />
+
         <CommercialSummaryCard
-          label="Facturado"
+          label="Trabajos facturados"
           value={formatCurrency(commercialSummary.invoicedAmount)}
-          helper="Facturado o parcial"
+          helper="Marcados como facturados"
         />
+
         <CommercialSummaryCard
-          label="Pagado"
+          label="Trabajos pagados"
           value={formatCurrency(commercialSummary.paidAmount)}
-          helper="Trabajos pagados"
+          helper="Marcados como pagados"
         />
+
         <CommercialSummaryCard
-          label="Costo interno"
+          label="Costo operativo"
           value={formatCurrency(commercialSummary.totalCost)}
-          helper="Costo registrado"
+          helper="Costos registrados"
         />
+
         <CommercialSummaryCard
           label="Utilidad estimada"
           value={formatCurrency(commercialSummary.profitAmount)}
-          helper="Venta menos costo"
+          helper="Valor menos costo"
         />
       </div>
 
       <div className="mt-5">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">
-            Trabajos recientes
+            Trabajos operativos recientes
           </h3>
         </div>
 
@@ -108,6 +122,7 @@ export function ClientCommercialSection({
                     <p className="truncate text-sm font-bold text-slate-900">
                       {item.description}
                     </p>
+
                     <p className="mt-1 text-xs text-slate-500">
                       Fecha: {formatDateLabel(item.date)}
                     </p>
@@ -115,9 +130,10 @@ export function ClientCommercialSection({
 
                   <div className="grid grid-cols-2 gap-3 sm:min-w-[260px]">
                     <MiniInfoCard
-                      label="Monto"
+                      label="Monto estimado"
                       value={formatCurrency(item.estimatedAmount)}
                     />
+
                     <MiniInfoCard
                       label="Costo"
                       value={formatCurrency(item.costAmount)}
