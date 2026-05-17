@@ -580,6 +580,13 @@ export async function createInstallationService(body: CreateInstallationInput) {
     client_id: body.client_id,
     service_type_id: body.service_type_id,
     installation_date: body.installation_date,
+    estimated_amount: body.estimated_amount,
+    final_amount: body.final_amount,
+    cost_amount: body.cost_amount,
+    warranty_months: body.warranty_months,
+    latitude: body.latitude,
+    longitude: body.longitude,
+    billing_status: body.billing_status,
   });
 
   if (errors.length > 0) {
@@ -763,6 +770,16 @@ export async function updateInstallationByIdService(
     service_type_id: body.service_type_id ?? existing.service_type_id,
     installation_date:
       body.installation_date ?? existing.installation_date.toISOString(),
+    estimated_amount:
+      body.estimated_amount ?? decimalToNumber(existing.estimated_amount),
+    final_amount: body.final_amount ?? decimalToNumber(existing.final_amount),
+    cost_amount: body.cost_amount ?? decimalToNumber(existing.cost_amount),
+    warranty_months: body.warranty_months ?? existing.warranty_months,
+    latitude: body.latitude ?? decimalToNumber(existing.latitude),
+    longitude: body.longitude ?? decimalToNumber(existing.longitude),
+    installation_status:
+      body.installation_status ?? existing.installation_status,
+    billing_status: body.billing_status ?? existing.billing_status,
   };
 
   const errors = validateInstallationInput(mergedBody);
