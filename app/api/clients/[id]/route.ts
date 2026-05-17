@@ -4,10 +4,8 @@ import {
   updateClientByIdService,
   inactivateClientByIdService,
 } from "@/lib/services/clientService";
-import {
-  normalizeClientStatus,
-  type ClientStatus,
-} from "@/lib/clients/clientStatus";
+import { normalizeClientStatus } from "@/lib/clients/clientStatus";
+import { validateUpdateClient } from "@/lib/validators/clientValidator";
 import { getFriendlyPrismaDuplicateError } from "@/lib/utils/prismaError.utils";
 
 type RouteContext = {
@@ -57,31 +55,25 @@ export async function PUT(req: Request, context: RouteContext) {
     const { id } = await context.params;
     const body = await req.json();
 
-    const normalizedStatus =
-      body.client_status !== undefined
-        ? normalizeClientStatus(body.client_status)
-        : null;
+    const validationErrors = validateUpdateClient(body);
 
-    if (
-      body.client_status !== undefined &&
-      body.client_status !== null &&
-      body.client_status !== "" &&
-      !normalizedStatus
-    ) {
+    if (validationErrors.length > 0) {
       return NextResponse.json(
         {
           success: false,
-          message: "Invalid client status",
-          errors: [
-            {
-              field: "client_status",
-              error: "invalid",
-            },
-          ],
+          message: "Validation error",
+          errors: validationErrors,
         },
         { status: 400 },
       );
     }
+
+    const normalizedStatus =
+      body.client_status !== undefined &&
+      body.client_status !== null &&
+      body.client_status !== ""
+        ? normalizeClientStatus(body.client_status)
+        : body.client_status;
 
     const result = await updateClientByIdService(id, {
       ...body,
