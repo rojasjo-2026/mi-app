@@ -295,6 +295,11 @@ export default function FollowUpDetailPage() {
     window.location.href = `/contact-attempts/new?follow_up_id=${followUp.follow_up_id}`;
   }
 
+  function goToClient() {
+    if (!followUp?.client?.client_id) return;
+    window.location.href = `/clients/${followUp.client.client_id}`;
+  }
+
   function goToInstallation() {
     if (!followUp?.installation?.installation_id) return;
     window.location.href = `/installations/${followUp.installation.installation_id}`;
@@ -396,6 +401,7 @@ export default function FollowUpDetailPage() {
               name={clientName}
               phone={followUp.client?.phone_primary || "-"}
               email={followUp.client?.email || "-"}
+              onViewClient={goToClient}
             />
 
             <FollowUpInstallationSection
@@ -405,6 +411,7 @@ export default function FollowUpDetailPage() {
                 followUp.installation?.installation_date,
               )}
               technician={followUp.installation?.technician_name || "-"}
+              onViewInstallation={goToInstallation}
             />
           </section>
         </FollowUpCollapsibleSection>
