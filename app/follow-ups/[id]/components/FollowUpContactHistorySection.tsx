@@ -26,6 +26,7 @@ type ActivityLogsResponse = {
 };
 
 type FollowUpContactHistorySectionProps = {
+  clientId?: string;
   followUpId: string;
   formatDate: (value?: string | null) => string;
   formatDateTime: (value?: string | null) => string;
@@ -147,6 +148,7 @@ function formatValue(
 }
 
 export default function FollowUpContactHistorySection({
+  clientId,
   followUpId,
   formatDate,
   formatDateTime,
@@ -156,12 +158,18 @@ export default function FollowUpContactHistorySection({
   const [error, setError] = useState("");
 
   async function loadActivityLogs() {
+    if (!clientId) {
+      setError("No se pudo cargar el historial del mantenimiento.");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
       const response = await fetch(
-        `/api/activity-logs?entity_type=FOLLOW_UP&entity_id=${followUpId}&take=50`,
+        `/api/activity-logs?client_id=${clientId}&entity_type=FOLLOW_UP&entity_id=${followUpId}&take=50`,
         { cache: "no-store" },
       );
 
@@ -180,10 +188,13 @@ export default function FollowUpContactHistorySection({
   }
 
   useEffect(() => {
-    if (followUpId) {
+    if (followUpId && clientId) {
       void loadActivityLogs();
+      return;
     }
-  }, [followUpId]);
+
+    setLoading(false);
+  }, [followUpId, clientId]);
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -434,6 +434,7 @@ export default function FollowUpDetailPage() {
 
         <FollowUpCollapsibleSection title="Historial del mantenimiento">
           <FollowUpContactHistorySection
+            clientId={followUp.client?.client_id}
             followUpId={followUp.follow_up_id}
             formatDate={formatDate}
             formatDateTime={formatDateTime}

@@ -198,10 +198,10 @@ export default function FollowUpsPage() {
           </div>
 
           <Link
-            href="/installations/new"
+            href="/follow-ups/new"
             className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
           >
-            + Nueva instalación
+            + Nuevo mantenimiento
           </Link>
         </section>
 
@@ -265,10 +265,10 @@ export default function FollowUpsPage() {
             </p>
 
             <Link
-              href="/installations/new"
+              href="/follow-ups/new"
               className="mt-5 inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              Crear instalación
+              Crear mantenimiento
             </Link>
           </section>
         ) : (
@@ -374,7 +374,7 @@ export default function FollowUpsPage() {
                       </Link>
 
                       <Link
-                        href={`/contact-attempts/new?followUpId=${item.follow_up_id}`}
+                        href={`/contact-attempts/new?follow_up_id=${item.follow_up_id}`}
                         className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
                         Registrar intento

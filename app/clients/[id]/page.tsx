@@ -38,6 +38,8 @@ export default function ClientDetailPage() {
     activityLogsLoading,
     activityLogsError,
     reloadActivityLogs,
+    loadMoreActivityLogs,
+    hasMore: hasMoreActivityLogs,
   } = useClientActivityLogs(clientId);
 
   const {
@@ -200,6 +202,8 @@ export default function ClientDetailPage() {
             activityLogs={activityLogs}
             loading={activityLogsLoading}
             error={activityLogsError}
+            hasMore={hasMoreActivityLogs}
+            onLoadMore={() => void loadMoreActivityLogs()}
           />
         </CollapsibleCard>
       </div>
