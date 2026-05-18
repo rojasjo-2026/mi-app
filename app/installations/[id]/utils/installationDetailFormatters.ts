@@ -16,7 +16,7 @@ export function getInstallationStatusLabel(status?: string | null): string {
     case "IN_PROGRESS":
       return "En proceso";
     case "CLOSED":
-      return "Cerrada";
+      return "Completada";
     case "CANCELLED":
       return "Cancelada";
     default:

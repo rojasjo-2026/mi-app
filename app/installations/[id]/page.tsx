@@ -62,7 +62,7 @@ function getInstallationStatusBadge(status?: string | null) {
   if (status === "CLOSED") {
     return (
       <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
-        Cerrada
+        Completada
       </span>
     );
   }

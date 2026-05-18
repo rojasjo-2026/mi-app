@@ -30,7 +30,7 @@ const STATUS_FILTERS: { label: string; value: FilterType }[] = [
   { label: "Todas", value: "all" },
   { label: "Abiertas", value: "OPEN" },
   { label: "En proceso", value: "IN_PROGRESS" },
-  { label: "Cerradas", value: "CLOSED" },
+  { label: "Completadas", value: "CLOSED" },
   { label: "Canceladas", value: "CANCELLED" },
 ];
 
@@ -45,7 +45,7 @@ function getInstallationStatusLabel(status?: string | null) {
 
   if (normalized === "OPEN") return "Abierta";
   if (normalized === "IN_PROGRESS") return "En proceso";
-  if (normalized === "CLOSED") return "Cerrada";
+  if (normalized === "CLOSED") return "Completada";
   if (normalized === "CANCELLED") return "Cancelada";
 
   return status || "Sin estado";

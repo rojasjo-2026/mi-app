@@ -195,7 +195,7 @@ export function getInstallationStatusClass(status?: string | null) {
 export function getInstallationStatusLabel(status?: string | null) {
   if (status === "OPEN") return "Abierta";
   if (status === "IN_PROGRESS") return "En proceso";
-  if (status === "CLOSED") return "Cerrada";
+  if (status === "CLOSED") return "Completada";
   if (status === "CANCELLED") return "Cancelada";
 
   return status || "Sin estado";
