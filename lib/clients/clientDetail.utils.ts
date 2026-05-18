@@ -360,6 +360,19 @@ export function formatActivityValue(
     return getClientStatusLabel(value);
   }
 
+  if (fieldName === "installation_status") {
+    return getInstallationStatusLabel(value);
+  }
+
+  if (fieldName === "billing_status") {
+    return getBillingStatusLabel(value);
+  }
+
+  if (fieldName === "is_active") {
+    if (value === "true") return "Activa";
+    if (value === "false") return "Inactiva";
+  }
+
   const parsedDate = new Date(value);
 
   if (!Number.isNaN(parsedDate.getTime()) && value.includes("T")) {
