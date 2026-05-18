@@ -41,6 +41,16 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!result.success && result.code === "installation_client_mismatch") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Installation does not belong to the selected client",
+        },
+        { status: 409 },
+      );
+    }
+
     if (!result.success && result.code === "pending_status_not_found") {
       return NextResponse.json(
         {
@@ -48,6 +58,16 @@ export async function POST(req: Request) {
           message: "Default follow-up status not found",
         },
         { status: 500 },
+      );
+    }
+
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Could not create follow-up",
+        },
+        { status: 400 },
       );
     }
 
