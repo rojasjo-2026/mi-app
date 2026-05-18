@@ -12,8 +12,122 @@ type FollowUpNotesSectionProps = {
   followUpId: string;
 };
 
+type SpeechRecognitionAlternativeResult = {
+  transcript?: string;
+};
+
+type SpeechRecognitionResultItem = {
+  0?: SpeechRecognitionAlternativeResult;
+};
+
+type SpeechRecognitionResultListLike = {
+  length: number;
+  [index: number]: SpeechRecognitionResultItem;
+};
+
+type BrowserSpeechRecognitionEvent = {
+  results: SpeechRecognitionResultListLike;
+};
+
+type BrowserSpeechRecognition = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onstart: (() => void) | null;
+  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+
+type WindowWithSpeechRecognition = Window &
+  typeof globalThis & {
+    SpeechRecognition?: BrowserSpeechRecognitionConstructor;
+    webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
+  };
+
 const buttonBase =
   "inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60";
+
+const maxNotesLength = 300;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isNote(value: unknown): value is Note {
+  return (
+    isRecord(value) &&
+    typeof value.follow_up_note_id === "string" &&
+    typeof value.note_text === "string" &&
+    typeof value.created_at === "string"
+  );
+}
+
+function getErrorMessage(data: unknown, fallback: string) {
+  if (isRecord(data) && typeof data.message === "string") {
+    return data.message;
+  }
+
+  return fallback;
+}
+
+function normalizeNotesPayload(data: unknown) {
+  if (Array.isArray(data)) {
+    return data.filter(isNote);
+  }
+
+  if (isRecord(data) && Array.isArray(data.data)) {
+    return data.data.filter(isNote);
+  }
+
+  return [];
+}
+
+function normalizeCreatedNotePayload(data: unknown) {
+  if (isNote(data)) {
+    return data;
+  }
+
+  if (isRecord(data) && isNote(data.data)) {
+    return data.data;
+  }
+
+  return null;
+}
+
+function getSpeechRecognitionApi() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const browserWindow = window as WindowWithSpeechRecognition;
+
+  return (
+    browserWindow.SpeechRecognition ||
+    browserWindow.webkitSpeechRecognition ||
+    null
+  );
+}
+
+function getTranscriptFromRecognitionEvent(
+  event: BrowserSpeechRecognitionEvent,
+) {
+  const transcriptParts: string[] = [];
+
+  for (let index = 0; index < event.results.length; index += 1) {
+    const transcript = event.results[index]?.[0]?.transcript;
+
+    if (transcript) {
+      transcriptParts.push(transcript);
+    }
+  }
+
+  return transcriptParts.join(" ").trim();
+}
 
 export default function FollowUpNotesSection({
   followUpId,
@@ -28,9 +142,8 @@ export default function FollowUpNotesSection({
     "info",
   );
 
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
 
-  const maxNotesLength = 300;
   const remaining = maxNotesLength - newNote.length;
 
   const noteCountLabel = useMemo(() => {
@@ -50,17 +163,20 @@ export default function FollowUpNotesSection({
     setStatusMessage("");
   }
 
-  async function parseResponse(res: Response) {
+  async function parseResponse(res: Response): Promise<unknown> {
     const contentType = res.headers.get("content-type") || "";
     const raw = await res.text();
 
     if (!contentType.includes("application/json")) {
       throw new Error(
-        `El endpoint devolvió una respuesta no válida (${res.status}). ${raw.slice(0, 200)}`,
+        `El endpoint devolvió una respuesta no válida (${res.status}). ${raw.slice(
+          0,
+          200,
+        )}`,
       );
     }
 
-    return JSON.parse(raw);
+    return JSON.parse(raw) as unknown;
   }
 
   async function loadNotes(showLoadingMessage = false) {
@@ -78,10 +194,12 @@ export default function FollowUpNotesSection({
       const data = await parseResponse(res);
 
       if (!res.ok) {
-        throw new Error(data.message || "No se pudieron cargar las notas");
+        throw new Error(
+          getErrorMessage(data, "No se pudieron cargar las notas"),
+        );
       }
 
-      setNotes(Array.isArray(data) ? data : []);
+      setNotes(normalizeNotesPayload(data));
 
       if (showLoadingMessage) {
         showStatus("Notas actualizadas.", "success");
@@ -96,7 +214,8 @@ export default function FollowUpNotesSection({
 
   useEffect(() => {
     if (!followUpId) return;
-    loadNotes();
+
+    void loadNotes();
   }, [followUpId]);
 
   useEffect(() => {
@@ -135,10 +254,18 @@ export default function FollowUpNotesSection({
       const data = await parseResponse(res);
 
       if (!res.ok) {
-        throw new Error(data.message || "No se pudo guardar la nota");
+        throw new Error(getErrorMessage(data, "No se pudo guardar la nota"));
       }
 
-      setNotes((prev) => [data, ...prev]);
+      const createdNote = normalizeCreatedNotePayload(data);
+
+      if (!createdNote) {
+        throw new Error(
+          "La nota fue guardada, pero la respuesta no es válida.",
+        );
+      }
+
+      setNotes((prev) => [createdNote, ...prev]);
       setNewNote("");
       showStatus("Nota guardada correctamente.", "success");
     } catch (error) {
@@ -171,11 +298,7 @@ export default function FollowUpNotesSection({
   function startVoiceRecognition() {
     if (loading) return;
 
-    const SpeechRecognitionApi =
-      typeof window !== "undefined"
-        ? (window as any).SpeechRecognition ||
-          (window as any).webkitSpeechRecognition
-        : null;
+    const SpeechRecognitionApi = getSpeechRecognitionApi();
 
     if (!SpeechRecognitionApi) {
       showStatus(
@@ -191,6 +314,7 @@ export default function FollowUpNotesSection({
     }
 
     const recognition = new SpeechRecognitionApi();
+
     recognition.lang = "es-CR";
     recognition.interimResults = true;
     recognition.continuous = true;
@@ -200,11 +324,8 @@ export default function FollowUpNotesSection({
       showStatus("Micrófono activo. Empezá a dictar.", "info");
     };
 
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0]?.transcript || "")
-        .join(" ")
-        .trim();
+    recognition.onresult = (event: BrowserSpeechRecognitionEvent) => {
+      const transcript = getTranscriptFromRecognitionEvent(event);
 
       if (!transcript) return;
 
@@ -256,11 +377,17 @@ export default function FollowUpNotesSection({
       <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 md:p-6">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
+            <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Bitácora operativa
+            </p>
+
             <p className="text-lg font-semibold tracking-tight text-slate-900">
               Notas del mantenimiento
             </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Registrá observaciones, seguimiento o condiciones relevantes.
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Registrá observaciones, acuerdos con el cliente, condiciones del
+              trabajo o detalles importantes para futuras visitas.
             </p>
           </div>
 
@@ -271,7 +398,7 @@ export default function FollowUpNotesSection({
 
             <button
               type="button"
-              onClick={() => loadNotes(true)}
+              onClick={() => void loadNotes(true)}
               disabled={loadingNotes}
               className={buttonBase}
             >
@@ -359,7 +486,7 @@ export default function FollowUpNotesSection({
         <div className="mt-4 flex justify-end">
           <button
             type="button"
-            onClick={handleAddNote}
+            onClick={() => void handleAddNote()}
             disabled={loading || !newNote.trim()}
             className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >

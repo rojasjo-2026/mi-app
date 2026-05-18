@@ -34,6 +34,10 @@ type Props = {
   followUpId: string;
 };
 
+async function readJsonResponse<T>(response: Response): Promise<T> {
+  return (await response.json()) as T;
+}
+
 export default function FollowUpContactFlowSection({ followUpId }: Props) {
   const [flow, setFlow] = useState<ContactFlowItem | null>(null);
   const [messages, setMessages] = useState<ContactFlowMessage[]>([]);
@@ -58,7 +62,7 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
         cache: "no-store",
       });
 
-      const result: SettingsApiResponse = await response.json();
+      const result = await readJsonResponse<SettingsApiResponse>(response);
 
       if (!response.ok || !result.success || !result.data) {
         setSettings(null);
@@ -77,7 +81,7 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
         cache: "no-store",
       });
 
-      const result: FollowUpApiResponse = await response.json();
+      const result = await readJsonResponse<FollowUpApiResponse>(response);
 
       if (!response.ok || !result.success || !result.data) {
         setFollowUpContext(null);
@@ -87,6 +91,30 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
       setFollowUpContext(result.data);
     } catch {
       setFollowUpContext(null);
+    }
+  }
+
+  async function loadMessages(contactFlowId: string) {
+    try {
+      setMessagesLoading(true);
+      setMessagesError("");
+
+      const response = await fetch(
+        `/api/contact-flows/${contactFlowId}/messages`,
+        { cache: "no-store" },
+      );
+
+      const result = await readJsonResponse<MessagesApiResponse>(response);
+
+      if (!response.ok || !result.success) {
+        throw new Error("No se pudo cargar la conversación.");
+      }
+
+      setMessages(result.data ?? []);
+    } catch {
+      setMessagesError("No se pudo cargar la conversación.");
+    } finally {
+      setMessagesLoading(false);
     }
   }
 
@@ -104,7 +132,7 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
         { cache: "no-store" },
       );
 
-      const result: ApiResponse = await response.json();
+      const result = await readJsonResponse<ApiResponse>(response);
 
       if (!response.ok || !result.success) {
         throw new Error("No se pudo cargar la gestión de contacto.");
@@ -128,30 +156,6 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
     }
   }
 
-  async function loadMessages(contactFlowId: string) {
-    try {
-      setMessagesLoading(true);
-      setMessagesError("");
-
-      const response = await fetch(
-        `/api/contact-flows/${contactFlowId}/messages`,
-        { cache: "no-store" },
-      );
-
-      const result: MessagesApiResponse = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error("No se pudo cargar la conversación.");
-      }
-
-      setMessages(result.data ?? []);
-    } catch {
-      setMessagesError("No se pudo cargar la conversación.");
-    } finally {
-      setMessagesLoading(false);
-    }
-  }
-
   async function handleCreateManualFlow() {
     try {
       setCreatingFlow(true);
@@ -167,7 +171,8 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
         }),
       });
 
-      const result: CreateContactFlowApiResponse = await response.json();
+      const result =
+        await readJsonResponse<CreateContactFlowApiResponse>(response);
 
       if (!response.ok || !result.success || !result.data) {
         throw new Error(
@@ -218,7 +223,7 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
         }),
       });
 
-      const result: SendMessageApiResponse = await response.json();
+      const result = await readJsonResponse<SendMessageApiResponse>(response);
 
       if (!response.ok || !result.success) {
         throw new Error(
@@ -256,7 +261,13 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
         body: formData,
       });
 
-      const uploadResult = await uploadResponse.json();
+      const uploadResult = await readJsonResponse<{
+        success: boolean;
+        message?: string;
+        data?: {
+          file_url?: string;
+        };
+      }>(uploadResponse);
 
       if (!uploadResponse.ok || !uploadResult.success) {
         throw new Error(uploadResult.message || "No se pudo subir el archivo.");
@@ -282,7 +293,10 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
         }),
       });
 
-      const mediaResult = await mediaResponse.json();
+      const mediaResult = await readJsonResponse<{
+        success: boolean;
+        error?: string;
+      }>(mediaResponse);
 
       if (!mediaResponse.ok || !mediaResult.success) {
         throw new Error(mediaResult.error || "No se pudo enviar el archivo.");
@@ -361,6 +375,30 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
 
   return (
     <section className="space-y-5">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Contacto y coordinación
+            </p>
+
+            <h2 className="text-lg font-semibold text-slate-900">
+              Gestión de contacto con cliente
+            </h2>
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Este flujo centraliza los mensajes, respuestas y coordinación del
+              mantenimiento para mantener la relación entre cliente, instalación
+              y seguimiento operativo.
+            </p>
+          </div>
+
+          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
+            WhatsApp / contacto
+          </span>
+        </div>
+      </div>
+
       <div
         className={`rounded-2xl border p-5 ${automationSummary.cardClasses}`}
       >

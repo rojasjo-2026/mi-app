@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { FollowUpEditForm } from "../utils";
 
 type TechnicianOption = {
@@ -58,14 +59,31 @@ function getTechnicianName(technician?: TechnicianOption | null) {
   return composedName || technician?.email || "Técnico sin nombre";
 }
 
-export function formatMoney(value?: number | null) {
-  if (value === null || value === undefined) return "-";
+function toNumber(value: unknown) {
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+export function formatMoney(value?: number | string | null) {
+  const amount = toNumber(value);
+
+  if (amount === null) return "-";
 
   return new Intl.NumberFormat("es-CR", {
     style: "currency",
     currency: "CRC",
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(amount);
 }
 
 export function formatBillingStatus(value?: string | null) {
@@ -108,25 +126,31 @@ export default function FollowUpCommercialSection({
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
+          <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Operación y facturación
+          </p>
+
           <h2 className="text-lg font-semibold tracking-tight text-slate-900">
             Información comercial
           </h2>
+
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Datos financieros y operativos asociados a este mantenimiento.
+            Define el tipo de mantenimiento, técnico responsable, montos y
+            estado financiero. Esta información conecta el mantenimiento con la
+            operación diaria y el módulo de finanzas.
           </p>
         </div>
 
-        <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+        <span className="w-fit rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700">
           Finanzas
         </span>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Tipo de mantenimiento
-          </p>
-
+        <FieldCard
+          label="Tipo de mantenimiento"
+          helperText="Clasifica el trabajo para entender si es preventivo, correctivo, garantía u otro."
+        >
           {isEditing ? (
             <select
               value={form.maintenance_type}
@@ -140,17 +164,14 @@ export default function FollowUpCommercialSection({
               ))}
             </select>
           ) : (
-            <p className="mt-2 text-sm font-semibold text-slate-800">
-              {maintenanceTypeLabel}
-            </p>
+            <FieldValue value={maintenanceTypeLabel} />
           )}
-        </div>
+        </FieldCard>
 
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Técnico asignado
-          </p>
-
+        <FieldCard
+          label="Técnico asignado"
+          helperText="Responsable operativo del mantenimiento."
+        >
           {isEditing ? (
             <select
               value={form.technician_id}
@@ -179,80 +200,59 @@ export default function FollowUpCommercialSection({
               ))}
             </select>
           ) : (
-            <p className="mt-2 text-sm font-semibold text-slate-800">
-              {technicianLabel}
-            </p>
+            <FieldValue value={technicianLabel} />
           )}
-        </div>
+        </FieldCard>
 
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Monto estimado
-          </p>
-
+        <FieldCard
+          label="Monto estimado"
+          helperText="Valor esperado antes de cerrar el trabajo."
+        >
           {isEditing ? (
-            <input
-              type="number"
-              min="0"
+            <MoneyInput
               value={form.estimated_amount}
-              onChange={(e) => onChange("estimated_amount", e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               placeholder="Ej: 50000"
+              onChange={(value) => onChange("estimated_amount", value)}
             />
           ) : (
-            <p className="mt-2 text-sm font-semibold text-slate-800">
-              {estimatedAmountLabel}
-            </p>
+            <FieldValue value={estimatedAmountLabel} />
           )}
-        </div>
+        </FieldCard>
 
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Monto final
-          </p>
-
+        <FieldCard
+          label="Monto final"
+          helperText="Valor real que se utilizará para facturación cuando aplique."
+        >
           {isEditing ? (
-            <input
-              type="number"
-              min="0"
+            <MoneyInput
               value={form.final_amount}
-              onChange={(e) => onChange("final_amount", e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               placeholder="Ej: 65000"
+              onChange={(value) => onChange("final_amount", value)}
             />
           ) : (
-            <p className="mt-2 text-sm font-semibold text-slate-800">
-              {finalAmountLabel}
-            </p>
+            <FieldValue value={finalAmountLabel} />
           )}
-        </div>
+        </FieldCard>
 
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Costo interno
-          </p>
-
+        <FieldCard
+          label="Costo interno"
+          helperText="Costo estimado o real del trabajo para controlar margen."
+        >
           {isEditing ? (
-            <input
-              type="number"
-              min="0"
+            <MoneyInput
               value={form.cost_amount}
-              onChange={(e) => onChange("cost_amount", e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               placeholder="Ej: 30000"
+              onChange={(value) => onChange("cost_amount", value)}
             />
           ) : (
-            <p className="mt-2 text-sm font-semibold text-slate-800">
-              {costAmountLabel}
-            </p>
+            <FieldValue value={costAmountLabel} />
           )}
-        </div>
+        </FieldCard>
 
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Estado de facturación
-          </p>
-
+        <FieldCard
+          label="Estado de facturación"
+          helperText="Indica si el mantenimiento está pendiente, facturado, pagado o no facturable."
+        >
           {isEditing ? (
             <select
               value={form.billing_status}
@@ -266,17 +266,15 @@ export default function FollowUpCommercialSection({
               ))}
             </select>
           ) : (
-            <p className="mt-2 text-sm font-semibold text-slate-800">
-              {billingStatusLabel}
-            </p>
+            <FieldValue value={billingStatusLabel} />
           )}
-        </div>
+        </FieldCard>
 
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 md:col-span-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Notas de facturación
-          </p>
-
+        <FieldCard
+          label="Notas de facturación"
+          helperText="Información interna para cobro, condiciones especiales o seguimiento financiero."
+          className="md:col-span-2"
+        >
           {isEditing ? (
             <textarea
               rows={3}
@@ -287,11 +285,65 @@ export default function FollowUpCommercialSection({
             />
           ) : (
             <p className="mt-2 text-sm font-medium leading-6 text-slate-700">
-              {billingNotesLabel}
+              {billingNotesLabel || "-"}
             </p>
           )}
-        </div>
+        </FieldCard>
       </div>
     </section>
+  );
+}
+
+function MoneyInput({
+  value,
+  placeholder,
+  onChange,
+}: {
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <input
+      type="number"
+      min="0"
+      inputMode="decimal"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+      placeholder={placeholder}
+    />
+  );
+}
+
+function FieldCard({
+  label,
+  helperText,
+  className = "",
+  children,
+}: {
+  label: string;
+  helperText: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border border-slate-200 bg-slate-50/70 p-4 ${className}`}
+    >
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </p>
+
+      {children}
+
+      <p className="mt-2 text-xs leading-5 text-slate-500">{helperText}</p>
+    </div>
+  );
+}
+
+function FieldValue({ value }: { value?: string }) {
+  return (
+    <p className="mt-2 text-sm font-semibold text-slate-800">{value || "-"}</p>
   );
 }

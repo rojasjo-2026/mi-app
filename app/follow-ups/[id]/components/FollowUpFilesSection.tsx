@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, DragEvent, TouchEvent } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 type FileItem = {
@@ -18,6 +19,55 @@ type PreviewFile = {
 };
 
 type SortOption = "newest" | "oldest" | "type";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isFileItem(value: unknown): value is FileItem {
+  return (
+    isRecord(value) &&
+    typeof value.file_id === "string" &&
+    typeof value.file_name === "string" &&
+    typeof value.file_url === "string"
+  );
+}
+
+function getErrorMessage(data: unknown, fallback: string) {
+  if (isRecord(data) && typeof data.message === "string") {
+    return data.message;
+  }
+
+  return fallback;
+}
+
+function normalizeFilesPayload(data: unknown) {
+  if (Array.isArray(data)) {
+    return data.filter(isFileItem);
+  }
+
+  if (isRecord(data) && Array.isArray(data.data)) {
+    return data.data.filter(isFileItem);
+  }
+
+  return [];
+}
+
+async function parseResponse(res: Response): Promise<unknown> {
+  const contentType = res.headers.get("content-type") || "";
+  const raw = await res.text();
+
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `El endpoint devolvió una respuesta no válida (${res.status}). ${raw.slice(
+        0,
+        200,
+      )}`,
+    );
+  }
+
+  return JSON.parse(raw) as unknown;
+}
 
 function sanitizeFileName(fileName: string) {
   const lastDotIndex = fileName.lastIndexOf(".");
@@ -78,6 +128,18 @@ function getFileTypeOrder(file: FileItem) {
   return 3;
 }
 
+function formatFileDate(value?: string | null) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleString("es-CR");
+}
+
 export default function FollowUpFilesSection({
   followUpId,
 }: {
@@ -98,6 +160,8 @@ export default function FollowUpFilesSection({
   );
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const previewFilesRef = useRef<PreviewFile[]>([]);
 
   const fileCountLabel = useMemo(() => {
     if (files.length === 1) return "1 archivo";
@@ -135,17 +199,59 @@ export default function FollowUpFilesSection({
   const selectedFile =
     selectedFileIndex !== null ? sortedFiles[selectedFileIndex] : null;
 
+  const loadFiles = useCallback(
+    async (showLoadingState = true) => {
+      try {
+        if (showLoadingState) {
+          setLoading(true);
+        }
+
+        const res = await fetch(
+          `/api/files?entity_type=follow_up&entity_id=${followUpId}`,
+          {
+            cache: "no-store",
+          },
+        );
+
+        const data = await parseResponse(res);
+
+        if (!res.ok) {
+          throw new Error(
+            getErrorMessage(data, "No se pudieron cargar los archivos"),
+          );
+        }
+
+        const normalizedFiles = normalizeFilesPayload(data);
+
+        setFiles(normalizedFiles);
+        return normalizedFiles;
+      } catch (error) {
+        console.error("Error loading follow-up files:", error);
+        return [];
+      } finally {
+        if (showLoadingState) {
+          setLoading(false);
+        }
+      }
+    },
+    [followUpId],
+  );
+
   useEffect(() => {
-    loadFiles();
-  }, []);
+    void loadFiles();
+  }, [loadFiles]);
+
+  useEffect(() => {
+    previewFilesRef.current = previewFiles;
+  }, [previewFiles]);
 
   useEffect(() => {
     return () => {
-      previewFiles.forEach((previewFile) => {
+      previewFilesRef.current.forEach((previewFile) => {
         URL.revokeObjectURL(previewFile.previewUrl);
       });
     };
-  }, [previewFiles]);
+  }, []);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -170,23 +276,6 @@ export default function FollowUpFilesSection({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedFileIndex, sortedFiles.length]);
-
-  async function loadFiles() {
-    try {
-      const res = await fetch(
-        `/api/files?entity_type=follow_up&entity_id=${followUpId}`,
-      );
-
-      const data = await res.json();
-      setFiles(data.data || []);
-      return data.data || [];
-    } catch {
-      console.error("Error loading files");
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function addSelectedFiles(selectedFiles: FileList | File[]) {
     const filesArray = Array.from(selectedFiles);
@@ -224,7 +313,7 @@ export default function FollowUpFilesSection({
   }
 
   async function uploadSelectedFiles() {
-    if (previewFiles.length === 0) return;
+    if (previewFiles.length === 0 || !followUpId) return;
 
     try {
       setUploading(true);
@@ -233,7 +322,7 @@ export default function FollowUpFilesSection({
         total: previewFiles.length,
       });
 
-      for (let index = 0; index < previewFiles.length; index++) {
+      for (let index = 0; index < previewFiles.length; index += 1) {
         const { file } = previewFiles[index];
 
         setUploadProgress({
@@ -273,15 +362,24 @@ export default function FollowUpFilesSection({
           }),
         });
 
-        const result = await res.json();
+        const result = await parseResponse(res);
 
-        if (!res.ok || !result.success) {
-          throw new Error(result.message || "No se pudo guardar el archivo");
+        if (!res.ok) {
+          throw new Error(
+            getErrorMessage(result, "No se pudo guardar el archivo"),
+          );
+        }
+
+        if (isRecord(result) && result.success === false) {
+          throw new Error(
+            getErrorMessage(result, "No se pudo guardar el archivo"),
+          );
         }
       }
 
       clearPreviewFiles();
-      const updatedFiles = await loadFiles();
+
+      const updatedFiles = await loadFiles(false);
 
       if (updatedFiles.length > 0) {
         setSelectedFileIndex(0);
@@ -298,7 +396,7 @@ export default function FollowUpFilesSection({
     }
   }
 
-  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = e.target.files;
     if (!selectedFiles) return;
 
@@ -306,7 +404,7 @@ export default function FollowUpFilesSection({
     e.target.value = "";
   }
 
-  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+  function handleDragOver(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setIsDragging(true);
   }
@@ -315,7 +413,7 @@ export default function FollowUpFilesSection({
     setIsDragging(false);
   }
 
-  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setIsDragging(false);
 
@@ -336,25 +434,29 @@ export default function FollowUpFilesSection({
 
   function goToPreviousFile() {
     setSelectedFileIndex((currentIndex) => {
-      if (currentIndex === null || sortedFiles.length === 0)
+      if (currentIndex === null || sortedFiles.length === 0) {
         return currentIndex;
+      }
+
       return currentIndex === 0 ? sortedFiles.length - 1 : currentIndex - 1;
     });
   }
 
   function goToNextFile() {
     setSelectedFileIndex((currentIndex) => {
-      if (currentIndex === null || sortedFiles.length === 0)
+      if (currentIndex === null || sortedFiles.length === 0) {
         return currentIndex;
+      }
+
       return currentIndex === sortedFiles.length - 1 ? 0 : currentIndex + 1;
     });
   }
 
-  function handleModalTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+  function handleModalTouchStart(e: TouchEvent<HTMLDivElement>) {
     setTouchStartX(e.touches[0].clientX);
   }
 
-  function handleModalTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
+  function handleModalTouchEnd(e: TouchEvent<HTMLDivElement>) {
     if (touchStartX === null || sortedFiles.length <= 1) return;
 
     const touchEndX = e.changedTouches[0].clientX;
@@ -383,13 +485,21 @@ export default function FollowUpFilesSection({
         method: "DELETE",
       });
 
-      const result = await res.json();
+      const result = await parseResponse(res);
 
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || "No se pudo eliminar el archivo");
+      if (!res.ok) {
+        throw new Error(
+          getErrorMessage(result, "No se pudo eliminar el archivo"),
+        );
       }
 
-      await loadFiles();
+      if (isRecord(result) && result.success === false) {
+        throw new Error(
+          getErrorMessage(result, "No se pudo eliminar el archivo"),
+        );
+      }
+
+      await loadFiles(false);
 
       if (selectedFile?.file_id === fileId) {
         closeFileModal();
@@ -405,13 +515,20 @@ export default function FollowUpFilesSection({
   return (
     <>
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
+            <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Evidencia del mantenimiento
+            </p>
+
             <h2 className="text-lg font-semibold text-slate-900">
               Archivos del mantenimiento
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Suba fotos, PDFs o evidencias relacionadas con este mantenimiento.
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Subí fotos, PDFs, comprobantes o documentos relacionados con este
+              mantenimiento para conservar la trazabilidad del trabajo
+              realizado.
             </p>
           </div>
 
@@ -504,7 +621,7 @@ export default function FollowUpFilesSection({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={uploadSelectedFiles}
+                  onClick={() => void uploadSelectedFiles()}
                   disabled={uploading}
                   className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
                 >
@@ -594,9 +711,15 @@ export default function FollowUpFilesSection({
                 )}
 
                 <div className="space-y-3 p-4">
-                  <p className="line-clamp-2 text-sm font-semibold text-slate-900">
-                    {file.file_name}
-                  </p>
+                  <div>
+                    <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                      {file.file_name}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-400">
+                      {formatFileDate(file.created_at)}
+                    </p>
+                  </div>
 
                   <div className="flex gap-2">
                     <button
@@ -614,7 +737,7 @@ export default function FollowUpFilesSection({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(file.file_id);
+                        void handleDelete(file.file_id);
                       }}
                       disabled={deletingId === file.file_id}
                       className="inline-flex flex-1 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-50"
