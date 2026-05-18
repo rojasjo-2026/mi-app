@@ -25,6 +25,7 @@ type InstallationFormData = {
   cost_amount?: number | string | null;
   billing_status?: string | null;
   billing_notes?: string | null;
+  installation_status?: string | null;
   address_line?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
@@ -53,6 +54,7 @@ export default function InstallationForm({
   const [costAmount, setCostAmount] = useState("");
   const [billingStatus, setBillingStatus] = useState("PENDING");
   const [billingNotes, setBillingNotes] = useState("");
+  const [installationStatus, setInstallationStatus] = useState("OPEN");
 
   const [addressLine, setAddressLine] = useState("");
   const [adminLevel1, setAdminLevel1] = useState("");
@@ -94,6 +96,7 @@ export default function InstallationForm({
     );
     setBillingStatus(initialData.billing_status ?? "PENDING");
     setBillingNotes(initialData.billing_notes ?? "");
+    setInstallationStatus(initialData.installation_status ?? "OPEN");
     setAddressLine(initialData.address_line ?? "");
     setAdminLevel1(initialData.admin_level_1 ?? "");
     setAdminLevel2(initialData.admin_level_2 ?? "");
@@ -229,6 +232,9 @@ export default function InstallationForm({
         cost_amount: costAmount ? Number(costAmount) : null,
         billing_status: billingStatus || "PENDING",
         billing_notes: billingNotes || null,
+        ...(mode === "edit" && {
+          installation_status: installationStatus || "OPEN",
+        }),
         address_line: addressLine || null,
         admin_level_1: adminLevel1 || null,
         admin_level_2: adminLevel2 || null,
@@ -363,6 +369,24 @@ export default function InstallationForm({
                   placeholder="Ej: 12"
                 />
               </div>
+
+              {mode === "edit" && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Estado de instalación
+                  </label>
+                  <select
+                    value={installationStatus}
+                    onChange={(e) => setInstallationStatus(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="OPEN">Abierta</option>
+                    <option value="IN_PROGRESS">En proceso</option>
+                    <option value="CLOSED">Completada</option>
+                    <option value="CANCELLED">Cancelada</option>
+                  </select>
+                </div>
+              )}
             </FormSection>
 
             <InstallationCommercialSection

@@ -24,6 +24,7 @@ type InstallationDetail = {
   cost_amount?: number | string | null;
   billing_status?: string | null;
   billing_notes?: string | null;
+  installation_status?: string;
   address_line?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
