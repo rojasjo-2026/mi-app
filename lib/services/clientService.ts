@@ -1,4 +1,7 @@
-import { ClientStatus as PrismaClientStatus } from "@prisma/client";
+import {
+  ClientStatus as PrismaClientStatus,
+  type CurrencyCode,
+} from "@prisma/client";
 
 import {
   findClients,
@@ -77,7 +80,7 @@ type CreateClientInput = {
   billing_address?: string | null;
   tax_id?: string | null;
   tax_exempt?: boolean;
-  preferred_currency?: "CRC" | "USD";
+  preferred_currency?: CurrencyCode;
 
   credit_limit?: number | string | null;
 
@@ -220,7 +223,8 @@ export async function createClientService(body: CreateClientInput) {
 
     tax_id: identificationNumber,
     tax_exempt: Boolean(body.tax_exempt),
-    preferred_currency: body.preferred_currency ?? "CRC",
+    preferred_currency: (body.preferred_currency ??
+      "CRC") as CreateClientData["preferred_currency"],
 
     credit_limit:
       paymentTerm === "CREDIT"
@@ -476,8 +480,9 @@ export async function updateClientByIdService(
         ? Boolean(body.tax_exempt)
         : existing.tax_exempt,
 
-    preferred_currency:
-      body.preferred_currency ?? existing.preferred_currency ?? "CRC",
+    preferred_currency: (body.preferred_currency ??
+      existing.preferred_currency ??
+      "CRC") as UpdateClientData["preferred_currency"],
 
     credit_limit:
       paymentTerm === "CREDIT"

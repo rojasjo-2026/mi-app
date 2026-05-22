@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type CurrencyCode } from "@prisma/client";
 
 import { DEFAULT_APP_SETTINGS } from "@/lib/settings/settingsDefaults";
 import {
@@ -6,6 +6,11 @@ import {
   findAppSettings,
   updateAppSettings,
 } from "@/lib/repositories/settingsRepository";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+  type CountryPreset,
+} from "@/lib/settings/countryPresets";
 
 type UpdateSettingsInput = {
   company_name?: string | null;
@@ -20,7 +25,11 @@ type UpdateSettingsInput = {
   admin_level_3_label?: string | null;
 
   timezone?: string;
-  default_currency?: "CRC" | "USD";
+  date_format?: string;
+  phone_country_code?: string;
+
+  default_currency?: CurrencyCode | string;
+  secondary_currency?: CurrencyCode | string | null;
   default_tax_rate?: number;
 
   whatsapp_enabled?: boolean;
@@ -29,17 +38,75 @@ type UpdateSettingsInput = {
   automatic_send_hour?: number;
 };
 
-const SUPPORTED_COUNTRIES = [
-  {
-    code: "CR",
-    name: "Costa Rica",
-    timezone: "America/Costa_Rica",
-    defaultCurrency: "CRC" as const,
-    adminLevel1Label: "Región / Provincia / Estado",
-    adminLevel2Label: "Ciudad / Cantón / Municipio",
-    adminLevel3Label: "Distrito / Zona",
-  },
-];
+type AppSettingsRecord = {
+  settings_id: string;
+
+  company_name: string | null;
+  company_phone: string | null;
+  company_email: string | null;
+
+  country_code: string;
+  country_name: string;
+
+  admin_level_1_label: string;
+  admin_level_2_label: string;
+  admin_level_3_label: string | null;
+
+  timezone: string;
+  date_format: string;
+  phone_country_code: string;
+
+  default_currency: CurrencyCode;
+  secondary_currency: CurrencyCode | null;
+  default_tax_rate: Prisma.Decimal;
+
+  whatsapp_enabled: boolean;
+  auto_contact_enabled: boolean;
+  maintenance_contact_days_before: number;
+  automatic_send_hour: number;
+
+  created_at: Date;
+  updated_at: Date;
+};
+
+const DEFAULT_COUNTRY_CODE = DEFAULT_APP_SETTINGS.country_code || "CR";
+
+const SUPPORTED_CURRENCY_CODES: CurrencyCode[] = [
+  "ARS",
+  "BOB",
+  "BRL",
+  "CAD",
+  "CLP",
+  "COP",
+  "CRC",
+  "DOP",
+  "EUR",
+  "GTQ",
+  "HNL",
+  "MXN",
+  "NIO",
+  "PEN",
+  "PYG",
+  "USD",
+  "UYU",
+  "VES",
+  "XAF",
+] as CurrencyCode[];
+
+function getFallbackCountryPreset(): CountryPreset {
+  const defaultPreset = getCountryPreset(DEFAULT_COUNTRY_CODE);
+  const firstPreset = Object.values(COUNTRY_PRESETS)[0];
+
+  if (defaultPreset) {
+    return defaultPreset;
+  }
+
+  if (firstPreset) {
+    return firstPreset;
+  }
+
+  throw new Error("No country presets were found.");
+}
 
 function normalizeNullableText(value: unknown) {
   const text = String(value || "").trim();
@@ -68,12 +135,43 @@ function normalizeInteger(
 
 function normalizeTaxRate(value: unknown) {
   const numberValue = Number(value);
+  const fallbackTaxRate = Number(DEFAULT_APP_SETTINGS.default_tax_rate ?? 13);
 
   if (!Number.isFinite(numberValue)) {
-    return DEFAULT_APP_SETTINGS.default_tax_rate;
+    return Number.isFinite(fallbackTaxRate) ? fallbackTaxRate : 13;
   }
 
   return Math.min(Math.max(numberValue, 0), 100);
+}
+
+function normalizeCurrencyCode(
+  value: unknown,
+  fallback: CurrencyCode = "CRC",
+): CurrencyCode {
+  const normalizedValue = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return SUPPORTED_CURRENCY_CODES.includes(normalizedValue as CurrencyCode)
+    ? (normalizedValue as CurrencyCode)
+    : fallback;
+}
+
+function normalizeOptionalCurrencyCode(
+  value: unknown,
+  fallback: CurrencyCode | null = null,
+): CurrencyCode | null {
+  const normalizedValue = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  if (!normalizedValue) {
+    return fallback;
+  }
+
+  return SUPPORTED_CURRENCY_CODES.includes(normalizedValue as CurrencyCode)
+    ? (normalizedValue as CurrencyCode)
+    : fallback;
 }
 
 function normalizeCountryCode(value: unknown) {
@@ -86,43 +184,39 @@ function normalizeCountryCode(value: unknown) {
     return "CR";
   }
 
-  const supportedCountry = SUPPORTED_COUNTRIES.find(
-    (country) => country.code === normalizedValue,
+  const presetByCode = getCountryPreset(normalizedValue);
+
+  if (presetByCode) {
+    return presetByCode.countryCode;
+  }
+
+  const presetByName = Object.values(COUNTRY_PRESETS).find(
+    (country) => country.countryName.toUpperCase() === normalizedValue,
   );
 
-  return supportedCountry?.code ?? DEFAULT_APP_SETTINGS.country_code;
+  return presetByName?.countryCode ?? DEFAULT_COUNTRY_CODE;
 }
 
-function getSupportedCountry(value: unknown) {
+function getSupportedCountry(value: unknown): CountryPreset {
   const countryCode = normalizeCountryCode(value);
 
-  return (
-    SUPPORTED_COUNTRIES.find((country) => country.code === countryCode) ??
-    SUPPORTED_COUNTRIES[0]
-  );
+  return getCountryPreset(countryCode) ?? getFallbackCountryPreset();
 }
 
-function normalizeSettings(settings: {
-  settings_id: string;
-  company_name: string | null;
-  company_phone: string | null;
-  company_email: string | null;
-  country_code: string;
-  country_name: string;
-  admin_level_1_label: string;
-  admin_level_2_label: string;
-  admin_level_3_label: string | null;
-  timezone: string;
-  default_currency: "CRC" | "USD";
-  default_tax_rate: Prisma.Decimal;
-  whatsapp_enabled: boolean;
-  auto_contact_enabled: boolean;
-  maintenance_contact_days_before: number;
-  automatic_send_hour: number;
-  created_at: Date;
-  updated_at: Date;
-}) {
+function getPresetDefaultCurrency(country: CountryPreset): CurrencyCode {
+  return normalizeCurrencyCode(country.primaryCurrency, "CRC");
+}
+
+function getPresetSecondaryCurrency(
+  country: CountryPreset,
+): CurrencyCode | null {
+  return normalizeOptionalCurrencyCode(country.secondaryCurrency, null);
+}
+
+function normalizeSettings(settings: AppSettingsRecord) {
   const country = getSupportedCountry(settings.country_code);
+  const presetDefaultCurrency = getPresetDefaultCurrency(country);
+  const presetSecondaryCurrency = getPresetSecondaryCurrency(country);
 
   return {
     settings_id: settings.settings_id,
@@ -131,8 +225,8 @@ function normalizeSettings(settings: {
     company_phone: settings.company_phone,
     company_email: settings.company_email,
 
-    country_code: country.code,
-    country_name: country.name,
+    country_code: country.countryCode,
+    country_name: country.countryName,
 
     admin_level_1_label:
       settings.admin_level_1_label || country.adminLevel1Label,
@@ -141,8 +235,12 @@ function normalizeSettings(settings: {
     admin_level_3_label:
       settings.admin_level_3_label || country.adminLevel3Label,
 
-    timezone: settings.timezone || country.timezone,
-    default_currency: settings.default_currency || country.defaultCurrency,
+    timezone: settings.timezone || country.defaultTimezone,
+    date_format: settings.date_format || country.dateFormat,
+    phone_country_code: settings.phone_country_code || country.phonePrefix,
+
+    default_currency: settings.default_currency || presetDefaultCurrency,
+    secondary_currency: settings.secondary_currency ?? presetSecondaryCurrency,
     default_tax_rate: settings.default_tax_rate.toNumber(),
 
     whatsapp_enabled: settings.whatsapp_enabled,
@@ -176,8 +274,10 @@ export async function updateAppSettingsService(input: UpdateSettingsInput) {
     input.country_code !== undefined || input.country_name !== undefined;
 
   const country = getSupportedCountry(
-    input.country_code ?? DEFAULT_APP_SETTINGS.country_code,
+    input.country_code ?? settings.country_code,
   );
+  const presetDefaultCurrency = getPresetDefaultCurrency(country);
+  const presetSecondaryCurrency = getPresetSecondaryCurrency(country);
 
   const data: Prisma.AppSettingsUpdateInput = {
     company_name:
@@ -195,13 +295,15 @@ export async function updateAppSettingsService(input: UpdateSettingsInput) {
         ? undefined
         : normalizeNullableText(input.company_email),
 
-    country_code: shouldUpdateCountry ? country.code : undefined,
+    country_code: shouldUpdateCountry ? country.countryCode : undefined,
 
-    country_name: shouldUpdateCountry ? country.name : undefined,
+    country_name: shouldUpdateCountry ? country.countryName : undefined,
 
     admin_level_1_label:
       input.admin_level_1_label === undefined
-        ? undefined
+        ? shouldUpdateCountry
+          ? country.adminLevel1Label
+          : undefined
         : normalizeRequiredText(
             input.admin_level_1_label,
             country.adminLevel1Label,
@@ -209,7 +311,9 @@ export async function updateAppSettingsService(input: UpdateSettingsInput) {
 
     admin_level_2_label:
       input.admin_level_2_label === undefined
-        ? undefined
+        ? shouldUpdateCountry
+          ? country.adminLevel2Label
+          : undefined
         : normalizeRequiredText(
             input.admin_level_2_label,
             country.adminLevel2Label,
@@ -217,25 +321,55 @@ export async function updateAppSettingsService(input: UpdateSettingsInput) {
 
     admin_level_3_label:
       input.admin_level_3_label === undefined
-        ? undefined
+        ? shouldUpdateCountry
+          ? country.adminLevel3Label
+          : undefined
         : (normalizeNullableText(input.admin_level_3_label) ??
           country.adminLevel3Label),
 
     timezone:
       input.timezone === undefined
-        ? undefined
-        : normalizeRequiredText(input.timezone, country.timezone),
+        ? shouldUpdateCountry
+          ? country.defaultTimezone
+          : undefined
+        : normalizeRequiredText(input.timezone, country.defaultTimezone),
+
+    date_format:
+      input.date_format === undefined
+        ? shouldUpdateCountry
+          ? country.dateFormat
+          : undefined
+        : normalizeRequiredText(input.date_format, country.dateFormat),
+
+    phone_country_code:
+      input.phone_country_code === undefined
+        ? shouldUpdateCountry
+          ? country.phonePrefix
+          : undefined
+        : normalizeRequiredText(input.phone_country_code, country.phonePrefix),
 
     default_currency:
       input.default_currency === undefined
-        ? undefined
-        : input.default_currency === "USD"
-          ? "USD"
-          : "CRC",
+        ? shouldUpdateCountry
+          ? presetDefaultCurrency
+          : undefined
+        : normalizeCurrencyCode(input.default_currency, presetDefaultCurrency),
+
+    secondary_currency:
+      input.secondary_currency === undefined
+        ? shouldUpdateCountry
+          ? presetSecondaryCurrency
+          : undefined
+        : normalizeOptionalCurrencyCode(
+            input.secondary_currency,
+            presetSecondaryCurrency,
+          ),
 
     default_tax_rate:
       input.default_tax_rate === undefined
-        ? undefined
+        ? shouldUpdateCountry
+          ? new Prisma.Decimal(country.defaultTaxRate)
+          : undefined
         : new Prisma.Decimal(normalizeTaxRate(input.default_tax_rate)),
 
     whatsapp_enabled:

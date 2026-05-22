@@ -77,8 +77,25 @@ enum PaymentMethod {
 }
 
 enum CurrencyCode {
+  ARS
+  BOB
+  BRL
+  CAD
+  CLP
+  COP
   CRC
+  DOP
+  EUR
+  GTQ
+  HNL
+  MXN
+  NIO
+  PEN
+  PYG
   USD
+  UYU
+  VES
+  XAF
 }
 
 enum ClientType {
@@ -727,9 +744,12 @@ model AppSettings {
   admin_level_2_label String  @default("Ciudad / Cantón / Municipio")
   admin_level_3_label String? @default("Distrito / Zona")
 
-  timezone         String       @default("America/Costa_Rica")
-  default_currency CurrencyCode @default(CRC)
-  default_tax_rate Decimal      @default(13) @db.Decimal(5, 2)
+  timezone           String        @default("America/Costa_Rica")
+  date_format        String        @default("DD/MM/YYYY")
+  phone_country_code String        @default("+506")
+  default_currency   CurrencyCode  @default(CRC)
+  secondary_currency CurrencyCode? @default(USD)
+  default_tax_rate   Decimal       @default(13) @db.Decimal(5, 2)
 
   whatsapp_enabled                Boolean @default(false)
   auto_contact_enabled            Boolean @default(true)

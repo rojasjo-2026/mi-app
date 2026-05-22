@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  COUNTRY_PRESET_OPTIONS,
+  COUNTRY_PRESETS,
+  getCountryPreset,
+  type CountryPreset,
+  type CountryTimezoneOption,
+} from "@/lib/settings/countryPresets";
 
-type CurrencyCode = "CRC" | "USD";
+type CurrencyCode = string;
 
 type AppSettings = {
   settings_id: string;
@@ -31,23 +38,53 @@ type AppSettings = {
   updated_at: string;
 };
 
+type SettingsForm = Omit<
+  AppSettings,
+  "settings_id" | "created_at" | "updated_at"
+>;
+
 type SettingsApiResponse = {
   success: boolean;
   data: AppSettings | null;
   message?: string;
 };
 
-const supportedCountries = [
-  {
-    code: "CR",
-    name: "Costa Rica",
-    timezone: "America/Costa_Rica",
-    default_currency: "CRC" as CurrencyCode,
-    admin_level_1_label: "Región / Provincia / Estado",
-    admin_level_2_label: "Ciudad / Cantón / Municipio",
-    admin_level_3_label: "Distrito / Zona",
-  },
-];
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+const currencyNames: Record<string, string> = {
+  ARS: "Peso argentino",
+  BOB: "Boliviano",
+  BRL: "Real brasileño",
+  CAD: "Dólar canadiense",
+  CLP: "Peso chileno",
+  COP: "Peso colombiano",
+  CRC: "Colón costarricense",
+  DOP: "Peso dominicano",
+  EUR: "Euro",
+  GTQ: "Quetzal guatemalteco",
+  HNL: "Lempira hondureño",
+  MXN: "Peso mexicano",
+  NIO: "Córdoba nicaragüense",
+  PEN: "Sol peruano",
+  PYG: "Guaraní paraguayo",
+  USD: "Dólar estadounidense",
+  UYU: "Peso uruguayo",
+  VES: "Bolívar venezolano",
+  XAF: "Franco CFA de África Central",
+};
+
+const currencyOptions = Array.from(
+  new Set(
+    Object.values(COUNTRY_PRESETS).flatMap((preset) =>
+      [preset.primaryCurrency, preset.secondaryCurrency].filter(Boolean),
+    ),
+  ),
+)
+  .map((currency) => String(currency))
+  .sort();
 
 const futureSections = [
   {
@@ -70,30 +107,31 @@ const futureSections = [
   },
 ];
 
-const defaultForm: Omit<
-  AppSettings,
-  "settings_id" | "created_at" | "updated_at"
-> = {
-  company_name: "",
-  company_phone: "",
-  company_email: "",
+function buildDefaultFormFromPreset(preset: CountryPreset): SettingsForm {
+  return {
+    company_name: "",
+    company_phone: "",
+    company_email: "",
 
-  country_code: "CR",
-  country_name: "Costa Rica",
+    country_code: preset.countryCode,
+    country_name: preset.countryName,
 
-  admin_level_1_label: "Región / Provincia / Estado",
-  admin_level_2_label: "Ciudad / Cantón / Municipio",
-  admin_level_3_label: "Distrito / Zona",
+    admin_level_1_label: preset.adminLevel1Label,
+    admin_level_2_label: preset.adminLevel2Label,
+    admin_level_3_label: preset.adminLevel3Label ?? "",
 
-  timezone: "America/Costa_Rica",
-  default_currency: "CRC",
-  default_tax_rate: 13,
+    timezone: preset.defaultTimezone,
+    default_currency: preset.primaryCurrency,
+    default_tax_rate: preset.defaultTaxRate,
 
-  whatsapp_enabled: false,
-  auto_contact_enabled: true,
-  maintenance_contact_days_before: 22,
-  automatic_send_hour: 9,
-};
+    whatsapp_enabled: false,
+    auto_contact_enabled: true,
+    maintenance_contact_days_before: 22,
+    automatic_send_hour: 9,
+  };
+}
+
+const defaultForm = buildDefaultFormFromPreset(fallbackCountryPreset);
 
 function normalizeCountryCode(value: string | null | undefined) {
   const normalizedValue = String(value || "")
@@ -105,24 +143,37 @@ function normalizeCountryCode(value: string | null | undefined) {
     return "CR";
   }
 
-  const isSupported = supportedCountries.some(
-    (country) => country.code === normalizedValue,
-  );
-
-  return isSupported ? normalizedValue : "CR";
+  return getCountryPreset(normalizedValue)?.countryCode ?? DEFAULT_COUNTRY_CODE;
 }
 
-function getCountryByCode(countryCode: string) {
+function getCountryByCode(countryCode: string | null | undefined) {
   const normalizedCountryCode = normalizeCountryCode(countryCode);
 
-  return (
-    supportedCountries.find(
-      (country) => country.code === normalizedCountryCode,
-    ) ?? supportedCountries[0]
-  );
+  return getCountryPreset(normalizedCountryCode) ?? fallbackCountryPreset;
 }
 
-function mapSettingsToForm(settings: AppSettings) {
+function getTimezoneOptions(
+  preset: CountryPreset,
+  currentTimezone: string,
+): CountryTimezoneOption[] {
+  const hasCurrentTimezone = preset.timezones.some(
+    (timezoneOption) => timezoneOption.value === currentTimezone,
+  );
+
+  if (!currentTimezone || hasCurrentTimezone) {
+    return preset.timezones;
+  }
+
+  return [
+    ...preset.timezones,
+    {
+      value: currentTimezone,
+      label: `Personalizada - ${currentTimezone}`,
+    },
+  ];
+}
+
+function mapSettingsToForm(settings: AppSettings): SettingsForm {
   const countryCode = normalizeCountryCode(settings.country_code);
   const country = getCountryByCode(countryCode);
 
@@ -131,19 +182,19 @@ function mapSettingsToForm(settings: AppSettings) {
     company_phone: settings.company_phone || "",
     company_email: settings.company_email || "",
 
-    country_code: country.code,
-    country_name: country.name,
+    country_code: country.countryCode,
+    country_name: country.countryName,
 
     admin_level_1_label:
-      settings.admin_level_1_label || country.admin_level_1_label,
+      settings.admin_level_1_label || country.adminLevel1Label,
     admin_level_2_label:
-      settings.admin_level_2_label || country.admin_level_2_label,
+      settings.admin_level_2_label || country.adminLevel2Label,
     admin_level_3_label:
-      settings.admin_level_3_label || country.admin_level_3_label,
+      settings.admin_level_3_label || country.adminLevel3Label || "",
 
-    timezone: settings.timezone || country.timezone,
-    default_currency: settings.default_currency || country.default_currency,
-    default_tax_rate: settings.default_tax_rate ?? 13,
+    timezone: settings.timezone || country.defaultTimezone,
+    default_currency: settings.default_currency || country.primaryCurrency,
+    default_tax_rate: settings.default_tax_rate ?? country.defaultTaxRate,
 
     whatsapp_enabled: settings.whatsapp_enabled,
     auto_contact_enabled: settings.auto_contact_enabled,
@@ -153,15 +204,30 @@ function mapSettingsToForm(settings: AppSettings) {
   };
 }
 
-function buildSettingsPayload(
-  form: Omit<AppSettings, "settings_id" | "created_at" | "updated_at">,
-) {
+function applyCountryPresetToForm(
+  currentForm: SettingsForm,
+  preset: CountryPreset,
+): SettingsForm {
+  return {
+    ...currentForm,
+    country_code: preset.countryCode,
+    country_name: preset.countryName,
+    timezone: preset.defaultTimezone,
+    default_currency: preset.primaryCurrency,
+    default_tax_rate: preset.defaultTaxRate,
+    admin_level_1_label: preset.adminLevel1Label,
+    admin_level_2_label: preset.adminLevel2Label,
+    admin_level_3_label: preset.adminLevel3Label ?? "",
+  };
+}
+
+function buildSettingsPayload(form: SettingsForm) {
   const country = getCountryByCode(form.country_code);
 
   return {
     ...form,
-    country_code: country.code,
-    country_name: country.name,
+    country_code: country.countryCode,
+    country_name: country.countryName,
   };
 }
 
@@ -172,6 +238,17 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [countryPresetMessage, setCountryPresetMessage] = useState("");
+
+  const selectedCountryPreset = useMemo(
+    () => getCountryByCode(form.country_code),
+    [form.country_code],
+  );
+
+  const timezoneOptions = useMemo(
+    () => getTimezoneOptions(selectedCountryPreset, form.timezone),
+    [form.timezone, selectedCountryPreset],
+  );
 
   async function loadSettings() {
     try {
@@ -309,7 +386,8 @@ export default function SettingsPage() {
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
             Defina los datos base de la empresa, ubicación, moneda, impuestos y
-            zona horaria.
+            zona horaria. Al seleccionar un país, CLARIUS sugerirá valores
+            regionales que pueden modificarse manualmente.
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -342,7 +420,7 @@ export default function SettingsPage() {
                     company_phone: event.target.value,
                   }))
                 }
-                placeholder="Ej. 8888-8888"
+                placeholder={`Ej. ${selectedCountryPreset.phonePrefix} 8888-8888`}
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               />
             </label>
@@ -373,28 +451,25 @@ export default function SettingsPage() {
                 onChange={(event) => {
                   const selectedCountry = getCountryByCode(event.target.value);
 
-                  setForm((current) => ({
-                    ...current,
-                    country_code: selectedCountry.code,
-                    country_name: selectedCountry.name,
-                    timezone: selectedCountry.timezone,
-                    default_currency: selectedCountry.default_currency,
-                    admin_level_1_label: selectedCountry.admin_level_1_label,
-                    admin_level_2_label: selectedCountry.admin_level_2_label,
-                    admin_level_3_label: selectedCountry.admin_level_3_label,
-                  }));
+                  setForm((current) =>
+                    applyCountryPresetToForm(current, selectedCountry),
+                  );
+
+                  setCountryPresetMessage(
+                    `Se aplicaron valores sugeridos para ${selectedCountry.countryName}. Puede ajustar moneda, impuesto, zona horaria y niveles administrativos antes de guardar.`,
+                  );
                 }}
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               >
-                {supportedCountries.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {country.code} - {country.name}
+                {COUNTRY_PRESET_OPTIONS.map((country) => (
+                  <option key={country.value} value={country.value}>
+                    {country.label}
                   </option>
                 ))}
               </select>
               <p className="text-xs text-slate-400">
-                Se usa para reglas regionales, formatos y futuras
-                configuraciones por país.
+                Se usa para sugerir reglas regionales, formatos, moneda,
+                impuestos y zona horaria.
               </p>
             </label>
 
@@ -406,6 +481,47 @@ export default function SettingsPage() {
                 className="w-full cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 outline-none"
               />
             </label>
+
+            {countryPresetMessage && (
+              <div className="md:col-span-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-6 text-sky-800">
+                {countryPresetMessage}
+              </div>
+            )}
+
+            <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <p className="text-sm font-semibold text-slate-800">
+                Valores sugeridos por país
+              </p>
+
+              <div className="mt-3 grid gap-3 text-xs text-slate-600 md:grid-cols-3">
+                <div>
+                  <span className="font-semibold text-slate-700">
+                    Prefijo telefónico:
+                  </span>{" "}
+                  {selectedCountryPreset.phonePrefix}
+                </div>
+
+                <div>
+                  <span className="font-semibold text-slate-700">
+                    Moneda secundaria:
+                  </span>{" "}
+                  {selectedCountryPreset.secondaryCurrency || "No definida"}
+                </div>
+
+                <div>
+                  <span className="font-semibold text-slate-700">
+                    Formato de fecha:
+                  </span>{" "}
+                  {selectedCountryPreset.dateFormat}
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs leading-5 text-slate-400">
+                Estos valores son una guía regional. La moneda principal, zona
+                horaria, impuesto y niveles administrativos pueden ajustarse
+                antes de guardar.
+              </p>
+            </div>
 
             <label className="space-y-2">
               <span className="text-sm font-semibold text-slate-700">
@@ -459,7 +575,7 @@ export default function SettingsPage() {
               <span className="text-sm font-semibold text-slate-700">
                 Zona horaria
               </span>
-              <input
+              <select
                 value={form.timezone}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -467,9 +583,21 @@ export default function SettingsPage() {
                     timezone: event.target.value,
                   }))
                 }
-                placeholder="America/Costa_Rica"
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              />
+              >
+                {timezoneOptions.map((timezoneOption) => (
+                  <option
+                    key={timezoneOption.value}
+                    value={timezoneOption.value}
+                  >
+                    {timezoneOption.label} - {timezoneOption.value}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-400">
+                Si el país tiene más de una zona horaria, seleccione la que
+                corresponde a la operación principal.
+              </p>
             </label>
 
             <label className="space-y-2">
@@ -481,14 +609,21 @@ export default function SettingsPage() {
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    default_currency: event.target.value as CurrencyCode,
+                    default_currency: event.target.value,
                   }))
                 }
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               >
-                <option value="CRC">CRC - Colón costarricense</option>
-                <option value="USD">USD - Dólar estadounidense</option>
+                {currencyOptions.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency} - {currencyNames[currency] || "Moneda"}
+                  </option>
+                ))}
               </select>
+              <p className="text-xs text-slate-400">
+                Se autocompleta según el país, pero puede cambiarse si la
+                empresa opera con otra moneda.
+              </p>
             </label>
 
             <label className="space-y-2">
@@ -509,6 +644,10 @@ export default function SettingsPage() {
                 }
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               />
+              <p className="text-xs text-slate-400">
+                Es una tasa sugerida. Puede ajustarse según la operación,
+                provincia, estado o régimen fiscal aplicable.
+              </p>
             </label>
           </div>
         </article>
