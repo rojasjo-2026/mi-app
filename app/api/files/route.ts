@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabaseServerClient";
+import { recordInstallationFileActivitySafely } from "@/lib/files/fileActivityLog.service";
 
 function getStoragePathFromPublicUrl(fileUrl: string) {
   const marker = "/storage/v1/object/public/files/";
@@ -141,6 +142,13 @@ export async function POST(req: Request) {
         },
       });
 
+      await recordInstallationFileActivitySafely({
+        entityType,
+        entityId,
+        fileName: uploadedFile.name,
+        action: "FILE_ADDED",
+      });
+
       return NextResponse.json(
         {
           success: true,
@@ -152,6 +160,10 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    const entityType = String(body.entity_type || "").trim();
+    const entityId = String(body.entity_id || "").trim();
+    const fileName = String(body.file_name || "").trim();
+
     const file = await prisma.file.create({
       data: {
         entity_type: body.entity_type,
@@ -161,6 +173,13 @@ export async function POST(req: Request) {
         file_path: body.file_path,
         file_type: body.file_type,
       },
+    });
+
+    await recordInstallationFileActivitySafely({
+      entityType,
+      entityId,
+      fileName,
+      action: "FILE_ADDED",
     });
 
     return NextResponse.json(
@@ -234,6 +253,13 @@ export async function DELETE(req: Request) {
       where: {
         file_id: fileId,
       },
+    });
+
+    await recordInstallationFileActivitySafely({
+      entityType: file.entity_type,
+      entityId: file.entity_id,
+      fileName: file.file_name,
+      action: "FILE_REMOVED",
     });
 
     return NextResponse.json({
