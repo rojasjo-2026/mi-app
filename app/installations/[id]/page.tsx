@@ -12,6 +12,7 @@ import InstallationDetailHeader from "./components/InstallationDetailHeader";
 import InstallationMainInfoSection from "./components/InstallationMainInfoSection";
 import InstallationClientSection from "./components/InstallationClientSection";
 import InstallationTechnicianSection from "./components/InstallationTechnicianSection";
+import InstallationFilesSection from "./components/InstallationFilesSection";
 import Card from "./components/Card";
 import { useInstallationDetail } from "./hooks/useInstallationDetail";
 import {
@@ -330,6 +331,12 @@ export default function InstallationDetailPage() {
               installationId={installation.installation_id}
             />
           </Card>
+        </section>
+
+        <section>
+          <InstallationFilesSection
+            installationId={installation.installation_id}
+          />
         </section>
 
         <InstallationLocationDisplay
