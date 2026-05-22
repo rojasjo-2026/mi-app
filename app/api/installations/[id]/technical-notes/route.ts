@@ -39,7 +39,7 @@ export async function POST(req: Request, context: RouteContext) {
     const { id } = await context.params;
     const body = await req.json();
 
-    const note = body?.note?.trim();
+    const note = String(body?.note || "").trim();
 
     if (!note) {
       return NextResponse.json(
@@ -51,11 +51,52 @@ export async function POST(req: Request, context: RouteContext) {
       );
     }
 
-    const newNote = await prisma.technicalNote.create({
-      data: {
+    const installation = await prisma.installation.findUnique({
+      where: {
         installation_id: id,
-        note_text: note,
       },
+      select: {
+        installation_id: true,
+        client_id: true,
+      },
+    });
+
+    if (!installation) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Installation not found",
+        },
+        { status: 404 },
+      );
+    }
+
+    const newNote = await prisma.$transaction(async (tx) => {
+      const createdNote = await tx.technicalNote.create({
+        data: {
+          installation_id: id,
+          note_text: note,
+        },
+      });
+
+      await tx.activityLog.create({
+        data: {
+          client_id: installation.client_id,
+          entity_type: "INSTALLATION",
+          entity_id: installation.installation_id,
+          category: "INSTALLATION",
+          action: "NOTE_ADDED",
+          visibility: "PUBLIC_INTERNAL",
+          field_name: "technical_note",
+          old_value: null,
+          new_value: note,
+          title: "Observación técnica agregada",
+          description: "Se agregó una observación técnica a la instalación.",
+          created_by: "system",
+        },
+      });
+
+      return createdNote;
     });
 
     return NextResponse.json(newNote, { status: 201 });
