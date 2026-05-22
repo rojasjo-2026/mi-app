@@ -340,11 +340,6 @@ export default function InstallationDetailPage() {
           />
         </section>
 
-        <InstallationActivityHistorySection
-          clientId={installation.client?.client_id}
-          installationId={installation.installation_id}
-        />
-
         <InstallationLocationDisplay
           zone={installation.zone}
           city={installation.city}
@@ -359,6 +354,11 @@ export default function InstallationDetailPage() {
         />
 
         <InstallationChangeLogSection changeLogs={changeLogs} />
+
+        <InstallationActivityHistorySection
+          clientId={installation.client?.client_id}
+          installationId={installation.installation_id}
+        />
 
         <InstallationFollowUpsSection
           followUps={installation.follow_ups}
