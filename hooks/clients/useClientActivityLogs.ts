@@ -6,12 +6,23 @@ import type {
   ClientActivityLog,
 } from "@/lib/clients/clientDetail.types";
 
-export function useClientActivityLogs(id?: string) {
+type ActivityLogFilters = {
+  entityType?: string;
+  entityId?: string;
+};
+
+export function useClientActivityLogs(
+  id?: string,
+  filters: ActivityLogFilters = {},
+) {
   const [activityLogs, setActivityLogs] = useState<ClientActivityLog[]>([]);
   const [activityLogsLoading, setActivityLogsLoading] = useState(true);
   const [activityLogsError, setActivityLogsError] = useState("");
   const [take, setTake] = useState(12);
   const [hasMore, setHasMore] = useState(false);
+
+  const entityType = filters.entityType?.trim() || "";
+  const entityId = filters.entityId?.trim() || "";
 
   const loadActivityLogs = useCallback(
     async (requestedTake: number) => {
@@ -26,12 +37,19 @@ export function useClientActivityLogs(id?: string) {
         setActivityLogsLoading(true);
         setActivityLogsError("");
 
-        const activityRes = await fetch(
-          `/api/activity-logs?client_id=${id}&take=${requestedTake}`,
-          {
-            cache: "no-store",
-          },
-        );
+        const params = new URLSearchParams({
+          client_id: id,
+          take: String(requestedTake),
+        });
+
+        if (entityType && entityId) {
+          params.set("entity_type", entityType);
+          params.set("entity_id", entityId);
+        }
+
+        const activityRes = await fetch(`/api/activity-logs?${params}`, {
+          cache: "no-store",
+        });
 
         const activityResult: ActivityLogsResponse = await activityRes.json();
 
@@ -52,12 +70,12 @@ export function useClientActivityLogs(id?: string) {
         setActivityLogsLoading(false);
       }
     },
-    [id],
+    [id, entityType, entityId],
   );
 
   useEffect(() => {
     void loadActivityLogs(12);
-  }, [id, loadActivityLogs]);
+  }, [id, entityType, entityId, loadActivityLogs]);
 
   const loadMoreActivityLogs = useCallback(() => {
     void loadActivityLogs(take + 12);

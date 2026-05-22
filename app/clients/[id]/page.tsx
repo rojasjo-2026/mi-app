@@ -25,13 +25,61 @@ import { ClientFinanceHistorySection } from "@/components/clients/detail/ClientF
 import { ClientInformationSections } from "@/components/clients/detail/ClientInformationSections";
 import { ClientInstallationsSection } from "@/components/clients/detail/ClientInstallationsSection";
 
+type InstallationHistoryOption = {
+  installation_id?: string | null;
+  description?: string | null;
+  installation_date?: string | null;
+  city?: string | null;
+  zone?: string | null;
+};
+
+function formatInstallationHistoryDate(value?: string | null) {
+  if (!value) return "";
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return parsed.toLocaleDateString("es-CR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function getInstallationHistoryLabel(installation: InstallationHistoryOption) {
+  const description =
+    installation.description?.trim() || "Instalación sin descripción";
+
+  const date = formatInstallationHistoryDate(installation.installation_date);
+
+  const location = [installation.city, installation.zone]
+    .filter(Boolean)
+    .join(" · ");
+
+  return [description, date, location].filter(Boolean).join(" · ");
+}
+
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
 
   const clientId = typeof params?.id === "string" ? params.id : undefined;
 
+  const [selectedHistoryInstallationId, setSelectedHistoryInstallationId] =
+    useState("all");
+
   const { client, loading, error } = useClientDetail(clientId);
+
+  const activityLogFilters =
+    selectedHistoryInstallationId !== "all"
+      ? {
+          entityType: "INSTALLATION",
+          entityId: selectedHistoryInstallationId,
+        }
+      : {};
 
   const {
     activityLogs,
@@ -40,7 +88,7 @@ export default function ClientDetailPage() {
     reloadActivityLogs,
     loadMoreActivityLogs,
     hasMore: hasMoreActivityLogs,
-  } = useClientActivityLogs(clientId);
+  } = useClientActivityLogs(clientId, activityLogFilters);
 
   const {
     invoices,
@@ -186,14 +234,41 @@ export default function ClientDetailPage() {
         <CollapsibleCard
           title="Historial del cliente"
           rightContent={
-            <button
-              type="button"
-              onClick={() => void reloadActivityLogs()}
-              disabled={activityLogsLoading}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Refrescar
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <label className="sr-only" htmlFor="history-installation-filter">
+                Filtrar historial por instalación
+              </label>
+
+              <select
+                id="history-installation-filter"
+                value={selectedHistoryInstallationId}
+                onChange={(event) =>
+                  setSelectedHistoryInstallationId(event.target.value)
+                }
+                disabled={activityLogsLoading || installations.length === 0}
+                className="min-w-[260px] rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="all">Historial completo del cliente</option>
+
+                {installations.map((installation) => (
+                  <option
+                    key={installation.installation_id}
+                    value={installation.installation_id}
+                  >
+                    {getInstallationHistoryLabel(installation)}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => void reloadActivityLogs()}
+                disabled={activityLogsLoading}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Refrescar
+              </button>
+            </div>
           }
           isOpen={openSections.history}
           onToggle={() => toggleDetailSection("history")}

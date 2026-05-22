@@ -13,6 +13,7 @@ import InstallationMainInfoSection from "./components/InstallationMainInfoSectio
 import InstallationClientSection from "./components/InstallationClientSection";
 import InstallationTechnicianSection from "./components/InstallationTechnicianSection";
 import InstallationFilesSection from "./components/InstallationFilesSection";
+import InstallationActivityHistorySection from "./components/InstallationActivityHistorySection";
 import Card from "./components/Card";
 import { useInstallationDetail } from "./hooks/useInstallationDetail";
 import {
@@ -338,6 +339,11 @@ export default function InstallationDetailPage() {
             installationId={installation.installation_id}
           />
         </section>
+
+        <InstallationActivityHistorySection
+          clientId={installation.client?.client_id}
+          installationId={installation.installation_id}
+        />
 
         <InstallationLocationDisplay
           zone={installation.zone}
