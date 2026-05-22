@@ -32,9 +32,14 @@ export function ClientActivityHistory({
   const categories = useMemo(
     () => [
       "ALL",
-      ...Array.from(new Set(activityLogs.map((activity) => activity.category))),
+      "INSTALLATION",
+      "FILE",
+      "FOLLOW_UP",
+      "FINANCE",
+      "CLIENT",
+      "CONTACT",
     ],
-    [activityLogs],
+    [],
   );
 
   const filteredLogs = useMemo(
@@ -106,97 +111,109 @@ export function ClientActivityHistory({
         </p>
       </div>
 
-      <div className="space-y-3">
-        {filteredLogs.map((activity) => (
-          <div
-            key={activity.activity_id}
-            className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${getActivityCategoryClass(
-                      activity.category,
-                    )}`}
-                  >
-                    {getActivityCategoryLabel(activity.category)}
-                  </span>
+      {filteredLogs.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+          <p className="text-sm font-semibold text-slate-600">
+            No hay eventos para este filtro.
+          </p>
+          <p className="mt-1 text-sm text-slate-400">
+            Probá con otra categoría o seleccioná Todos para ver el historial
+            disponible.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredLogs.map((activity) => (
+            <div
+              key={activity.activity_id}
+              className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${getActivityCategoryClass(
+                        activity.category,
+                      )}`}
+                    >
+                      {getActivityCategoryLabel(activity.category)}
+                    </span>
 
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                    {getActivityActionLabel(activity.action)}
-                  </span>
-                </div>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                      {getActivityActionLabel(activity.action)}
+                    </span>
+                  </div>
 
-                <p className="mt-2 text-sm font-semibold text-slate-900">
-                  {activity.title}
-                </p>
-
-                {activity.description && (
-                  <p className="mt-1 text-sm leading-5 text-slate-600">
-                    {activity.description}
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {activity.title}
                   </p>
-                )}
-              </div>
 
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                {formatDateTimeLabel(activity.created_at)}
-              </div>
-            </div>
-
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              <MiniInfoCard
-                label="Módulo"
-                value={getActivityCategoryLabel(activity.category)}
-              />
-
-              <MiniInfoCard
-                label="Campo"
-                value={getActivityFieldLabel(activity.field_name)}
-              />
-
-              <MiniInfoCard
-                label="Usuario"
-                value={activity.created_by || "Sistema"}
-              />
-            </div>
-
-            {(activity.old_value || activity.new_value) && (
-              <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-                  Ver cambios
-                </summary>
-
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Antes
+                  {activity.description && (
+                    <p className="mt-1 text-sm leading-5 text-slate-600">
+                      {activity.description}
                     </p>
-                    <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
-                      {formatActivityValue(
-                        activity.old_value,
-                        activity.field_name,
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Después
-                    </p>
-                    <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
-                      {formatActivityValue(
-                        activity.new_value,
-                        activity.field_name,
-                      )}
-                    </p>
-                  </div>
+                  )}
                 </div>
-              </details>
-            )}
-          </div>
-        ))}
-      </div>
+
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  {formatDateTimeLabel(activity.created_at)}
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <MiniInfoCard
+                  label="Módulo"
+                  value={getActivityCategoryLabel(activity.category)}
+                />
+
+                <MiniInfoCard
+                  label="Campo"
+                  value={getActivityFieldLabel(activity.field_name)}
+                />
+
+                <MiniInfoCard
+                  label="Usuario"
+                  value={activity.created_by || "Sistema"}
+                />
+              </div>
+
+              {(activity.old_value || activity.new_value) && (
+                <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+                    Ver cambios
+                  </summary>
+
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                        Antes
+                      </p>
+                      <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
+                        {formatActivityValue(
+                          activity.old_value,
+                          activity.field_name,
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                        Después
+                      </p>
+                      <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
+                        {formatActivityValue(
+                          activity.new_value,
+                          activity.field_name,
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </details>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {hasMore && onLoadMore && (
         <div className="pt-2">
