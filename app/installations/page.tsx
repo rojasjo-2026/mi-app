@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 
 type InstallationItem = {
   installation_id: string;
@@ -25,6 +29,29 @@ type InstallationItem = {
 
 type FilterType = "all" | "OPEN" | "IN_PROGRESS" | "CLOSED" | "CANCELLED";
 type SortType = "recent" | "oldest";
+
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
+};
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
+  const countryPreset =
+    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+
+  return {
+    currency: settings?.default_currency || countryPreset.primaryCurrency,
+    locale: countryPreset.locale,
+  };
+}
 
 const STATUS_FILTERS: { label: string; value: FilterType }[] = [
   { label: "Todas", value: "all" },
@@ -73,7 +100,7 @@ function getStatusBadgeClass(status?: string | null) {
   return "border border-gray-200 bg-gray-50 text-gray-700";
 }
 
-function formatDateLabel(value?: string | null) {
+function formatDateLabel(value?: string | null, locale = "es-CR") {
   if (!value) return "No disponible";
 
   const parsed = new Date(value);
@@ -82,21 +109,31 @@ function formatDateLabel(value?: string | null) {
     return value;
   }
 
-  return parsed.toLocaleDateString("es-CR", {
+  return parsed.toLocaleDateString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
 }
 
-function formatCurrency(value?: number | null) {
+function formatCurrency(
+  value?: number | null,
+  currency = "CRC",
+  locale = "es-CR",
+) {
   if (value == null) return "No definido";
 
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    maximumFractionDigits: 0,
-  }).format(value);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return `${currency} ${value.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    })}`;
+  }
 }
 
 function getClientName(client?: InstallationItem["client"]) {
@@ -133,9 +170,40 @@ export default function InstallationsPage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("recent");
 
+  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
+  const [businessCurrency, setBusinessCurrency] = useState(
+    defaultBusinessMeta.currency,
+  );
+  const [businessLocale, setBusinessLocale] = useState(
+    defaultBusinessMeta.locale,
+  );
+
   useEffect(() => {
+    async function loadBusinessSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          return;
+        }
+
+        const businessMeta = getBusinessCountryMeta(result.data);
+
+        setBusinessCurrency(businessMeta.currency);
+        setBusinessLocale(businessMeta.locale);
+      } catch {
+        // Keep default business metadata if settings cannot be loaded.
+      }
+    }
+
     async function loadInstallations() {
       try {
+        await loadBusinessSettings();
+
         const response = await fetch("/api/installations", {
           cache: "no-store",
         });
@@ -160,7 +228,7 @@ export default function InstallationsPage() {
       }
     }
 
-    loadInstallations();
+    void loadInstallations();
   }, []);
 
   const filteredInstallations = useMemo(() => {
@@ -367,7 +435,10 @@ export default function InstallationsPage() {
                           Fecha
                         </p>
                         <p className="mt-2 text-sm font-medium text-slate-800">
-                          {formatDateLabel(item.installation_date)}
+                          {formatDateLabel(
+                            item.installation_date,
+                            businessLocale,
+                          )}
                         </p>
                       </div>
 
@@ -403,7 +474,11 @@ export default function InstallationsPage() {
                           Monto estimado
                         </p>
                         <p className="mt-2 text-sm font-medium text-slate-800">
-                          {formatCurrency(item.estimated_amount)}
+                          {formatCurrency(
+                            item.estimated_amount,
+                            businessCurrency,
+                            businessLocale,
+                          )}
                         </p>
                       </div>
                     </div>

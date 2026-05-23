@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { provincias } from "@/lib/data/costa-rica-locations";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+  type CountryPreset,
+} from "@/lib/settings/countryPresets";
 import NotesSection from "@/components/installations/NotesSection";
 import ClientSearchSection from "@/components/installations/ClientSearchSection";
 import InstallationLocationSection from "@/components/installations/InstallationLocationSection";
@@ -51,7 +56,39 @@ type NominatimResponse = {
   };
 };
 
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
+};
+
 const MAX_NOTES_LENGTH = 300;
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryPreset(countryCode?: string | null): CountryPreset {
+  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
+}
+
+function getSpeechRecognitionLocale(countryPreset: CountryPreset) {
+  if (countryPreset.countryCode === "BR") return "pt-BR";
+  if (countryPreset.countryCode === "US") return "en-US";
+  if (countryPreset.countryCode === "CA") return "en-CA";
+
+  return countryPreset.locale || "es-CR";
+}
+
+function getMapsCountryRestriction(countryPreset: CountryPreset) {
+  return countryPreset.countryCode.toLowerCase();
+}
+
+function isCostaRicaPreset(countryPreset: CountryPreset) {
+  return countryPreset.countryCode === "CR";
+}
 
 function getClientDisplayName(client: Client) {
   return [client.first_name, client.last_name_1, client.last_name_2]
@@ -217,6 +254,9 @@ export default function NewInstallationPage() {
   const addressRef = useRef<HTMLInputElement | null>(null);
   const recognitionRef = useRef<any>(null);
 
+  const [businessCountryPreset, setBusinessCountryPreset] =
+    useState<CountryPreset>(fallbackCountryPreset);
+
   const [clientSearch, setClientSearch] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -256,26 +296,44 @@ export default function NewInstallationPage() {
     notes: false,
   });
 
+  const businessLocale = businessCountryPreset.locale || "es-CR";
+  const speechRecognitionLocale = getSpeechRecognitionLocale(
+    businessCountryPreset,
+  );
+  const mapsCountryRestriction = getMapsCountryRestriction(
+    businessCountryPreset,
+  );
+  const shouldUseCostaRicaLocationCatalog = isCostaRicaPreset(
+    businessCountryPreset,
+  );
+
   const provinciaOptions = useMemo(
-    () => provincias.map((provincia) => provincia.nombre),
-    [],
+    () =>
+      shouldUseCostaRicaLocationCatalog
+        ? provincias.map((provincia) => provincia.nombre)
+        : [],
+    [shouldUseCostaRicaLocationCatalog],
   );
 
   const cantonOptions = useMemo(() => {
+    if (!shouldUseCostaRicaLocationCatalog) return [];
+
     const provinciaSeleccionada = provincias.find(
       (provincia) => provincia.nombre === adminLevel1,
     );
 
     return provinciaSeleccionada?.cantones ?? [];
-  }, [adminLevel1]);
+  }, [adminLevel1, shouldUseCostaRicaLocationCatalog]);
 
   const distritoOptions = useMemo(() => {
+    if (!shouldUseCostaRicaLocationCatalog) return [];
+
     const cantonSeleccionado = cantonOptions.find(
       (canton) => canton.nombre === adminLevel2,
     );
 
     return cantonSeleccionado?.distritos ?? [];
-  }, [adminLevel2, cantonOptions]);
+  }, [adminLevel2, cantonOptions, shouldUseCostaRicaLocationCatalog]);
 
   function toggleSection(section: keyof typeof openSections) {
     setOpenSections((prev) => ({
@@ -324,7 +382,7 @@ export default function NewInstallationPage() {
   }
 
   function addTimestampedText(text: string) {
-    const timestamp = new Date().toLocaleString("es-CR");
+    const timestamp = new Date().toLocaleString(businessLocale);
     const newEntry = `[${timestamp}] ${text}`.trim();
 
     setLocationNotes((prev) => {
@@ -346,7 +404,7 @@ export default function NewInstallationPage() {
     setMessage("");
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "es-CR";
+    recognition.lang = speechRecognitionLocale;
     recognition.continuous = false;
     recognition.interimResults = false;
 
@@ -396,6 +454,40 @@ export default function NewInstallationPage() {
   }
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadBusinessSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          return;
+        }
+
+        const countryPreset = getBusinessCountryPreset(
+          result.data?.country_code,
+        );
+
+        if (!isMounted) return;
+
+        setBusinessCountryPreset(countryPreset);
+      } catch {
+        // Keep Costa Rica defaults if system settings cannot be loaded.
+      }
+    }
+
+    void loadBusinessSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       if (!window.google?.maps?.places || !addressRef.current) {
         return;
@@ -404,7 +496,7 @@ export default function NewInstallationPage() {
       const autocomplete = new window.google.maps.places.Autocomplete(
         addressRef.current,
         {
-          componentRestrictions: { country: "cr" },
+          componentRestrictions: { country: mapsCountryRestriction },
           fields: ["geometry", "formatted_address"],
         },
       );
@@ -436,7 +528,7 @@ export default function NewInstallationPage() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [useClientAddress, selectedClient]);
+  }, [mapsCountryRestriction, useClientAddress, selectedClient]);
 
   useEffect(() => {
     if (!clientSearch.trim()) {
@@ -568,24 +660,40 @@ export default function NewInstallationPage() {
             setAddressLine(data.display_name);
           }
 
-          const matchedLocation = findBestLocationMatch(data.address);
+          if (shouldUseCostaRicaLocationCatalog) {
+            const matchedLocation = findBestLocationMatch(data.address);
 
-          if (matchedLocation.province) {
-            setAdminLevel1(matchedLocation.province);
-          } else {
-            setAdminLevel1("");
-          }
+            if (matchedLocation.province) {
+              setAdminLevel1(matchedLocation.province);
+            } else {
+              setAdminLevel1("");
+            }
 
-          if (matchedLocation.canton) {
-            setAdminLevel2(matchedLocation.canton);
-          } else {
-            setAdminLevel2("");
-          }
+            if (matchedLocation.canton) {
+              setAdminLevel2(matchedLocation.canton);
+            } else {
+              setAdminLevel2("");
+            }
 
-          if (matchedLocation.district) {
-            setAdminLevel3(matchedLocation.district);
+            if (matchedLocation.district) {
+              setAdminLevel3(matchedLocation.district);
+            } else {
+              setAdminLevel3("");
+            }
           } else {
-            setAdminLevel3("");
+            setAdminLevel1(data.address?.state || "");
+            setAdminLevel2(
+              data.address?.city ||
+                data.address?.town ||
+                data.address?.municipality ||
+                "",
+            );
+            setAdminLevel3(
+              data.address?.suburb ||
+                data.address?.neighbourhood ||
+                data.address?.village ||
+                "",
+            );
           }
 
           setMessage("Se detectó una ubicación distinta a la del cliente.");

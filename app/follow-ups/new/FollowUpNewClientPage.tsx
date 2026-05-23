@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 
 type InstallationOption = {
   installation_id: string;
@@ -24,6 +28,29 @@ type TechnicianOption = {
   email?: string | null;
   is_active?: boolean;
 };
+
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
+};
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
+  const countryPreset =
+    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+
+  return {
+    currency: settings?.default_currency || countryPreset.primaryCurrency,
+    locale: countryPreset.locale,
+  };
+}
 
 const billingStatusOptions = [
   { value: "PENDING", label: "Pendiente por facturar" },
@@ -70,32 +97,38 @@ function getTechnicianName(technician?: TechnicianOption | null) {
   return composedName || technician?.email || "Técnico sin nombre";
 }
 
-function formatDateLabel(value?: string | null) {
+function formatDateLabel(value?: string | null, locale = "es-CR") {
   if (!value) return "Sin fecha";
 
   const parsed = new Date(value);
 
   if (Number.isNaN(parsed.getTime())) return value;
 
-  return parsed.toLocaleDateString("es-CR", {
+  return parsed.toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-function formatMoneyPreview(value: string) {
+function formatMoneyPreview(value: string, currency: string, locale: string) {
   if (!value) return "-";
 
   const parsed = Number(value);
 
   if (Number.isNaN(parsed)) return "-";
 
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    maximumFractionDigits: 0,
-  }).format(parsed);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(parsed);
+  } catch {
+    return `${currency} ${parsed.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    })}`;
+  }
 }
 
 function getOptionLabel(
@@ -122,6 +155,14 @@ export default function FollowUpNewClientPage() {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [error, setError] = useState("");
 
+  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
+  const [businessCurrency, setBusinessCurrency] = useState(
+    defaultBusinessMeta.currency,
+  );
+  const [businessLocale, setBusinessLocale] = useState(
+    defaultBusinessMeta.locale,
+  );
+
   const [installationId, setInstallationId] = useState(installationIdFromQuery);
   const [targetDate, setTargetDate] = useState("");
   const [priority, setPriority] = useState("2");
@@ -135,8 +176,31 @@ export default function FollowUpNewClientPage() {
   const [billingNotes, setBillingNotes] = useState("");
 
   useEffect(() => {
+    async function loadBusinessSettings() {
+      try {
+        const res = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await res.json();
+
+        if (!res.ok || !result.success) {
+          return;
+        }
+
+        const businessMeta = getBusinessCountryMeta(result.data);
+
+        setBusinessCurrency(businessMeta.currency);
+        setBusinessLocale(businessMeta.locale);
+      } catch {
+        // Keep default business metadata if settings cannot be loaded.
+      }
+    }
+
     async function loadPageData() {
       try {
+        await loadBusinessSettings();
+
         const [installationsRes, techniciansRes] = await Promise.all([
           fetch("/api/installations", {
             cache: "no-store",
@@ -178,7 +242,7 @@ export default function FollowUpNewClientPage() {
       }
     }
 
-    loadPageData();
+    void loadPageData();
   }, []);
 
   const selectedInstallation = useMemo(() => {
@@ -544,7 +608,10 @@ export default function FollowUpNewClientPage() {
                       Fecha de instalación
                     </p>
                     <p className="mt-2 text-sm font-medium text-slate-800">
-                      {formatDateLabel(selectedInstallation.installation_date)}
+                      {formatDateLabel(
+                        selectedInstallation.installation_date,
+                        businessLocale,
+                      )}
                     </p>
                   </div>
 
@@ -583,7 +650,11 @@ export default function FollowUpNewClientPage() {
                         Monto estimado
                       </p>
                       <p className="mt-2 text-sm font-medium text-slate-800">
-                        {formatMoneyPreview(estimatedAmount)}
+                        {formatMoneyPreview(
+                          estimatedAmount,
+                          businessCurrency,
+                          businessLocale,
+                        )}
                       </p>
                     </div>
 
@@ -592,7 +663,11 @@ export default function FollowUpNewClientPage() {
                         Costo interno
                       </p>
                       <p className="mt-2 text-sm font-medium text-slate-800">
-                        {formatMoneyPreview(costAmount)}
+                        {formatMoneyPreview(
+                          costAmount,
+                          businessCurrency,
+                          businessLocale,
+                        )}
                       </p>
                     </div>
                   </div>

@@ -1,7 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 import MetricCard from "./components/MetricCard";
 import StaffMetricCard from "./components/StaffMetricCard";
 import InstallationStatusAlerts from "./components/InstallationStatusAlerts";
@@ -29,10 +33,7 @@ import {
   hasCoordinates,
 } from "./utils/installationDetailSelectors";
 import type { ClientNameParts } from "./types/installationDetailPage.types";
-import {
-  formatDate,
-  getTechnicianDisplayName,
-} from "@/lib/installations/installation-detail.utils";
+import { getTechnicianDisplayName } from "@/lib/installations/installation-detail.utils";
 import InstallationComponentsSection from "@/components/installations/InstallationComponentsSection";
 
 type InstallationCommercialInfo = {
@@ -43,6 +44,45 @@ type InstallationCommercialInfo = {
   billing_notes?: string | null;
   warranty_months?: number | string | null;
 };
+
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
+};
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
+  const countryPreset =
+    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+
+  return {
+    currency: settings?.default_currency || countryPreset.primaryCurrency,
+    locale: countryPreset.locale,
+  };
+}
+
+function formatBusinessDate(value?: string | null, locale = "es-CR") {
+  if (!value) return "-";
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "-";
+  }
+
+  return parsed.toLocaleDateString(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 function getInstallationStatusBadge(status?: string | null) {
   if (status === "OPEN") {
@@ -84,7 +124,11 @@ function getInstallationStatusBadge(status?: string | null) {
   );
 }
 
-function formatCurrencyLabel(value?: number | string | null) {
+function formatCurrencyLabel(
+  value?: number | string | null,
+  currency = "CRC",
+  locale = "es-CR",
+) {
   if (value === null || value === undefined || value === "") {
     return "-";
   }
@@ -95,15 +139,25 @@ function formatCurrencyLabel(value?: number | string | null) {
     return "-";
   }
 
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    maximumFractionDigits: 0,
-  }).format(numericValue);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(numericValue);
+  } catch {
+    return `${currency} ${numericValue.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    })}`;
+  }
 }
 
-function formatOptionalCurrencyLabel(value?: number | string | null) {
-  const formattedValue = formatCurrencyLabel(value);
+function formatOptionalCurrencyLabel(
+  value?: number | string | null,
+  currency = "CRC",
+  locale = "es-CR",
+) {
+  const formattedValue = formatCurrencyLabel(value, currency, locale);
 
   return formattedValue === "-" ? undefined : formattedValue;
 }
@@ -144,6 +198,47 @@ export default function InstallationDetailPage() {
     handleCompleteMaintenance,
     handleDeactivateInstallation,
   } = useInstallationDetail({ id });
+
+  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
+  const [businessCurrency, setBusinessCurrency] = useState(
+    defaultBusinessMeta.currency,
+  );
+  const [businessLocale, setBusinessLocale] = useState(
+    defaultBusinessMeta.locale,
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBusinessSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          return;
+        }
+
+        const businessMeta = getBusinessCountryMeta(result.data);
+
+        if (!isMounted) return;
+
+        setBusinessCurrency(businessMeta.currency);
+        setBusinessLocale(businessMeta.locale);
+      } catch {
+        // Keep default business metadata if settings cannot be loaded.
+      }
+    }
+
+    void loadBusinessSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const latitude = useMemo(() => getLatitude(installation), [installation]);
   const longitude = useMemo(() => getLongitude(installation), [installation]);
@@ -200,9 +295,21 @@ export default function InstallationDetailPage() {
     installation.client as ClientNameParts | null | undefined,
   );
 
-  const estimatedAmount = formatCurrencyLabel(commercialInfo.estimated_amount);
-  const costAmount = formatOptionalCurrencyLabel(commercialInfo.cost_amount);
-  const finalAmount = formatOptionalCurrencyLabel(commercialInfo.final_amount);
+  const estimatedAmount = formatCurrencyLabel(
+    commercialInfo.estimated_amount,
+    businessCurrency,
+    businessLocale,
+  );
+  const costAmount = formatOptionalCurrencyLabel(
+    commercialInfo.cost_amount,
+    businessCurrency,
+    businessLocale,
+  );
+  const finalAmount = formatOptionalCurrencyLabel(
+    commercialInfo.final_amount,
+    businessCurrency,
+    businessLocale,
+  );
   const billingStatusLabel = getBillingStatusLabel(
     commercialInfo.billing_status,
   );
@@ -236,12 +343,18 @@ export default function InstallationDetailPage() {
             installation.installation_status,
           )}
           clientName={clientFullName || "Cliente no definido"}
-          installationDate={formatDate(installation.installation_date)}
+          installationDate={formatBusinessDate(
+            installation.installation_date,
+            businessLocale,
+          )}
           location={locationLabel}
           amount={estimatedAmount}
           nextPendingFollowUpDate={
             nextPendingFollowUp?.target_date
-              ? formatDate(nextPendingFollowUp.target_date)
+              ? formatBusinessDate(
+                  nextPendingFollowUp.target_date,
+                  businessLocale,
+                )
               : null
           }
           creatingMaintenance={creatingMaintenance}
@@ -290,7 +403,10 @@ export default function InstallationDetailPage() {
 
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <InstallationMainInfoSection
-            installationDate={formatDate(installation.installation_date)}
+            installationDate={formatBusinessDate(
+              installation.installation_date,
+              businessLocale,
+            )}
             serviceTypeName={installation.service_type?.name || "-"}
             statusLabel={getInstallationStatusLabel(
               installation.installation_status,
@@ -321,7 +437,10 @@ export default function InstallationDetailPage() {
           technicianIsActive={installation.technician?.is_active}
           hasLinkedTechnician={Boolean(installation.technician)}
           warrantyMonths={warrantyMonths}
-          warrantyEndDate={formatDate(installation.warranty_end_date)}
+          warrantyEndDate={formatBusinessDate(
+            installation.warranty_end_date,
+            businessLocale,
+          )}
           coverage={warrantyCoverage}
           manualBackup={manualBackup}
         />

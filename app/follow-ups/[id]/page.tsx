@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 import FollowUpActionsSection from "./components/FollowUpActionsSection";
 import FollowUpClientSection from "./components/FollowUpClientSection";
 import FollowUpContactFlowSection from "./components/FollowUpContactFlowSection";
@@ -15,7 +19,6 @@ import FollowUpCollapsibleSection from "./components/FollowUpCollapsibleSection"
 import FollowUpCommercialSection, {
   formatBillingStatus,
   formatMaintenanceType,
-  formatMoney,
 } from "./components/FollowUpCommercialSection";
 import {
   type FollowUpDetail,
@@ -37,6 +40,89 @@ type TechnicianOption = {
   last_name_2?: string | null;
   email?: string | null;
 };
+
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
+};
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
+  const countryPreset =
+    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+
+  return {
+    currency: settings?.default_currency || countryPreset.primaryCurrency,
+    locale: countryPreset.locale,
+  };
+}
+
+function toSafeNumber(value?: number | string | null) {
+  if (value === null || value === undefined || value === "") return null;
+
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatBusinessMoney(
+  value?: number | string | null,
+  currency = "CRC",
+  locale = "es-CR",
+) {
+  const amount = toSafeNumber(value);
+
+  if (amount === null) return "-";
+
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    })}`;
+  }
+}
+
+function formatBusinessDate(value?: string | null, locale = "es-CR") {
+  if (!value) return "-";
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) return "-";
+
+  return parsed.toLocaleDateString(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatBusinessDateTime(value?: string | null, locale = "es-CR") {
+  if (!value) return "-";
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) return "-";
+
+  return parsed.toLocaleString(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function getNumberInputValue(value?: number | null) {
   return value !== null && value !== undefined ? String(value) : "";
@@ -97,7 +183,36 @@ export default function FollowUpDetailPage() {
     technician_id: "",
   });
 
+  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
+  const [businessCurrency, setBusinessCurrency] = useState(
+    defaultBusinessMeta.currency,
+  );
+  const [businessLocale, setBusinessLocale] = useState(
+    defaultBusinessMeta.locale,
+  );
+
   useEffect(() => {
+    async function loadBusinessSettings() {
+      try {
+        const res = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await res.json();
+
+        if (!res.ok || !result.success) {
+          return;
+        }
+
+        const businessMeta = getBusinessCountryMeta(result.data);
+
+        setBusinessCurrency(businessMeta.currency);
+        setBusinessLocale(businessMeta.locale);
+      } catch {
+        // Keep default business metadata if settings cannot be loaded.
+      }
+    }
+
     async function loadData() {
       if (!id) {
         setError("Mantenimiento no encontrado");
@@ -106,6 +221,8 @@ export default function FollowUpDetailPage() {
       }
 
       try {
+        await loadBusinessSettings();
+
         const res = await fetch(`/api/follow-ups/${id}`, {
           cache: "no-store",
         });
@@ -124,7 +241,7 @@ export default function FollowUpDetailPage() {
       }
     }
 
-    loadData();
+    void loadData();
   }, [id]);
 
   useEffect(() => {
@@ -148,7 +265,7 @@ export default function FollowUpDetailPage() {
       }
     }
 
-    loadTechnicians();
+    void loadTechnicians();
   }, []);
 
   useEffect(() => {
@@ -366,10 +483,16 @@ export default function FollowUpDetailPage() {
           <FollowUpInfoSection
             isEditing={isEditing}
             form={editForm}
-            completedAtLabel={formatDate(followUp.completed_at)}
+            completedAtLabel={formatBusinessDate(
+              followUp.completed_at,
+              businessLocale,
+            )}
             createdFrom={followUp.created_from || "-"}
-            targetDateLabel={formatDate(followUp.target_date)}
-            dueDateLabel={formatDate(followUp.due_date)}
+            targetDateLabel={formatBusinessDate(
+              followUp.target_date,
+              businessLocale,
+            )}
+            dueDateLabel={formatBusinessDate(followUp.due_date, businessLocale)}
             reasonLabel={followUp.reason || "Mantenimiento programado"}
             priorityLabel={String(followUp.priority ?? "-")}
             onChange={updateEditField}
@@ -380,9 +503,21 @@ export default function FollowUpDetailPage() {
           <FollowUpCommercialSection
             isEditing={isEditing}
             form={editForm}
-            estimatedAmountLabel={formatMoney(followUp.estimated_amount)}
-            finalAmountLabel={formatMoney(followUp.final_amount)}
-            costAmountLabel={formatMoney(followUp.cost_amount)}
+            estimatedAmountLabel={formatBusinessMoney(
+              followUp.estimated_amount,
+              businessCurrency,
+              businessLocale,
+            )}
+            finalAmountLabel={formatBusinessMoney(
+              followUp.final_amount,
+              businessCurrency,
+              businessLocale,
+            )}
+            costAmountLabel={formatBusinessMoney(
+              followUp.cost_amount,
+              businessCurrency,
+              businessLocale,
+            )}
             billingStatusLabel={formatBillingStatus(followUp.billing_status)}
             billingNotesLabel={followUp.billing_notes || "-"}
             maintenanceTypeLabel={formatMaintenanceType(
@@ -407,8 +542,9 @@ export default function FollowUpDetailPage() {
             <FollowUpInstallationSection
               hasInstallation={Boolean(followUp.installation)}
               description={followUp.installation?.description || "-"}
-              installationDate={formatDate(
+              installationDate={formatBusinessDate(
                 followUp.installation?.installation_date,
+                businessLocale,
               )}
               technician={followUp.installation?.technician_name || "-"}
               onViewInstallation={goToInstallation}
@@ -443,8 +579,10 @@ export default function FollowUpDetailPage() {
           <FollowUpContactHistorySection
             clientId={followUp.client?.client_id}
             followUpId={followUp.follow_up_id}
-            formatDate={formatDate}
-            formatDateTime={formatDateTime}
+            formatDate={(value) => formatBusinessDate(value, businessLocale)}
+            formatDateTime={(value) =>
+              formatBusinessDateTime(value, businessLocale)
+            }
           />
         </FollowUpCollapsibleSection>
       </div>

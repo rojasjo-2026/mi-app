@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 
 type Technician = {
   user_id?: string;
@@ -10,6 +14,14 @@ type Technician = {
   first_name?: string | null;
   last_name?: string | null;
   email?: string | null;
+};
+
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
 };
 
 type FollowUp = {
@@ -61,6 +73,21 @@ type BillingFilter =
   | "BILLING_ERROR"
   | "CANCELLED";
 type SortMode = "target_date" | "priority" | "client" | "billing";
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
+  const countryPreset =
+    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+
+  return {
+    currency: settings?.default_currency || countryPreset.primaryCurrency,
+    locale: countryPreset.locale,
+  };
+}
 
 function getFilterButtonClass(isActive: boolean) {
   return isActive
@@ -140,7 +167,7 @@ function getBillingStatusClasses(status?: string | null) {
   }
 }
 
-function formatDateLabel(value?: string | null) {
+function formatDateLabel(value?: string | null, locale = "es-CR") {
   if (!value) return null;
 
   const parsed = new Date(value);
@@ -149,7 +176,7 @@ function formatDateLabel(value?: string | null) {
     return value;
   }
 
-  return parsed.toLocaleDateString("es-CR", {
+  return parsed.toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -263,16 +290,22 @@ function getMainAmount(item: FollowUp) {
   return toNumber(item.final_amount) ?? toNumber(item.estimated_amount);
 }
 
-function formatMoney(value: unknown) {
+function formatMoney(value: unknown, currency: string, locale: string) {
   const amount = toNumber(value);
 
   if (amount === null) return "No definido";
 
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    })}`;
+  }
 }
 
 function getSearchText(item: FollowUp) {
@@ -306,6 +339,14 @@ export default function FollowUpsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
+  const [businessCurrency, setBusinessCurrency] = useState(
+    defaultBusinessMeta.currency,
+  );
+  const [businessLocale, setBusinessLocale] = useState(
+    defaultBusinessMeta.locale,
+  );
+
   const [statusFilter, setStatusFilter] = useState<FollowUpFilter>("all");
   const [timingFilter, setTimingFilter] = useState<TimingFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
@@ -314,8 +355,31 @@ export default function FollowUpsPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
+    async function loadBusinessSettings() {
+      try {
+        const res = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await res.json();
+
+        if (!res.ok || !result.success) {
+          return;
+        }
+
+        const businessMeta = getBusinessCountryMeta(result.data);
+
+        setBusinessCurrency(businessMeta.currency);
+        setBusinessLocale(businessMeta.locale);
+      } catch {
+        // Keep default business metadata if settings cannot be loaded.
+      }
+    }
+
     async function loadFollowUps() {
       try {
+        await loadBusinessSettings();
+
         const res = await fetch("/api/follow-ups", {
           cache: "no-store",
         });
@@ -743,13 +807,21 @@ export default function FollowUpsPage() {
         ) : (
           <ul className="space-y-4">
             {filteredItems.map((item) => {
-              const formattedTargetDate = formatDateLabel(item.target_date);
+              const formattedTargetDate = formatDateLabel(
+                item.target_date,
+                businessLocale,
+              );
               const formattedScheduledDate = formatDateLabel(
                 item.scheduled_date,
+                businessLocale,
               );
-              const formattedDueDate = formatDateLabel(item.due_date);
+              const formattedDueDate = formatDateLabel(
+                item.due_date,
+                businessLocale,
+              );
               const formattedInstallationDate = formatDateLabel(
                 item.installation?.installation_date,
+                businessLocale,
               );
               const timingMeta = getTimingMeta(
                 item.target_date,
@@ -854,7 +926,11 @@ export default function FollowUpsPage() {
                           <p className="mt-2 text-sm font-medium text-slate-800">
                             {amount === null
                               ? "No definido"
-                              : formatMoney(amount)}
+                              : formatMoney(
+                                  amount,
+                                  businessCurrency,
+                                  businessLocale,
+                                )}
                           </p>
                         </div>
 

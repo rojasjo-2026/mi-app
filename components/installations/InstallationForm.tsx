@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { provincias } from "@/lib/data/costa-rica-locations";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+  type CountryPreset,
+} from "@/lib/settings/countryPresets";
 import InstallationCommercialSection from "./InstallationCommercialSection";
 
 type TechnicianOption = {
@@ -39,11 +44,34 @@ type InstallationFormProps = {
   initialData?: InstallationFormData | null;
 };
 
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+  } | null;
+};
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryPreset(countryCode?: string | null): CountryPreset {
+  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
+}
+
+function isCostaRicaPreset(countryPreset: CountryPreset) {
+  return countryPreset.countryCode === "CR";
+}
+
 export default function InstallationForm({
   mode,
   initialData = null,
 }: InstallationFormProps) {
   const router = useRouter();
+
+  const [businessCountryPreset, setBusinessCountryPreset] =
+    useState<CountryPreset>(fallbackCountryPreset);
 
   const [description, setDescription] = useState("");
   const [technicianName, setTechnicianName] = useState("");
@@ -70,6 +98,40 @@ export default function InstallationForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBusinessSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          return;
+        }
+
+        const countryPreset = getBusinessCountryPreset(
+          result.data?.country_code,
+        );
+
+        if (!isMounted) return;
+
+        setBusinessCountryPreset(countryPreset);
+      } catch {
+        // Keep Costa Rica defaults if system settings cannot be loaded.
+      }
+    }
+
+    void loadBusinessSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!initialData) return;
@@ -132,26 +194,40 @@ export default function InstallationForm({
     loadTechnicians();
   }, []);
 
+  const shouldUseCostaRicaLocationCatalog = isCostaRicaPreset(
+    businessCountryPreset,
+  );
+
+  const adminLevel3Label =
+    businessCountryPreset.adminLevel3Label ?? "Nivel administrativo 3";
+
   const provinciaOptions = useMemo(
-    () => provincias.map((provincia) => provincia.nombre),
-    [],
+    () =>
+      shouldUseCostaRicaLocationCatalog
+        ? provincias.map((provincia) => provincia.nombre)
+        : [],
+    [shouldUseCostaRicaLocationCatalog],
   );
 
   const cantonOptions = useMemo(() => {
+    if (!shouldUseCostaRicaLocationCatalog) return [];
+
     const provinciaSeleccionada = provincias.find(
       (provincia) => provincia.nombre === adminLevel1,
     );
 
     return provinciaSeleccionada?.cantones ?? [];
-  }, [adminLevel1]);
+  }, [adminLevel1, shouldUseCostaRicaLocationCatalog]);
 
   const distritoOptions = useMemo(() => {
+    if (!shouldUseCostaRicaLocationCatalog) return [];
+
     const cantonSeleccionado = cantonOptions.find(
       (canton) => canton.nombre === adminLevel2,
     );
 
     return cantonSeleccionado?.distritos ?? [];
-  }, [adminLevel2, cantonOptions]);
+  }, [adminLevel2, cantonOptions, shouldUseCostaRicaLocationCatalog]);
 
   const selectedTechnician = useMemo(() => {
     if (!technicianId) return initialData?.technician ?? null;
@@ -487,61 +563,124 @@ export default function InstallationForm({
               title="Ubicación"
               description="Información geográfica y referencias de la instalación."
             >
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Provincia
-                </label>
-                <select
-                  value={adminLevel1}
-                  onChange={(e) => handleProvinceChange(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">Seleccione provincia</option>
-                  {provinciaOptions.map((provincia) => (
-                    <option key={provincia} value={provincia}>
-                      {provincia}
-                    </option>
-                  ))}
-                </select>
+              <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-sm font-semibold text-slate-800">
+                  País operativo
+                </p>
+                <p className="mt-1 text-sm font-medium text-slate-700">
+                  {businessCountryPreset.countryName}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Este país viene de la Configuración del sistema y define los
+                  nombres de ubicación usados para esta instalación.
+                </p>
               </div>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Cantón
-                </label>
-                <select
-                  value={adminLevel2}
-                  onChange={(e) => handleCantonChange(e.target.value)}
-                  disabled={!adminLevel1}
-                  className={selectClass}
-                >
-                  <option value="">Seleccione cantón</option>
-                  {cantonOptions.map((canton) => (
-                    <option key={canton.nombre} value={canton.nombre}>
-                      {canton.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {shouldUseCostaRicaLocationCatalog ? (
+                <>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      {businessCountryPreset.adminLevel1Label}
+                    </label>
+                    <select
+                      value={adminLevel1}
+                      onChange={(e) => handleProvinceChange(e.target.value)}
+                      className={selectClass}
+                    >
+                      <option value="">
+                        Seleccione{" "}
+                        {businessCountryPreset.adminLevel1Label.toLowerCase()}
+                      </option>
+                      {provinciaOptions.map((provincia) => (
+                        <option key={provincia} value={provincia}>
+                          {provincia}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="md:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Distrito
-                </label>
-                <select
-                  value={adminLevel3}
-                  onChange={(e) => setAdminLevel3(e.target.value)}
-                  disabled={!adminLevel1 || !adminLevel2}
-                  className={selectClass}
-                >
-                  <option value="">Seleccione distrito</option>
-                  {distritoOptions.map((distrito) => (
-                    <option key={distrito.nombre} value={distrito.nombre}>
-                      {distrito.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      {businessCountryPreset.adminLevel2Label}
+                    </label>
+                    <select
+                      value={adminLevel2}
+                      onChange={(e) => handleCantonChange(e.target.value)}
+                      disabled={!adminLevel1}
+                      className={selectClass}
+                    >
+                      <option value="">
+                        Seleccione{" "}
+                        {businessCountryPreset.adminLevel2Label.toLowerCase()}
+                      </option>
+                      {cantonOptions.map((canton) => (
+                        <option key={canton.nombre} value={canton.nombre}>
+                          {canton.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      {adminLevel3Label}
+                    </label>
+                    <select
+                      value={adminLevel3}
+                      onChange={(e) => setAdminLevel3(e.target.value)}
+                      disabled={!adminLevel1 || !adminLevel2}
+                      className={selectClass}
+                    >
+                      <option value="">
+                        Seleccione {adminLevel3Label.toLowerCase()}
+                      </option>
+                      {distritoOptions.map((distrito) => (
+                        <option key={distrito.nombre} value={distrito.nombre}>
+                          {distrito.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      {businessCountryPreset.adminLevel1Label}
+                    </label>
+                    <input
+                      value={adminLevel1}
+                      onChange={(e) => setAdminLevel1(e.target.value)}
+                      className={inputClass}
+                      placeholder={businessCountryPreset.adminLevel1Label}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      {businessCountryPreset.adminLevel2Label}
+                    </label>
+                    <input
+                      value={adminLevel2}
+                      onChange={(e) => setAdminLevel2(e.target.value)}
+                      className={inputClass}
+                      placeholder={businessCountryPreset.adminLevel2Label}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      {adminLevel3Label}
+                    </label>
+                    <input
+                      value={adminLevel3}
+                      onChange={(e) => setAdminLevel3(e.target.value)}
+                      className={inputClass}
+                      placeholder={adminLevel3Label}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="md:col-span-2">
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -563,7 +702,7 @@ export default function InstallationForm({
                   value={referencePoint}
                   onChange={(e) => setReferencePoint(e.target.value)}
                   className={inputClass}
-                  placeholder="Ej: 100 metros al sur de la iglesia"
+                  placeholder="Ej: entrada principal, edificio, local o referencia cercana"
                 />
               </div>
 

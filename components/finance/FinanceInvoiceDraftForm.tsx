@@ -1,6 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 
 type PaymentTerm = "CASH" | "CREDIT";
 type SourceType = "INSTALLATION" | "FOLLOW_UP" | "MANUAL";
@@ -22,6 +26,9 @@ type FinanceInvoiceDraftFormProps = {
     default_credit_days?: number | null;
     default_discount_rate?: number | string | null;
     tax_exempt?: boolean | null;
+    country_code?: string | null;
+    identification_country?: string | null;
+    preferred_currency?: string | null;
   } | null;
 
   installationId?: string | null;
@@ -41,12 +48,58 @@ function buildClientName(client?: FinanceInvoiceDraftFormProps["client"]) {
     .join(" ");
 }
 
-function formatCRC(value: number) {
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    minimumFractionDigits: 0,
-  }).format(value);
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+    default_tax_rate?: number | string | null;
+  } | null;
+};
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryMeta(
+  settings?: AppSettingsResponse["data"],
+  client?: FinanceInvoiceDraftFormProps["client"],
+) {
+  const countryPreset =
+    getCountryPreset(
+      client?.country_code ??
+        client?.identification_country ??
+        settings?.country_code,
+    ) ?? fallbackCountryPreset;
+
+  return {
+    currency:
+      client?.preferred_currency ||
+      settings?.default_currency ||
+      countryPreset.primaryCurrency,
+    locale: countryPreset.locale,
+    taxLabel: countryPreset.taxLabel || "IVA",
+    taxRate:
+      settings?.default_tax_rate !== null &&
+      settings?.default_tax_rate !== undefined
+        ? Number(settings.default_tax_rate)
+        : countryPreset.defaultTaxRate,
+  };
+}
+
+function formatMoney(value: number, currency: string, locale: string) {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return `${currency} ${value.toLocaleString(locale, {
+      minimumFractionDigits: 0,
+    })}`;
+  }
 }
 
 export default function FinanceInvoiceDraftForm({
@@ -63,6 +116,10 @@ export default function FinanceInvoiceDraftForm({
   const defaultPhone = client?.billing_phone || client?.phone_primary || "";
   const defaultEmail = client?.billing_email || client?.email || "";
   const defaultAddress = client?.billing_address || "";
+  const defaultBusinessMeta = useMemo(
+    () => getBusinessCountryMeta(undefined, client),
+    [client],
+  );
 
   const baseAmount = Number(finalAmount ?? estimatedAmount ?? 0);
 
@@ -81,6 +138,19 @@ export default function FinanceInvoiceDraftForm({
     Number(client?.default_discount_rate ?? 0),
   );
 
+  const [businessCurrency, setBusinessCurrency] = useState(
+    defaultBusinessMeta.currency,
+  );
+  const [businessLocale, setBusinessLocale] = useState(
+    defaultBusinessMeta.locale,
+  );
+  const [businessTaxLabel, setBusinessTaxLabel] = useState(
+    defaultBusinessMeta.taxLabel,
+  );
+  const [businessTaxRate, setBusinessTaxRate] = useState(
+    defaultBusinessMeta.taxRate,
+  );
+
   const [applyTax, setApplyTax] = useState(!client?.tax_exempt);
   const [paymentTerm, setPaymentTerm] = useState<PaymentTerm>(
     client?.default_payment_term ?? "CASH",
@@ -93,11 +163,46 @@ export default function FinanceInvoiceDraftForm({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBusinessSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          return;
+        }
+
+        const businessMeta = getBusinessCountryMeta(result.data, client);
+
+        if (!isMounted) return;
+
+        setBusinessCurrency(businessMeta.currency);
+        setBusinessLocale(businessMeta.locale);
+        setBusinessTaxLabel(businessMeta.taxLabel);
+        setBusinessTaxRate(businessMeta.taxRate);
+      } catch {
+        // Keep default business metadata if settings cannot be loaded.
+      }
+    }
+
+    void loadBusinessSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [client]);
+
   const totals = useMemo(() => {
     const subtotal = Number(amount || 0);
     const discount = subtotal * (Number(discountRate || 0) / 100);
     const taxable = subtotal - discount;
-    const tax = applyTax ? taxable * 0.13 : 0;
+    const tax = applyTax ? taxable * (Number(businessTaxRate || 0) / 100) : 0;
     const total = taxable + tax;
 
     return {
@@ -106,7 +211,7 @@ export default function FinanceInvoiceDraftForm({
       tax,
       total,
     };
-  }, [amount, discountRate, applyTax]);
+  }, [amount, discountRate, applyTax, businessTaxRate]);
 
   async function handleGenerateInvoice() {
     setError("");
@@ -155,7 +260,7 @@ export default function FinanceInvoiceDraftForm({
 
           payment_term: paymentTerm,
           credit_days: paymentTerm === "CREDIT" ? creditDays : null,
-          currency: "CRC",
+          currency: businessCurrency,
 
           description,
           quantity: 1,
@@ -163,7 +268,7 @@ export default function FinanceInvoiceDraftForm({
 
           discount_rate: discountRate,
           discount_reason: null,
-          tax_rate: applyTax ? 13 : 0,
+          tax_rate: applyTax ? businessTaxRate : 0,
           tax_exempt: !applyTax,
 
           customer_snapshot_name: customerName,
@@ -324,7 +429,7 @@ export default function FinanceInvoiceDraftForm({
                 onChange={(e) => setApplyTax(e.target.checked)}
                 className="h-4 w-4"
               />
-              Aplicar IVA 13%
+              Aplicar {businessTaxLabel} {Number(businessTaxRate || 0)}%
             </label>
           </div>
         </div>
@@ -367,23 +472,29 @@ export default function FinanceInvoiceDraftForm({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Subtotal</span>
-              <span className="font-medium">{formatCRC(totals.subtotal)}</span>
+              <span className="font-medium">
+                {formatMoney(totals.subtotal, businessCurrency, businessLocale)}
+              </span>
             </div>
 
             <div className="flex justify-between">
               <span className="text-gray-500">Descuento</span>
-              <span className="font-medium">{formatCRC(totals.discount)}</span>
+              <span className="font-medium">
+                {formatMoney(totals.discount, businessCurrency, businessLocale)}
+              </span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-500">IVA</span>
-              <span className="font-medium">{formatCRC(totals.tax)}</span>
+              <span className="text-gray-500">{businessTaxLabel}</span>
+              <span className="font-medium">
+                {formatMoney(totals.tax, businessCurrency, businessLocale)}
+              </span>
             </div>
 
             <div className="mt-3 flex justify-between border-t pt-3 text-base">
               <span className="font-semibold text-gray-900">Total</span>
               <span className="font-bold text-gray-900">
-                {formatCRC(totals.total)}
+                {formatMoney(totals.total, businessCurrency, businessLocale)}
               </span>
             </div>
           </div>
