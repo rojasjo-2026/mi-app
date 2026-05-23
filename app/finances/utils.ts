@@ -1,5 +1,30 @@
 import type { FinanceInvoice } from "./types";
 
+const DEFAULT_LOCALE = "es-CR";
+const DEFAULT_CURRENCY = "CRC";
+
+const currencyLocaleMap: Record<string, string> = {
+  ARS: "es-AR",
+  BOB: "es-BO",
+  BRL: "pt-BR",
+  CAD: "en-CA",
+  CLP: "es-CL",
+  COP: "es-CO",
+  CRC: "es-CR",
+  DOP: "es-DO",
+  EUR: "es-ES",
+  GTQ: "es-GT",
+  HNL: "es-HN",
+  MXN: "es-MX",
+  NIO: "es-NI",
+  PEN: "es-PE",
+  PYG: "es-PY",
+  USD: "en-US",
+  UYU: "es-UY",
+  VES: "es-VE",
+  XAF: "es-GQ",
+};
+
 export function toSafeNumber(value?: number | string | null) {
   if (value === null || value === undefined || value === "") return 0;
 
@@ -8,15 +33,50 @@ export function toSafeNumber(value?: number | string | null) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function formatCurrency(value?: number | string | null) {
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    maximumFractionDigits: 0,
-  }).format(toSafeNumber(value));
+function normalizeCurrencyCode(currency?: string | null) {
+  const normalizedCurrency = String(currency || DEFAULT_CURRENCY)
+    .trim()
+    .toUpperCase();
+
+  return normalizedCurrency || DEFAULT_CURRENCY;
 }
 
-export function formatDateLabel(value?: string | null) {
+function getLocaleForCurrency(currency?: string | null) {
+  const normalizedCurrency = normalizeCurrencyCode(currency);
+
+  return currencyLocaleMap[normalizedCurrency] ?? DEFAULT_LOCALE;
+}
+
+export function getInvoiceCurrency(invoice?: Pick<FinanceInvoice, "currency">) {
+  return normalizeCurrencyCode(invoice?.currency);
+}
+
+export function formatCurrency(
+  value?: number | string | null,
+  currency?: string | null,
+  locale?: string,
+) {
+  const normalizedCurrency = normalizeCurrencyCode(currency);
+  const resolvedLocale = locale || getLocaleForCurrency(normalizedCurrency);
+  const amount = toSafeNumber(value);
+
+  try {
+    return new Intl.NumberFormat(resolvedLocale, {
+      style: "currency",
+      currency: normalizedCurrency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${normalizedCurrency} ${amount.toLocaleString(resolvedLocale, {
+      maximumFractionDigits: 0,
+    })}`;
+  }
+}
+
+export function formatDateLabel(
+  value?: string | null,
+  locale = DEFAULT_LOCALE,
+) {
   if (!value) return "-";
 
   const parsed = new Date(value);
@@ -25,7 +85,7 @@ export function formatDateLabel(value?: string | null) {
     return value;
   }
 
-  return parsed.toLocaleDateString("es-CR", {
+  return parsed.toLocaleDateString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -117,14 +177,18 @@ export function getInvoiceOrigin(invoice: FinanceInvoice) {
 export function formatPaymentTerm(term?: string | null) {
   if (term === "CASH") return "Contado";
   if (term === "CREDIT") return "Crédito";
+
   return term || "-";
 }
 
 export function formatPaymentMethod(method?: string | null) {
   if (method === "CASH") return "Efectivo";
+  if (method === "SINPE") return "SINPE";
+  if (method === "BANK_TRANSFER") return "Transferencia bancaria";
   if (method === "TRANSFER") return "Transferencia";
   if (method === "CHECK") return "Cheque";
   if (method === "CARD") return "Tarjeta";
   if (method === "OTHER") return "Otro";
+
   return method || "-";
 }

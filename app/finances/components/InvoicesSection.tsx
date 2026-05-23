@@ -9,6 +9,7 @@ import {
   formatPaymentTerm,
   getBillingStatusLabel,
   getClientName,
+  getInvoiceCurrency,
   getInvoiceOrigin,
   getInvoiceStatusClass,
   getInvoiceStatusLabel,
@@ -40,6 +41,9 @@ export default function InvoicesSection({
   const [submittingInvoiceId, setSubmittingInvoiceId] = useState<string | null>(
     null,
   );
+
+  const summaryCurrency =
+    invoices.find((invoice) => invoice.currency)?.currency ?? "CRC";
 
   const cancelableStatuses = new Set<string>(["PENDING", "OVERDUE"]);
 
@@ -228,7 +232,7 @@ export default function InvoicesSection({
           </p>
           <p className="mt-1">
             Cobro urgente: saldo vencido total{" "}
-            {formatCurrency(invoiceSummary.overdueAmount)}.
+            {formatCurrency(invoiceSummary.overdueAmount, summaryCurrency)}.
           </p>
         </div>
       )}
@@ -249,31 +253,34 @@ export default function InvoicesSection({
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <FinanceSummaryCard
           label="Total facturado"
-          value={formatCurrency(invoiceSummary.totalInvoiced)}
+          value={formatCurrency(invoiceSummary.totalInvoiced, summaryCurrency)}
           helper="Todas las facturas"
         />
 
         <FinanceSummaryCard
           label="Pendiente"
-          value={formatCurrency(invoiceSummary.pendingAmount)}
+          value={formatCurrency(invoiceSummary.pendingAmount, summaryCurrency)}
           helper="Pendiente de cobro"
         />
 
         <FinanceSummaryCard
           label="Pagado"
-          value={formatCurrency(invoiceSummary.paidAmount)}
+          value={formatCurrency(invoiceSummary.paidAmount, summaryCurrency)}
           helper="Pagos recibidos"
         />
 
         <FinanceSummaryCard
           label="Vencido"
-          value={formatCurrency(invoiceSummary.overdueAmount)}
+          value={formatCurrency(invoiceSummary.overdueAmount, summaryCurrency)}
           helper="Facturas vencidas"
         />
 
         <FinanceSummaryCard
           label="Cancelado"
-          value={formatCurrency(invoiceSummary.cancelledAmount)}
+          value={formatCurrency(
+            invoiceSummary.cancelledAmount,
+            summaryCurrency,
+          )}
           helper="Facturas canceladas"
         />
       </div>
@@ -301,6 +308,8 @@ export default function InvoicesSection({
           {invoices.map((invoice, index) => {
             const invoiceId =
               typeof invoice.invoice_id === "string" ? invoice.invoice_id : "";
+
+            const invoiceCurrency = getInvoiceCurrency(invoice);
 
             const isExpanded = invoiceId ? expandedIds.has(invoiceId) : false;
 
@@ -350,17 +359,26 @@ export default function InvoicesSection({
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:min-w-[420px]">
                     <MiniAmountCard
                       label="Total"
-                      value={formatCurrency(invoice.total_amount)}
+                      value={formatCurrency(
+                        invoice.total_amount,
+                        invoiceCurrency,
+                      )}
                     />
 
                     <MiniAmountCard
                       label="Pagado"
-                      value={formatCurrency(invoice.paid_amount)}
+                      value={formatCurrency(
+                        invoice.paid_amount,
+                        invoiceCurrency,
+                      )}
                     />
 
                     <MiniAmountCard
                       label="Saldo"
-                      value={formatCurrency(invoice.balance_amount)}
+                      value={formatCurrency(
+                        invoice.balance_amount,
+                        invoiceCurrency,
+                      )}
                     />
                   </div>
                 </div>
@@ -413,7 +431,7 @@ export default function InvoicesSection({
                         <div className="rounded-lg bg-white p-3">
                           <p className="text-xs text-slate-500">Moneda</p>
                           <p className="mt-1 text-sm font-semibold text-slate-900">
-                            {invoice.currency || "CRC"}
+                            {invoiceCurrency}
                           </p>
                         </div>
 
@@ -438,7 +456,10 @@ export default function InvoicesSection({
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-600">Subtotal</span>
                           <span className="font-semibold text-slate-900">
-                            {formatCurrency(invoice.subtotal_amount)}
+                            {formatCurrency(
+                              invoice.subtotal_amount,
+                              invoiceCurrency,
+                            )}
                           </span>
                         </div>
 
@@ -452,7 +473,11 @@ export default function InvoicesSection({
                                   : ""}
                               </span>
                               <span className="font-semibold text-slate-900">
-                                -{formatCurrency(invoice.discount_amount)}
+                                -
+                                {formatCurrency(
+                                  invoice.discount_amount,
+                                  invoiceCurrency,
+                                )}
                               </span>
                             </div>
 
@@ -473,7 +498,11 @@ export default function InvoicesSection({
                                 : ""}
                             </span>
                             <span className="font-semibold text-slate-900">
-                              +{formatCurrency(invoice.tax_amount)}
+                              +
+                              {formatCurrency(
+                                invoice.tax_amount,
+                                invoiceCurrency,
+                              )}
                             </span>
                           </div>
                         )}
@@ -482,7 +511,10 @@ export default function InvoicesSection({
                           <div className="flex justify-between text-sm font-bold">
                             <span className="text-slate-900">Total</span>
                             <span className="text-slate-900">
-                              {formatCurrency(invoice.total_amount)}
+                              {formatCurrency(
+                                invoice.total_amount,
+                                invoiceCurrency,
+                              )}
                             </span>
                           </div>
                         </div>
@@ -491,7 +523,10 @@ export default function InvoicesSection({
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">Pagado</span>
                             <span className="font-semibold text-emerald-700">
-                              {formatCurrency(invoice.paid_amount)}
+                              {formatCurrency(
+                                invoice.paid_amount,
+                                invoiceCurrency,
+                              )}
                             </span>
                           </div>
 
@@ -506,7 +541,10 @@ export default function InvoicesSection({
                                   : "text-emerald-700"
                               }`}
                             >
-                              {formatCurrency(invoice.balance_amount)}
+                              {formatCurrency(
+                                invoice.balance_amount,
+                                invoiceCurrency,
+                              )}
                             </span>
                           </div>
                         </div>
@@ -552,10 +590,16 @@ export default function InvoicesSection({
                                     {toSafeNumber(line.quantity)}
                                   </td>
                                   <td className="px-4 py-3 text-right text-slate-600">
-                                    {formatCurrency(line.unit_price)}
+                                    {formatCurrency(
+                                      line.unit_price,
+                                      invoiceCurrency,
+                                    )}
                                   </td>
                                   <td className="px-4 py-3 text-right font-semibold text-slate-900">
-                                    {formatCurrency(line.total)}
+                                    {formatCurrency(
+                                      line.total,
+                                      invoiceCurrency,
+                                    )}
                                   </td>
                                 </tr>
                               ))}
@@ -587,7 +631,10 @@ export default function InvoicesSection({
                               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                 <div className="flex-1">
                                   <p className="text-sm font-semibold text-slate-900">
-                                    {formatCurrency(payment.amount)}
+                                    {formatCurrency(
+                                      payment.amount,
+                                      invoiceCurrency,
+                                    )}
                                   </p>
 
                                   <p className="mt-1 text-xs text-slate-500">

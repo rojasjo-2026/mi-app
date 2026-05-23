@@ -6,6 +6,7 @@ import {
   formatCurrency,
   formatDateLabel,
   getClientName,
+  getInvoiceCurrency,
   getInvoiceOrigin,
   getInvoiceStatusClass,
   getInvoiceStatusLabel,
@@ -73,6 +74,9 @@ export default function PaymentsSection() {
       );
     });
   }, [invoices]);
+
+  const summaryCurrency =
+    payableInvoices.find((invoice) => invoice.currency)?.currency ?? "CRC";
 
   const summary = useMemo(() => {
     const pendingAmount = payableInvoices.reduce(
@@ -199,13 +203,13 @@ export default function PaymentsSection() {
 
         <FinanceSummaryCard
           label="Saldo pendiente"
-          value={formatCurrency(summary.pendingAmount)}
+          value={formatCurrency(summary.pendingAmount, summaryCurrency)}
           helper="Por cobrar"
         />
 
         <FinanceSummaryCard
           label="Vencido"
-          value={formatCurrency(summary.overdueAmount)}
+          value={formatCurrency(summary.overdueAmount, summaryCurrency)}
           helper="Facturas vencidas"
         />
       </div>
@@ -237,7 +241,10 @@ export default function PaymentsSection() {
               <p className="mt-1 text-sm text-slate-600">
                 {getClientName(selectedInvoice.client)} · Saldo pendiente:{" "}
                 <span className="font-semibold text-slate-900">
-                  {formatCurrency(selectedInvoice.balance_amount)}
+                  {formatCurrency(
+                    selectedInvoice.balance_amount,
+                    getInvoiceCurrency(selectedInvoice),
+                  )}
                 </span>
               </p>
             </div>
@@ -332,68 +339,81 @@ export default function PaymentsSection() {
         </div>
       ) : (
         <div className="mt-6 space-y-3">
-          {payableInvoices.map((invoice) => (
-            <div
-              key={invoice.invoice_id}
-              className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-            >
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div className="min-w-0">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                      {invoice.invoice_number || "Sin número"}
-                    </span>
+          {payableInvoices.map((invoice) => {
+            const invoiceCurrency = getInvoiceCurrency(invoice);
 
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${getInvoiceStatusClass(
-                        invoice.status,
-                      )}`}
-                    >
-                      {getInvoiceStatusLabel(invoice.status)}
-                    </span>
+            return (
+              <div
+                key={invoice.invoice_id}
+                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+              >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                        {invoice.invoice_number || "Sin número"}
+                      </span>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getInvoiceStatusClass(
+                          invoice.status,
+                        )}`}
+                      >
+                        {getInvoiceStatusLabel(invoice.status)}
+                      </span>
+                    </div>
+
+                    <p className="text-sm font-bold text-slate-900">
+                      {getClientName(invoice.client)}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      {getInvoiceOrigin(invoice)}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Fecha: {formatDateLabel(invoice.invoice_date)} · Vence:{" "}
+                      {formatDateLabel(invoice.due_date)}
+                    </p>
                   </div>
 
-                  <p className="text-sm font-bold text-slate-900">
-                    {getClientName(invoice.client)}
-                  </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 xl:min-w-[560px]">
+                    <MiniAmountCard
+                      label="Total"
+                      value={formatCurrency(
+                        invoice.total_amount,
+                        invoiceCurrency,
+                      )}
+                    />
 
-                  <p className="mt-1 text-xs text-slate-500">
-                    {getInvoiceOrigin(invoice)}
-                  </p>
+                    <MiniAmountCard
+                      label="Pagado"
+                      value={formatCurrency(
+                        invoice.paid_amount,
+                        invoiceCurrency,
+                      )}
+                    />
 
-                  <p className="mt-1 text-xs text-slate-500">
-                    Fecha: {formatDateLabel(invoice.invoice_date)} · Vence:{" "}
-                    {formatDateLabel(invoice.due_date)}
-                  </p>
-                </div>
+                    <MiniAmountCard
+                      label="Saldo"
+                      value={formatCurrency(
+                        invoice.balance_amount,
+                        invoiceCurrency,
+                      )}
+                    />
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 xl:min-w-[560px]">
-                  <MiniAmountCard
-                    label="Total"
-                    value={formatCurrency(invoice.total_amount)}
-                  />
-
-                  <MiniAmountCard
-                    label="Pagado"
-                    value={formatCurrency(invoice.paid_amount)}
-                  />
-
-                  <MiniAmountCard
-                    label="Saldo"
-                    value={formatCurrency(invoice.balance_amount)}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => handleSelectInvoice(invoice)}
-                    className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    Registrar pago
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectInvoice(invoice)}
+                      className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Registrar pago
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -1,6 +1,11 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import FinanceInvoiceDraftForm from "@/components/finance/FinanceInvoiceDraftForm";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 import type { PendingBillable, PendingBillablesResponse } from "../types";
 import {
   formatCurrency,
@@ -12,6 +17,29 @@ import {
 import FinanceSummaryCard from "./FinanceSummaryCard";
 import MiniAmountCard from "./MiniAmountCard";
 import SectionHeader from "./SectionHeader";
+
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
+};
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
+  const countryPreset =
+    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+
+  return {
+    currency: settings?.default_currency || countryPreset.primaryCurrency,
+    locale: countryPreset.locale,
+  };
+}
 
 type PendingBillablesSectionProps = {
   items: PendingBillable[];
@@ -44,6 +72,47 @@ export default function PendingBillablesSection({
   onClearSelection,
   onInvoiceCreated,
 }: PendingBillablesSectionProps) {
+  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
+  const [businessCurrency, setBusinessCurrency] = useState(
+    defaultBusinessMeta.currency,
+  );
+  const [businessLocale, setBusinessLocale] = useState(
+    defaultBusinessMeta.locale,
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBusinessSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          return;
+        }
+
+        const businessMeta = getBusinessCountryMeta(result.data);
+
+        if (!isMounted) return;
+
+        setBusinessCurrency(businessMeta.currency);
+        setBusinessLocale(businessMeta.locale);
+      } catch {
+        // Keep default business metadata if settings cannot be loaded.
+      }
+    }
+
+    void loadBusinessSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -72,13 +141,21 @@ export default function PendingBillablesSection({
 
         <FinanceSummaryCard
           label="Monto estimado"
-          value={formatCurrency(summary?.total_amount ?? 0)}
+          value={formatCurrency(
+            summary?.total_amount ?? 0,
+            businessCurrency,
+            businessLocale,
+          )}
           helper="Total pendiente"
         />
 
         <FinanceSummaryCard
           label="Utilidad estimada"
-          value={formatCurrency(summary?.estimated_profit ?? 0)}
+          value={formatCurrency(
+            summary?.estimated_profit ?? 0,
+            businessCurrency,
+            businessLocale,
+          )}
           helper="Monto menos costo"
         />
       </div>
@@ -212,7 +289,7 @@ export default function PendingBillablesSection({
 
                   <p className="mt-1 text-xs text-slate-500">
                     Teléfono: {item.client_phone || "-"} · Fecha:{" "}
-                    {formatDateLabel(item.date)}
+                    {formatDateLabel(item.date, businessLocale)}
                   </p>
                 </div>
 
@@ -223,12 +300,18 @@ export default function PendingBillablesSection({
                       toSafeNumber(item.final_amount) > 0
                         ? item.final_amount
                         : item.estimated_amount,
+                      businessCurrency,
+                      businessLocale,
                     )}
                   />
 
                   <MiniAmountCard
                     label="Costo"
-                    value={formatCurrency(item.cost_amount)}
+                    value={formatCurrency(
+                      item.cost_amount,
+                      businessCurrency,
+                      businessLocale,
+                    )}
                   />
 
                   <button

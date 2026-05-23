@@ -1,10 +1,37 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 import type { FinanceInvoice, PendingBillablesResponse } from "../types";
 import { formatCurrency, toSafeNumber } from "../utils";
 import FinanceSummaryCard from "./FinanceSummaryCard";
 import SectionHeader from "./SectionHeader";
+
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
+};
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
+  const countryPreset =
+    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+
+  return {
+    currency: settings?.default_currency || countryPreset.primaryCurrency,
+    locale: countryPreset.locale,
+  };
+}
 
 export default function ReportsSection() {
   const [invoices, setInvoices] = useState<FinanceInvoice[]>([]);
@@ -13,6 +40,14 @@ export default function ReportsSection() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
+  const [businessCurrency, setBusinessCurrency] = useState(
+    defaultBusinessMeta.currency,
+  );
+  const [businessLocale, setBusinessLocale] = useState(
+    defaultBusinessMeta.locale,
+  );
 
   async function loadReports() {
     setLoading(true);
@@ -63,8 +98,44 @@ export default function ReportsSection() {
   }
 
   useEffect(() => {
-    loadReports();
+    let isMounted = true;
+
+    async function loadBusinessSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          return;
+        }
+
+        const businessMeta = getBusinessCountryMeta(result.data);
+
+        if (!isMounted) return;
+
+        setBusinessCurrency(businessMeta.currency);
+        setBusinessLocale(businessMeta.locale);
+      } catch {
+        // Keep default business metadata if settings cannot be loaded.
+      }
+    }
+
+    void loadBusinessSettings();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  useEffect(() => {
+    void loadReports();
+  }, []);
+
+  const reportCurrency =
+    invoices.find((invoice) => invoice.currency)?.currency ?? businessCurrency;
 
   const reportSummary = useMemo(() => {
     const activeInvoices = invoices.filter(
@@ -164,7 +235,12 @@ export default function ReportsSection() {
             Tienes {reportSummary.overdueCount} factura
             {reportSummary.overdueCount === 1 ? "" : "s"} vencida
             {reportSummary.overdueCount === 1 ? "" : "s"} por un total de{" "}
-            {formatCurrency(reportSummary.overdueAmount)}.
+            {formatCurrency(
+              reportSummary.overdueAmount,
+              reportCurrency,
+              businessLocale,
+            )}
+            .
           </p>
         </div>
       )}
@@ -177,25 +253,41 @@ export default function ReportsSection() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <FinanceSummaryCard
             label="Total facturado"
-            value={formatCurrency(reportSummary.totalInvoiced)}
+            value={formatCurrency(
+              reportSummary.totalInvoiced,
+              reportCurrency,
+              businessLocale,
+            )}
             helper={`${reportSummary.invoiceCount} facturas registradas`}
           />
 
           <FinanceSummaryCard
             label="Total pagado"
-            value={formatCurrency(reportSummary.totalPaid)}
+            value={formatCurrency(
+              reportSummary.totalPaid,
+              reportCurrency,
+              businessLocale,
+            )}
             helper={`${reportSummary.paidInvoicesCount} facturas pagadas`}
           />
 
           <FinanceSummaryCard
             label="Saldo pendiente"
-            value={formatCurrency(reportSummary.totalBalance)}
+            value={formatCurrency(
+              reportSummary.totalBalance,
+              reportCurrency,
+              businessLocale,
+            )}
             helper={`${reportSummary.openInvoicesCount} facturas abiertas`}
           />
 
           <FinanceSummaryCard
             label="Vencido"
-            value={formatCurrency(reportSummary.overdueAmount)}
+            value={formatCurrency(
+              reportSummary.overdueAmount,
+              reportCurrency,
+              businessLocale,
+            )}
             helper="Saldo vencido"
           />
         </div>
@@ -215,19 +307,31 @@ export default function ReportsSection() {
 
           <FinanceSummaryCard
             label="Monto pendiente"
-            value={formatCurrency(reportSummary.pendingBillablesAmount)}
+            value={formatCurrency(
+              reportSummary.pendingBillablesAmount,
+              reportCurrency,
+              businessLocale,
+            )}
             helper="Por facturar"
           />
 
           <FinanceSummaryCard
             label="Costo estimado"
-            value={formatCurrency(reportSummary.pendingBillablesCost)}
+            value={formatCurrency(
+              reportSummary.pendingBillablesCost,
+              reportCurrency,
+              businessLocale,
+            )}
             helper="Costo interno"
           />
 
           <FinanceSummaryCard
             label="Utilidad estimada"
-            value={formatCurrency(reportSummary.pendingBillablesProfit)}
+            value={formatCurrency(
+              reportSummary.pendingBillablesProfit,
+              reportCurrency,
+              businessLocale,
+            )}
             helper="Pendiente de facturar"
           />
         </div>
@@ -241,7 +345,11 @@ export default function ReportsSection() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <FinanceSummaryCard
             label="Cancelado"
-            value={formatCurrency(reportSummary.cancelledAmount)}
+            value={formatCurrency(
+              reportSummary.cancelledAmount,
+              reportCurrency,
+              businessLocale,
+            )}
             helper="Facturas canceladas"
           />
 
@@ -262,6 +370,8 @@ export default function ReportsSection() {
             value={formatCurrency(
               reportSummary.totalInvoiced +
                 reportSummary.pendingBillablesAmount,
+              reportCurrency,
+              businessLocale,
             )}
             helper="Facturado + pendiente"
           />
