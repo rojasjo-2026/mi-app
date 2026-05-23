@@ -185,6 +185,16 @@ enum CalendarNonWorkingDayType {
   OTHER
 }
 
+enum BusinessWeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 // ======================================================
 // USERS / STAFF
 // ======================================================
@@ -747,6 +757,27 @@ model CalendarNonWorkingDay {
   @@index([non_working_date])
   @@index([country_code])
   @@index([type])
+  @@index([is_active])
+}
+
+model BusinessWorkingHour {
+  business_working_hour_id String          @id @default(uuid()) @db.Uuid
+  day_of_week              BusinessWeekDay
+  country_code             String          @default("CR")
+  is_working_day           Boolean         @default(true)
+  start_time               String?
+  end_time                 String?
+  break_start_time         String?
+  break_end_time           String?
+  notes                    String?
+  is_active                Boolean         @default(true)
+  created_at               DateTime        @default(now())
+  updated_at               DateTime        @updatedAt
+
+  @@unique([day_of_week, country_code])
+  @@index([day_of_week])
+  @@index([country_code])
+  @@index([is_working_day])
   @@index([is_active])
 }
 
