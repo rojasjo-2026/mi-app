@@ -11,6 +11,7 @@ import {
 
 import CalendarBlockedDatesManager from "@/app/settings/components/CalendarBlockedDatesManager";
 import CalendarNonWorkingDaysManager from "@/app/settings/components/CalendarNonWorkingDaysManager";
+import BusinessWorkingHoursManager from "@/app/settings/components/BusinessWorkingHoursManager";
 
 type CurrencyCode = string;
 
@@ -251,7 +252,7 @@ export default function SettingsPage() {
   const [countryPresetMessage, setCountryPresetMessage] = useState("");
   const [activeOperationSection, setActiveOperationSection] = useState<
     string | null
-  >("Bloqueos de calendario");
+  >("Horario laboral");
 
   const selectedCountryPreset = useMemo(
     () => getCountryByCode(form.country_code),
@@ -893,10 +894,13 @@ export default function SettingsPage() {
               {section.items.map((item) => {
                 const isOperationSection =
                   section.title === "Operación y agenda";
+                const manageableOperationItems = [
+                  "Horario laboral",
+                  "Días no laborables",
+                  "Bloqueos de calendario",
+                ];
                 const isManageableOperationItem =
-                  isOperationSection &&
-                  (item === "Días no laborables" ||
-                    item === "Bloqueos de calendario");
+                  isOperationSection && manageableOperationItems.includes(item);
                 const isActive = activeOperationSection === item;
 
                 return (
@@ -940,6 +944,14 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+
+            {section.title === "Operación y agenda" &&
+            activeOperationSection === "Horario laboral" ? (
+              <BusinessWorkingHoursManager
+                countryCode={form.country_code}
+                countryName={form.country_name}
+              />
+            ) : null}
 
             {section.title === "Operación y agenda" &&
             activeOperationSection === "Días no laborables" ? (
