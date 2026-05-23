@@ -20,9 +20,33 @@ export const NORTH_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     ],
     phonePrefix: "+1",
     phoneExample: "+1 555 123 4567",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 10,
+      nationalExample: "(555) 123-4567",
+      internationalExample: "+1 555 123 4567",
+      requiresCountryPrefix: false,
+      notes:
+        "NANP format. Country prefix can be added for international messaging.",
+    },
     defaultTaxRate: 0,
     taxLabel: "Sales Tax",
     taxMode: "REGIONAL",
+    regionalTaxRules: {
+      appliesByRegion: true,
+      description:
+        "Sales tax is commonly handled by state, county, city, or local jurisdiction.",
+      notes:
+        "Keep the default at 0 unless a regional tax rule is configured for the operation.",
+    },
+    identificationTypes: [
+      { code: "SSN", label: "SSN", appliesTo: "PERSON" },
+      { code: "EIN", label: "EIN", appliesTo: "COMPANY" },
+      { code: "ITIN", label: "ITIN", appliesTo: "PERSON" },
+      { code: "PASSPORT", label: "Passport", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Other", appliesTo: "BOTH" },
+    ],
+    addressExample: "State, county/city, ZIP code, street address",
     adminLevel1Label: "State",
     adminLevel2Label: "County / City",
     adminLevel3Label: "ZIP Code / Neighborhood",
@@ -47,9 +71,31 @@ export const NORTH_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     ],
     phonePrefix: "+1",
     phoneExample: "+1 416 555 1234",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 10,
+      nationalExample: "(416) 555-1234",
+      internationalExample: "+1 416 555 1234",
+      requiresCountryPrefix: false,
+      notes:
+        "NANP format. Province-based settings may be needed for tax handling.",
+    },
     defaultTaxRate: 5,
     taxLabel: "GST / HST",
     taxMode: "MIXED",
+    regionalTaxRules: {
+      appliesByRegion: true,
+      description: "GST/HST/PST handling can vary by province or territory.",
+      notes:
+        "The 5% value is only a base suggestion. Province-specific rules should override it later.",
+    },
+    identificationTypes: [
+      { code: "SIN", label: "SIN", appliesTo: "PERSON" },
+      { code: "BN", label: "Business Number", appliesTo: "COMPANY" },
+      { code: "PASSPORT", label: "Passport", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Other", appliesTo: "BOTH" },
+    ],
+    addressExample: "Province/territory, city, postal code, street address",
     adminLevel1Label: "Province / Territory",
     adminLevel2Label: "City / Municipality",
     adminLevel3Label: "Postal Code / Neighborhood",

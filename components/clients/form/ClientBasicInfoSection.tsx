@@ -58,7 +58,6 @@ export default function ClientBasicInfoSection({
   inputClass,
   selectClass,
   handleClientTypeChange,
-  handleComplianceProfileChange,
   setFirstName,
   setLastName1,
   setLastName2,
@@ -71,6 +70,9 @@ export default function ClientBasicInfoSection({
   setTaxId,
   getIdentificationHelpText,
 }: ClientBasicInfoSectionProps) {
+  const profileLabel =
+    complianceProfile === "COSTA_RICA" ? "Costa Rica" : "Global";
+
   return (
     <FormSection
       title="Información del cliente"
@@ -97,22 +99,19 @@ export default function ClientBasicInfoSection({
           </select>
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-semibold text-slate-700">
-            Perfil de validación *
-          </label>
-          <select
-            value={complianceProfile}
-            onChange={(e) =>
-              handleComplianceProfileChange(
-                e.target.value as "GLOBAL" | "COSTA_RICA",
-              )
-            }
-            className={selectClass}
-          >
-            <option value="COSTA_RICA">Costa Rica</option>
-            <option value="GLOBAL">Global</option>
-          </select>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-800">
+            Perfil de validación aplicado
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-slate-700">
+            {profileLabel}
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Este perfil se aplica automáticamente según el país configurado para
+            el negocio. Para cambiarlo, actualice la Configuración del sistema.
+          </p>
         </div>
 
         {clientType === "PERSON" && (

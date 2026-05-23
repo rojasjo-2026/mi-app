@@ -94,6 +94,7 @@ export type ClientDetail = {
   commercial_name?: string | null;
   main_contact_name?: string | null;
 
+  country_code?: string | null;
   identification_country?: string | null;
   identification_type?: string | null;
   identification_number?: string | null;
@@ -122,7 +123,7 @@ export type ClientDetail = {
   billing_address?: string | null;
   tax_id?: string | null;
   tax_exempt?: boolean | null;
-  preferred_currency?: "CRC" | "USD" | null;
+  preferred_currency?: string | null;
 
   installations?: ClientInstallation[];
 };

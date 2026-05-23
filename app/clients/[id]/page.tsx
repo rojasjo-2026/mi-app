@@ -13,6 +13,10 @@ import {
   filterClientInstallations,
   getNextClientMaintenance,
 } from "@/lib/clients/clientInstallations.utils";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+} from "@/lib/settings/countryPresets";
 import { useClientActivityLogs } from "@/hooks/clients/useClientActivityLogs";
 import { useClientDetail } from "@/hooks/clients/useClientDetail";
 import { useClientInvoices } from "@/hooks/clients/useClientInvoices";
@@ -33,7 +37,15 @@ type InstallationHistoryOption = {
   zone?: string | null;
 };
 
-function formatInstallationHistoryDate(value?: string | null) {
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+function formatInstallationHistoryDate(
+  value?: string | null,
+  locale = "es-CR",
+) {
   if (!value) return "";
 
   const parsed = new Date(value);
@@ -42,18 +54,24 @@ function formatInstallationHistoryDate(value?: string | null) {
     return "";
   }
 
-  return parsed.toLocaleDateString("es-CR", {
+  return parsed.toLocaleDateString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
 }
 
-function getInstallationHistoryLabel(installation: InstallationHistoryOption) {
+function getInstallationHistoryLabel(
+  installation: InstallationHistoryOption,
+  locale?: string,
+) {
   const description =
     installation.description?.trim() || "Instalación sin descripción";
 
-  const date = formatInstallationHistoryDate(installation.installation_date);
+  const date = formatInstallationHistoryDate(
+    installation.installation_date,
+    locale,
+  );
 
   const location = [installation.city, installation.zone]
     .filter(Boolean)
@@ -72,6 +90,19 @@ export default function ClientDetailPage() {
     useState("all");
 
   const { client, loading, error } = useClientDetail(clientId);
+
+  const clientCountryPreset = useMemo(() => {
+    return (
+      getCountryPreset(
+        client?.country_code ?? client?.identification_country,
+      ) ?? fallbackCountryPreset
+    );
+  }, [client?.country_code, client?.identification_country]);
+
+  const clientCurrency =
+    client?.preferred_currency || clientCountryPreset.primaryCurrency;
+
+  const clientLocale = clientCountryPreset.locale;
 
   const activityLogFilters =
     selectedHistoryInstallationId !== "all"
@@ -194,12 +225,16 @@ export default function ClientDetailPage() {
           pendingBalance={invoiceFinanceSummary.pendingBalance}
           pendingInvoiceCount={invoiceFinanceSummary.pendingInvoiceCount}
           nextMaintenance={nextMaintenance}
+          currency={clientCurrency}
+          locale={clientLocale}
         />
 
         <ClientCommercialSection
           commercialSummary={commercialSummary}
           isOpen={openSections.commercial}
           onToggle={() => toggleDetailSection("commercial")}
+          currency={clientCurrency}
+          locale={clientLocale}
         />
 
         <ClientFinanceHistorySection
@@ -210,6 +245,8 @@ export default function ClientDetailPage() {
           isOpen={openSections.financeHistory}
           onToggle={() => toggleDetailSection("financeHistory")}
           onRefresh={() => void reloadInvoices()}
+          currency={clientCurrency}
+          locale={clientLocale}
         />
 
         <ClientInformationSections
@@ -255,7 +292,7 @@ export default function ClientDetailPage() {
                     key={installation.installation_id}
                     value={installation.installation_id}
                   >
-                    {getInstallationHistoryLabel(installation)}
+                    {getInstallationHistoryLabel(installation, clientLocale)}
                   </option>
                 ))}
               </select>

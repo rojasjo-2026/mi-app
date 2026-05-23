@@ -16,7 +16,7 @@ export function getComplianceProfileLabel(profile?: string | null) {
   if (profile === "GLOBAL") return "Global";
   if (profile === "COSTA_RICA") return "Costa Rica";
 
-  return "Costa Rica";
+  return "Global";
 }
 
 export function getIdentificationTypeLabel(type?: string | null) {
@@ -48,6 +48,45 @@ export function getPaymentTermLabel(term?: string | null) {
    Formatters
 ========================= */
 
+const DEFAULT_LOCALE = "es-CR";
+const DEFAULT_CURRENCY = "CRC";
+
+const currencyLocaleMap: Record<string, string> = {
+  ARS: "es-AR",
+  BOB: "es-BO",
+  BRL: "pt-BR",
+  CAD: "en-CA",
+  CLP: "es-CL",
+  COP: "es-CO",
+  CRC: "es-CR",
+  DOP: "es-DO",
+  EUR: "es-ES",
+  GTQ: "es-GT",
+  HNL: "es-HN",
+  MXN: "es-MX",
+  NIO: "es-NI",
+  PEN: "es-PE",
+  PYG: "es-PY",
+  USD: "en-US",
+  UYU: "es-UY",
+  VES: "es-VE",
+  XAF: "es-GQ",
+};
+
+function normalizeCurrencyCode(currency?: string | null) {
+  const normalizedCurrency = String(currency || DEFAULT_CURRENCY)
+    .trim()
+    .toUpperCase();
+
+  return normalizedCurrency || DEFAULT_CURRENCY;
+}
+
+function getLocaleForCurrency(currency?: string | null) {
+  const normalizedCurrency = normalizeCurrencyCode(currency);
+
+  return currencyLocaleMap[normalizedCurrency] ?? DEFAULT_LOCALE;
+}
+
 export function formatYesNo(value?: boolean | null) {
   return value ? "Sí" : "No";
 }
@@ -68,7 +107,10 @@ export function formatOptionalNumber(value?: number | string | null) {
   return String(value);
 }
 
-export function formatDateLabel(value?: string | null) {
+export function formatDateLabel(
+  value?: string | null,
+  locale = DEFAULT_LOCALE,
+) {
   if (!value) return "-";
 
   const parsed = new Date(value);
@@ -77,14 +119,17 @@ export function formatDateLabel(value?: string | null) {
     return value;
   }
 
-  return parsed.toLocaleDateString("es-CR", {
+  return parsed.toLocaleDateString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
 }
 
-export function formatDateTimeLabel(value?: string | null) {
+export function formatDateTimeLabel(
+  value?: string | null,
+  locale = DEFAULT_LOCALE,
+) {
   if (!value) return "-";
 
   const parsed = new Date(value);
@@ -93,7 +138,7 @@ export function formatDateTimeLabel(value?: string | null) {
     return value;
   }
 
-  return parsed.toLocaleString("es-CR", {
+  return parsed.toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -110,14 +155,26 @@ export function toSafeNumber(value?: number | string | null) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function formatCurrency(value?: number | string | null) {
+export function formatCurrency(
+  value?: number | string | null,
+  currency?: string | null,
+  locale?: string,
+) {
   const amount = toSafeNumber(value);
+  const normalizedCurrency = normalizeCurrencyCode(currency);
+  const resolvedLocale = locale || getLocaleForCurrency(normalizedCurrency);
 
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat(resolvedLocale, {
+      style: "currency",
+      currency: normalizedCurrency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${normalizedCurrency} ${amount.toLocaleString(resolvedLocale, {
+      maximumFractionDigits: 0,
+    })}`;
+  }
 }
 
 /* =========================

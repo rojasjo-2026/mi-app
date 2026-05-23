@@ -560,10 +560,65 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Validación y datos regionales
+                </p>
+
+                <div className="mt-3 grid gap-4 text-xs text-slate-600 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <span className="font-semibold text-slate-700">
+                      Tipos de identificación:
+                    </span>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedCountryPreset.identificationTypes.map(
+                        (identificationType) => (
+                          <span
+                            key={identificationType.code}
+                            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-medium text-slate-600"
+                          >
+                            {identificationType.label}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="font-semibold text-slate-700">
+                      Ejemplo de dirección:
+                    </span>{" "}
+                    {selectedCountryPreset.addressExample}
+                  </div>
+
+                  <div>
+                    <span className="font-semibold text-slate-700">
+                      Teléfono:
+                    </span>{" "}
+                    {selectedCountryPreset.phoneValidation.minDigits ===
+                    selectedCountryPreset.phoneValidation.maxDigits
+                      ? `${selectedCountryPreset.phoneValidation.minDigits} dígitos`
+                      : `${selectedCountryPreset.phoneValidation.minDigits}-${selectedCountryPreset.phoneValidation.maxDigits} dígitos`}
+                    {" · "}
+                    Ej.{" "}
+                    {selectedCountryPreset.phoneValidation.internationalExample}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <span className="font-semibold text-slate-700">
+                      Regla fiscal:
+                    </span>{" "}
+                    {selectedCountryPreset.regionalTaxRules.description}
+                  </div>
+                </div>
+              </div>
+
               <p className="mt-3 text-xs leading-5 text-slate-400">
                 Estos valores son una guía regional. La moneda principal, zona
-                horaria, impuesto y niveles administrativos pueden ajustarse
-                antes de guardar.
+                horaria, impuesto, niveles administrativos, identificación y
+                reglas fiscales pueden ajustarse o validarse según la operación
+                real de cada negocio.
               </p>
             </div>
 

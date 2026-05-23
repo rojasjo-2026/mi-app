@@ -15,13 +15,20 @@ type ClientCommercialSectionProps = {
   commercialSummary: CommercialSummary;
   isOpen: boolean;
   onToggle: () => void;
+  currency?: string | null;
+  locale?: string;
 };
 
 export function ClientCommercialSection({
   commercialSummary,
   isOpen,
   onToggle,
+  currency,
+  locale,
 }: ClientCommercialSectionProps) {
+  const formatMoney = (value?: number | string | null) =>
+    formatCurrency(value, currency, locale);
+
   return (
     <CollapsibleCard
       title="Resumen comercial operativo"
@@ -46,37 +53,37 @@ export function ClientCommercialSection({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
         <CommercialSummaryCard
           label="Valor de trabajos"
-          value={formatCurrency(commercialSummary.totalEstimated)}
+          value={formatMoney(commercialSummary.totalEstimated)}
           helper="Estimado desde trabajos"
         />
 
         <CommercialSummaryCard
           label="Por facturar"
-          value={formatCurrency(commercialSummary.pendingAmount)}
+          value={formatMoney(commercialSummary.pendingAmount)}
           helper="Trabajos pendientes"
         />
 
         <CommercialSummaryCard
           label="Trabajos facturados"
-          value={formatCurrency(commercialSummary.invoicedAmount)}
+          value={formatMoney(commercialSummary.invoicedAmount)}
           helper="Marcados como facturados"
         />
 
         <CommercialSummaryCard
           label="Trabajos pagados"
-          value={formatCurrency(commercialSummary.paidAmount)}
+          value={formatMoney(commercialSummary.paidAmount)}
           helper="Marcados como pagados"
         />
 
         <CommercialSummaryCard
           label="Costo operativo"
-          value={formatCurrency(commercialSummary.totalCost)}
+          value={formatMoney(commercialSummary.totalCost)}
           helper="Costos registrados"
         />
 
         <CommercialSummaryCard
           label="Utilidad estimada"
-          value={formatCurrency(commercialSummary.profitAmount)}
+          value={formatMoney(commercialSummary.profitAmount)}
           helper="Valor menos costo"
         />
       </div>
@@ -124,19 +131,19 @@ export function ClientCommercialSection({
                     </p>
 
                     <p className="mt-1 text-xs text-slate-500">
-                      Fecha: {formatDateLabel(item.date)}
+                      Fecha: {formatDateLabel(item.date, locale)}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 sm:min-w-[260px]">
                     <MiniInfoCard
                       label="Monto estimado"
-                      value={formatCurrency(item.estimatedAmount)}
+                      value={formatMoney(item.estimatedAmount)}
                     />
 
                     <MiniInfoCard
                       label="Costo"
-                      value={formatCurrency(item.costAmount)}
+                      value={formatMoney(item.costAmount)}
                     />
                   </div>
                 </div>

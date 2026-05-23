@@ -18,6 +18,8 @@ type ClientDetailSummaryCardsProps = {
   pendingBalance: number;
   pendingInvoiceCount: number;
   nextMaintenance: ClientNextMaintenance | null;
+  currency?: string | null;
+  locale?: string;
 };
 
 type SummaryMetricCardProps = {
@@ -101,6 +103,8 @@ export function ClientDetailSummaryCards({
   pendingBalance,
   pendingInvoiceCount,
   nextMaintenance,
+  currency,
+  locale,
 }: ClientDetailSummaryCardsProps) {
   return (
     <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -122,7 +126,7 @@ export function ClientDetailSummaryCards({
 
       <SummaryMetricCard
         label="Saldo pendiente"
-        value={formatCurrency(pendingBalance)}
+        value={formatCurrency(pendingBalance, currency, locale)}
         helper={getPendingBalanceHelper(pendingInvoiceCount)}
         icon={<CircleDollarSign className="h-6 w-6" />}
         tone="green"
@@ -131,7 +135,9 @@ export function ClientDetailSummaryCards({
       <SummaryMetricCard
         label="Próximo"
         value={
-          nextMaintenance ? formatDateLabel(nextMaintenance.target_date) : "-"
+          nextMaintenance
+            ? formatDateLabel(nextMaintenance.target_date, locale)
+            : "-"
         }
         helper={
           nextMaintenance

@@ -12,6 +12,7 @@ type ClientContactSectionProps = {
   email: string;
   clientStatus: ClientStatus;
   whatsappOptIn: boolean;
+  phoneExample: string;
   inputClass: string;
   selectClass: string;
   onToggle: () => void;
@@ -30,6 +31,7 @@ export default function ClientContactSection({
   email,
   clientStatus,
   whatsappOptIn,
+  phoneExample,
   inputClass,
   selectClass,
   onToggle,
@@ -53,6 +55,7 @@ export default function ClientContactSection({
           onChange={setPhonePrimary}
           required
           inputClass={inputClass}
+          placeholder={`Ej. ${phoneExample}`}
         />
 
         <FormInput
@@ -60,7 +63,7 @@ export default function ClientContactSection({
           value={phoneSecondary}
           onChange={setPhoneSecondary}
           inputClass={inputClass}
-          placeholder="Casa, oficina o celular alternativo"
+          placeholder={`Ej. ${phoneExample}`}
         />
 
         <FormInput
@@ -69,6 +72,7 @@ export default function ClientContactSection({
           onChange={setEmail}
           inputClass={inputClass}
           type="email"
+          placeholder="correo@empresa.com"
         />
 
         {mode === "edit" && (

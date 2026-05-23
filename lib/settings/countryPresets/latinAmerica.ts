@@ -12,9 +12,38 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Costa_Rica", label: "Costa Rica Time" }],
     phonePrefix: "+506",
     phoneExample: "+506 8888-8888",
+    phoneValidation: {
+      minDigits: 8,
+      maxDigits: 8,
+      nationalExample: "8888-8888",
+      internationalExample: "+506 8888-8888",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 13,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Costa Rica.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "CEDULA_FISICA", label: "Cédula física", appliesTo: "PERSON" },
+      {
+        code: "CEDULA_JURIDICA",
+        label: "Cédula jurídica",
+        appliesTo: "COMPANY",
+      },
+      { code: "DIMEX", label: "DIMEX", appliesTo: "PERSON" },
+      { code: "NITE", label: "NITE", appliesTo: "BOTH" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Provincia, cantón, distrito, dirección exacta o punto de referencia",
     adminLevel1Label: "Provincia",
     adminLevel2Label: "Cantón",
     adminLevel3Label: "Distrito",
@@ -32,9 +61,32 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Panama", label: "Panama Time" }],
     phonePrefix: "+507",
     phoneExample: "+507 6000-0000",
+    phoneValidation: {
+      minDigits: 8,
+      maxDigits: 8,
+      nationalExample: "6000-0000",
+      internationalExample: "+507 6000-0000",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 7,
     taxLabel: "ITBMS",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El ITBMS sugerido se maneja como una regla nacional base para Panamá.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "CEDULA", label: "Cédula", appliesTo: "PERSON" },
+      { code: "RUC", label: "RUC", appliesTo: "COMPANY" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Provincia/comarca, distrito, corregimiento, dirección exacta",
     adminLevel1Label: "Provincia / Comarca",
     adminLevel2Label: "Distrito",
     adminLevel3Label: "Corregimiento",
@@ -60,9 +112,32 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     ],
     phonePrefix: "+52",
     phoneExample: "+52 55 1234 5678",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 10,
+      nationalExample: "55 1234 5678",
+      internationalExample: "+52 55 1234 5678",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 16,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para México.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "RFC", label: "RFC", appliesTo: "BOTH" },
+      { code: "CURP", label: "CURP", appliesTo: "PERSON" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Estado, municipio/alcaldía, colonia/localidad, dirección exacta",
     adminLevel1Label: "Estado / Ciudad de México",
     adminLevel2Label: "Municipio / Alcaldía",
     adminLevel3Label: "Colonia / Localidad",
@@ -80,9 +155,41 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Bogota", label: "Colombia Time" }],
     phonePrefix: "+57",
     phoneExample: "+57 300 123 4567",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 10,
+      nationalExample: "300 123 4567",
+      internationalExample: "+57 300 123 4567",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 19,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Colombia.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      {
+        code: "CEDULA_CIUDADANIA",
+        label: "Cédula de ciudadanía",
+        appliesTo: "PERSON",
+      },
+      { code: "NIT", label: "NIT", appliesTo: "COMPANY" },
+      {
+        code: "CEDULA_EXTRANJERIA",
+        label: "Cédula de extranjería",
+        appliesTo: "PERSON",
+      },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento, municipio, barrio/localidad, dirección exacta",
     adminLevel1Label: "Departamento / Distrito Capital",
     adminLevel2Label: "Municipio",
     adminLevel3Label: "Barrio / Localidad",
@@ -100,9 +207,32 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Guatemala", label: "Guatemala Time" }],
     phonePrefix: "+502",
     phoneExample: "+502 5555-5555",
+    phoneValidation: {
+      minDigits: 8,
+      maxDigits: 8,
+      nationalExample: "5555-5555",
+      internationalExample: "+502 5555-5555",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 12,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Guatemala.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "DPI", label: "DPI", appliesTo: "PERSON" },
+      { code: "NIT", label: "NIT", appliesTo: "BOTH" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento, municipio, zona/aldea/caserío, dirección exacta",
     adminLevel1Label: "Departamento",
     adminLevel2Label: "Municipio",
     adminLevel3Label: "Zona / Aldea / Caserío",
@@ -120,9 +250,32 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/El_Salvador", label: "El Salvador Time" }],
     phonePrefix: "+503",
     phoneExample: "+503 7000-0000",
+    phoneValidation: {
+      minDigits: 8,
+      maxDigits: 8,
+      nationalExample: "7000-0000",
+      internationalExample: "+503 7000-0000",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 13,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para El Salvador.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "DUI", label: "DUI", appliesTo: "PERSON" },
+      { code: "NIT", label: "NIT", appliesTo: "BOTH" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento, municipio, distrito/cantón, dirección exacta",
     adminLevel1Label: "Departamento",
     adminLevel2Label: "Municipio",
     adminLevel3Label: "Distrito / Cantón",
@@ -140,9 +293,32 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Tegucigalpa", label: "Honduras Time" }],
     phonePrefix: "+504",
     phoneExample: "+504 9999-9999",
+    phoneValidation: {
+      minDigits: 8,
+      maxDigits: 8,
+      nationalExample: "9999-9999",
+      internationalExample: "+504 9999-9999",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 15,
     taxLabel: "ISV",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El ISV sugerido se maneja como una regla nacional base para Honduras.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "DNI", label: "DNI", appliesTo: "PERSON" },
+      { code: "RTN", label: "RTN", appliesTo: "BOTH" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento, municipio, aldea/caserío/barrio, dirección exacta",
     adminLevel1Label: "Departamento",
     adminLevel2Label: "Municipio",
     adminLevel3Label: "Aldea / Caserío / Barrio",
@@ -160,9 +336,36 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Managua", label: "Nicaragua Time" }],
     phonePrefix: "+505",
     phoneExample: "+505 8888-8888",
+    phoneValidation: {
+      minDigits: 8,
+      maxDigits: 8,
+      nationalExample: "8888-8888",
+      internationalExample: "+505 8888-8888",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 15,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Nicaragua.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      {
+        code: "CEDULA_IDENTIDAD",
+        label: "Cédula de identidad",
+        appliesTo: "PERSON",
+      },
+      { code: "RUC", label: "RUC", appliesTo: "BOTH" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento/región autónoma, municipio, barrio/comunidad, dirección exacta",
     adminLevel1Label: "Departamento / Región Autónoma",
     adminLevel2Label: "Municipio",
     adminLevel3Label: "Barrio / Comunidad",
@@ -182,9 +385,32 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     ],
     phonePrefix: "+1",
     phoneExample: "+1 809 555 5555",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 10,
+      nationalExample: "809 555 5555",
+      internationalExample: "+1 809 555 5555",
+      requiresCountryPrefix: false,
+      notes: "Formato NANP usado en República Dominicana.",
+    },
     defaultTaxRate: 18,
     taxLabel: "ITBIS",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El ITBIS sugerido se maneja como una regla nacional base para República Dominicana.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "CEDULA", label: "Cédula", appliesTo: "PERSON" },
+      { code: "RNC", label: "RNC", appliesTo: "COMPANY" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Provincia/Distrito Nacional, municipio, distrito municipal/sector, dirección exacta",
     adminLevel1Label: "Provincia / Distrito Nacional",
     adminLevel2Label: "Municipio",
     adminLevel3Label: "Distrito municipal / Sector",
@@ -202,9 +428,30 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Puerto_Rico", label: "Puerto Rico Time" }],
     phonePrefix: "+1",
     phoneExample: "+1 787 555 5555",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 10,
+      nationalExample: "787 555 5555",
+      internationalExample: "+1 787 555 5555",
+      requiresCountryPrefix: false,
+      notes: "Formato NANP usado en Puerto Rico.",
+    },
     defaultTaxRate: 11.5,
     taxLabel: "IVU",
     taxMode: "MIXED",
+    regionalTaxRules: {
+      appliesByRegion: true,
+      description:
+        "El IVU puede requerir ajustes según la jurisdicción o regla local.",
+      notes: "Usar el valor sugerido como base y ajustar según la operación.",
+    },
+    identificationTypes: [
+      { code: "SSN", label: "SSN", appliesTo: "PERSON" },
+      { code: "EIN", label: "EIN", appliesTo: "COMPANY" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample: "Municipio, barrio, sector/urbanización, dirección exacta",
     adminLevel1Label: "Municipio",
     adminLevel2Label: "Barrio",
     adminLevel3Label: "Sector / Urbanización",
@@ -224,9 +471,33 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     ],
     phonePrefix: "+54",
     phoneExample: "+54 11 1234-5678",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 10,
+      nationalExample: "11 1234-5678",
+      internationalExample: "+54 11 1234-5678",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 21,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Argentina.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "DNI", label: "DNI", appliesTo: "PERSON" },
+      { code: "CUIT", label: "CUIT", appliesTo: "BOTH" },
+      { code: "CUIL", label: "CUIL", appliesTo: "PERSON" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Provincia/Ciudad Autónoma, departamento/partido/comuna, localidad/barrio, dirección exacta",
     adminLevel1Label: "Provincia / Ciudad Autónoma",
     adminLevel2Label: "Departamento / Partido / Comuna",
     adminLevel3Label: "Localidad / Barrio",
@@ -247,9 +518,31 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     ],
     phonePrefix: "+56",
     phoneExample: "+56 9 1234 5678",
+    phoneValidation: {
+      minDigits: 9,
+      maxDigits: 9,
+      nationalExample: "9 1234 5678",
+      internationalExample: "+56 9 1234 5678",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 19,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Chile.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "RUT", label: "RUT", appliesTo: "BOTH" },
+      { code: "RUN", label: "RUN", appliesTo: "PERSON" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample: "Región, provincia, comuna, dirección exacta",
     adminLevel1Label: "Región",
     adminLevel2Label: "Provincia",
     adminLevel3Label: "Comuna",
@@ -267,9 +560,37 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Lima", label: "Peru Time" }],
     phonePrefix: "+51",
     phoneExample: "+51 999 999 999",
+    phoneValidation: {
+      minDigits: 9,
+      maxDigits: 9,
+      nationalExample: "999 999 999",
+      internationalExample: "+51 999 999 999",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 18,
     taxLabel: "IGV",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IGV sugerido se maneja como una regla nacional base para Perú.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "DNI", label: "DNI", appliesTo: "PERSON" },
+      { code: "RUC", label: "RUC", appliesTo: "COMPANY" },
+      {
+        code: "CARNET_EXTRANJERIA",
+        label: "Carné de extranjería",
+        appliesTo: "PERSON",
+      },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento/región, provincia, distrito, dirección exacta",
     adminLevel1Label: "Departamento / Región",
     adminLevel2Label: "Provincia",
     adminLevel3Label: "Distrito",
@@ -290,9 +611,31 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     ],
     phonePrefix: "+593",
     phoneExample: "+593 99 999 9999",
+    phoneValidation: {
+      minDigits: 9,
+      maxDigits: 9,
+      nationalExample: "99 999 9999",
+      internationalExample: "+593 99 999 9999",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 15,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Ecuador.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "CEDULA", label: "Cédula", appliesTo: "PERSON" },
+      { code: "RUC", label: "RUC", appliesTo: "COMPANY" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample: "Provincia, cantón, parroquia, dirección exacta",
     adminLevel1Label: "Provincia",
     adminLevel2Label: "Cantón",
     adminLevel3Label: "Parroquia",
@@ -310,9 +653,32 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/La_Paz", label: "Bolivia Time" }],
     phonePrefix: "+591",
     phoneExample: "+591 70000000",
+    phoneValidation: {
+      minDigits: 8,
+      maxDigits: 8,
+      nationalExample: "70000000",
+      internationalExample: "+591 70000000",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 13,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Bolivia.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      { code: "CI", label: "Cédula de identidad", appliesTo: "PERSON" },
+      { code: "NIT", label: "NIT", appliesTo: "COMPANY" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento, provincia, municipio/localidad, dirección exacta",
     adminLevel1Label: "Departamento",
     adminLevel2Label: "Provincia",
     adminLevel3Label: "Municipio / Localidad",
@@ -330,9 +696,36 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Asuncion", label: "Paraguay Time" }],
     phonePrefix: "+595",
     phoneExample: "+595 981 123456",
+    phoneValidation: {
+      minDigits: 9,
+      maxDigits: 9,
+      nationalExample: "981 123456",
+      internationalExample: "+595 981 123456",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 10,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Paraguay.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      {
+        code: "CEDULA_IDENTIDAD",
+        label: "Cédula de identidad",
+        appliesTo: "PERSON",
+      },
+      { code: "RUC", label: "RUC", appliesTo: "BOTH" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento/capital, distrito, barrio/compañía, dirección exacta",
     adminLevel1Label: "Departamento / Capital",
     adminLevel2Label: "Distrito",
     adminLevel3Label: "Barrio / Compañía",
@@ -350,9 +743,36 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Montevideo", label: "Uruguay Time" }],
     phonePrefix: "+598",
     phoneExample: "+598 99 123 456",
+    phoneValidation: {
+      minDigits: 8,
+      maxDigits: 8,
+      nationalExample: "99 123 456",
+      internationalExample: "+598 99 123 456",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 22,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Uruguay.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      {
+        code: "CEDULA_IDENTIDAD",
+        label: "Cédula de identidad",
+        appliesTo: "PERSON",
+      },
+      { code: "RUT", label: "RUT", appliesTo: "COMPANY" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Departamento, municipio/localidad, barrio/zona, dirección exacta",
     adminLevel1Label: "Departamento",
     adminLevel2Label: "Municipio / Localidad",
     adminLevel3Label: "Barrio / Zona",
@@ -370,9 +790,36 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     timezones: [{ value: "America/Caracas", label: "Venezuela Time" }],
     phonePrefix: "+58",
     phoneExample: "+58 412 1234567",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 10,
+      nationalExample: "412 1234567",
+      internationalExample: "+58 412 1234567",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 16,
     taxLabel: "IVA",
     taxMode: "NATIONAL",
+    regionalTaxRules: {
+      appliesByRegion: false,
+      description:
+        "El IVA sugerido se maneja como una regla nacional base para Venezuela.",
+      notes:
+        "Validar reglas fiscales específicas antes de usarlo como cálculo fiscal oficial.",
+    },
+    identificationTypes: [
+      {
+        code: "CEDULA_IDENTIDAD",
+        label: "Cédula de identidad",
+        appliesTo: "PERSON",
+      },
+      { code: "RIF", label: "RIF", appliesTo: "BOTH" },
+      { code: "PASSPORT", label: "Pasaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Otro", appliesTo: "BOTH" },
+    ],
+    addressExample:
+      "Estado/Distrito Capital, municipio, parroquia, dirección exacta",
     adminLevel1Label: "Estado / Distrito Capital",
     adminLevel2Label: "Municipio",
     adminLevel3Label: "Parroquia",
@@ -396,9 +843,31 @@ export const LATIN_AMERICA_COUNTRY_PRESETS: Record<string, CountryPreset> = {
     ],
     phonePrefix: "+55",
     phoneExample: "+55 11 91234-5678",
+    phoneValidation: {
+      minDigits: 10,
+      maxDigits: 11,
+      nationalExample: "11 91234-5678",
+      internationalExample: "+55 11 91234-5678",
+      requiresCountryPrefix: false,
+      notes: "Formato base sugerido para teléfonos nacionales.",
+    },
     defaultTaxRate: 0,
     taxLabel: "ICMS / ISS",
     taxMode: "MIXED",
+    regionalTaxRules: {
+      appliesByRegion: true,
+      description:
+        "La carga fiscal puede depender del tipo de operación, estado, municipio y tipo de servicio.",
+      notes:
+        "Usar 0 como valor inicial hasta configurar reglas fiscales específicas.",
+    },
+    identificationTypes: [
+      { code: "CPF", label: "CPF", appliesTo: "PERSON" },
+      { code: "CNPJ", label: "CNPJ", appliesTo: "COMPANY" },
+      { code: "PASSPORT", label: "Passaporte", appliesTo: "PERSON" },
+      { code: "OTHER", label: "Outro", appliesTo: "BOTH" },
+    ],
+    addressExample: "Estado, município, bairro/distrito, endereço completo",
     adminLevel1Label: "Estado",
     adminLevel2Label: "Municipio",
     adminLevel3Label: "Barrio / Distrito",

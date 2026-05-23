@@ -17,6 +17,12 @@ import {
   getReadableFieldName,
   getReadableValidationError,
 } from "@/lib/clients/clientForm.utils";
+import {
+  COUNTRY_PRESET_OPTIONS,
+  COUNTRY_PRESETS,
+  getCountryPreset,
+  type CountryPreset,
+} from "@/lib/settings/countryPresets";
 import AlertMessage from "@/components/clients/form/AlertMessage";
 import ClientBasicInfoSection from "@/components/clients/form/ClientBasicInfoSection";
 import ClientContactSection from "@/components/clients/form/ClientContactSection";
@@ -38,6 +44,7 @@ type ClientFormData = {
   company_name?: string | null;
   commercial_name?: string | null;
   main_contact_name?: string | null;
+  country_code?: string | null;
   identification_country?: string | null;
   identification_type?: string | null;
   identification_number?: string | null;
@@ -65,7 +72,7 @@ type ClientFormData = {
   billing_address?: string | null;
   tax_id?: string | null;
   tax_exempt?: boolean | null;
-  preferred_currency?: "CRC" | "USD" | null;
+  preferred_currency?: string | null;
 };
 
 type ClientFormProps = {
@@ -73,7 +80,43 @@ type ClientFormProps = {
   initialData?: ClientFormData | null;
 };
 
+type AppSettingsResponse = {
+  success: boolean;
+  data: {
+    country_code?: string | null;
+    default_currency?: string | null;
+  } | null;
+  message?: string;
+};
+
 type SectionKey = "personal" | "contact" | "location" | "finance" | "billing";
+
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
+const currencyNames: Record<string, string> = {
+  ARS: "Peso argentino",
+  BOB: "Boliviano",
+  BRL: "Real brasileño",
+  CAD: "Dólar canadiense",
+  CLP: "Peso chileno",
+  COP: "Peso colombiano",
+  CRC: "Colón costarricense",
+  DOP: "Peso dominicano",
+  EUR: "Euro",
+  GTQ: "Quetzal guatemalteco",
+  HNL: "Lempira hondureño",
+  MXN: "Peso mexicano",
+  NIO: "Córdoba nicaragüense",
+  PEN: "Sol peruano",
+  PYG: "Guaraní paraguayo",
+  USD: "Dólar estadounidense",
+  UYU: "Peso uruguayo",
+  VES: "Bolívar venezolano",
+  XAF: "Franco CFA de África Central",
+};
 
 const COSTA_RICA_IDENTIFICATION_OPTIONS = [
   { value: "CEDULA_FISICA", label: "Cédula física" },
@@ -92,6 +135,10 @@ const GLOBAL_IDENTIFICATION_OPTIONS = [
   { value: "BUSINESS_REGISTRATION", label: "Registro empresarial" },
   { value: "OTHER", label: "Otro" },
 ];
+
+function getCountryByCode(countryCode?: string | null): CountryPreset {
+  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
+}
 
 export default function ClientForm({
   mode,
@@ -130,6 +177,7 @@ export default function ClientForm({
   const [phoneSecondary, setPhoneSecondary] = useState("");
   const [email, setEmail] = useState("");
 
+  const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [addressLine, setAddressLine] = useState("");
   const [adminLevel1, setAdminLevel1] = useState("");
   const [adminLevel2, setAdminLevel2] = useState("");
@@ -143,9 +191,7 @@ export default function ClientForm({
   const [discountRate, setDiscountRate] = useState("");
   const [creditLimit, setCreditLimit] = useState("");
   const [taxExempt, setTaxExempt] = useState(false);
-  const [preferredCurrency, setPreferredCurrency] = useState<"CRC" | "USD">(
-    "CRC",
-  );
+  const [preferredCurrency, setPreferredCurrency] = useState("CRC");
 
   const [billingSameAsClient, setBillingSameAsClient] = useState(true);
   const [billingName, setBillingName] = useState("");
@@ -157,6 +203,29 @@ export default function ClientForm({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
+  const selectedCountryPreset = useMemo(
+    () => getCountryByCode(countryCode),
+    [countryCode],
+  );
+
+  const currencyOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          Object.values(COUNTRY_PRESETS).flatMap((preset) =>
+            [preset.primaryCurrency, preset.secondaryCurrency].filter(Boolean),
+          ),
+        ),
+      )
+        .map((currency) => String(currency))
+        .sort()
+        .map((currency) => ({
+          value: currency,
+          label: `${currency} - ${currencyNames[currency] || "Moneda"}`,
+        })),
+    [],
+  );
+
   const identificationOptions =
     complianceProfile === "COSTA_RICA"
       ? COSTA_RICA_IDENTIFICATION_OPTIONS
@@ -165,10 +234,18 @@ export default function ClientForm({
   useEffect(() => {
     if (!initialData) return;
 
+    const nextCountryCode =
+      initialData.country_code ??
+      initialData.identification_country ??
+      DEFAULT_COUNTRY_CODE;
+
+    const nextCountryPreset = getCountryByCode(nextCountryCode);
     const nextClientType = initialData.client_type ?? "PERSON";
     const nextComplianceProfile =
-      initialData.compliance_profile ?? "COSTA_RICA";
+      initialData.compliance_profile ??
+      (nextCountryPreset.countryCode === "CR" ? "COSTA_RICA" : "GLOBAL");
 
+    setCountryCode(nextCountryPreset.countryCode);
     setClientType(nextClientType);
     setComplianceProfile(nextComplianceProfile);
 
@@ -223,7 +300,9 @@ export default function ClientForm({
         : "",
     );
     setTaxExempt(initialData.tax_exempt ?? false);
-    setPreferredCurrency(initialData.preferred_currency ?? "CRC");
+    setPreferredCurrency(
+      initialData.preferred_currency ?? nextCountryPreset.primaryCurrency,
+    );
 
     setBillingSameAsClient(initialData.billing_same_as_client ?? true);
     setBillingName(initialData.billing_name ?? "");
@@ -231,6 +310,52 @@ export default function ClientForm({
     setBillingPhone(initialData.billing_phone ?? "");
     setBillingAddress(initialData.billing_address ?? "");
   }, [initialData]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBusinessCountryFromSettings() {
+      try {
+        const response = await fetch("/api/settings", {
+          cache: "no-store",
+        });
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!response.ok || !result.success || !result.data) {
+          return;
+        }
+
+        const nextCountryPreset = getCountryByCode(
+          result.data.country_code ?? DEFAULT_COUNTRY_CODE,
+        );
+
+        const nextComplianceProfile =
+          nextCountryPreset.countryCode === "CR" ? "COSTA_RICA" : "GLOBAL";
+
+        const nextClientType = initialData?.client_type ?? clientType;
+
+        if (!isMounted) return;
+
+        setCountryCode(nextCountryPreset.countryCode);
+        setComplianceProfile(nextComplianceProfile);
+        setIdentificationType(
+          getDefaultIdentificationType(nextClientType, nextComplianceProfile),
+        );
+        setPreferredCurrency(
+          result.data.default_currency ?? nextCountryPreset.primaryCurrency,
+        );
+      } catch {
+        // Keep the current form values if system settings cannot be loaded.
+      }
+    }
+
+    void loadBusinessCountryFromSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [clientType, initialData, mode]);
 
   useEffect(() => {
     if (paymentTerm === "CASH") {
@@ -277,6 +402,23 @@ export default function ClientForm({
   function handleComplianceProfileChange(value: ClientComplianceProfile) {
     setComplianceProfile(value);
     setIdentificationType(getDefaultIdentificationType(clientType, value));
+  }
+
+  function handleCountryChange(value: string) {
+    const nextCountryPreset = getCountryByCode(value);
+    const nextComplianceProfile =
+      nextCountryPreset.countryCode === "CR" ? "COSTA_RICA" : "GLOBAL";
+
+    setCountryCode(nextCountryPreset.countryCode);
+    setComplianceProfile(nextComplianceProfile);
+    setIdentificationType(
+      getDefaultIdentificationType(clientType, nextComplianceProfile),
+    );
+    setPreferredCurrency(nextCountryPreset.primaryCurrency);
+
+    setAdminLevel1("");
+    setAdminLevel2("");
+    setAdminLevel3("");
   }
 
   function handleProvinceChange(value: string) {
@@ -376,7 +518,8 @@ export default function ClientForm({
         main_contact_name:
           clientType !== "PERSON" ? mainContactName || null : null,
 
-        identification_country: "CR",
+        country_code: countryCode,
+        identification_country: countryCode,
         identification_type: identificationType,
         identification_number: normalizedTaxId,
         tax_id: normalizedTaxId,
@@ -562,6 +705,7 @@ export default function ClientForm({
             email={email}
             clientStatus={clientStatus}
             whatsappOptIn={whatsappOptIn}
+            phoneExample={selectedCountryPreset.phoneExample}
             inputClass={inputClass}
             selectClass={selectClass}
             isOpen={openSections.contact}
@@ -576,6 +720,9 @@ export default function ClientForm({
           <ClientLocationSection
             isOpen={openSections.location}
             onToggle={() => toggleSection("location")}
+            countryCode={countryCode}
+            countryPreset={selectedCountryPreset}
+            countryOptions={COUNTRY_PRESET_OPTIONS}
             adminLevel1={adminLevel1}
             adminLevel2={adminLevel2}
             adminLevel3={adminLevel3}
@@ -583,8 +730,11 @@ export default function ClientForm({
             provinciaOptions={provinciaOptions}
             cantonOptions={cantonOptions}
             distritoOptions={distritoOptions}
+            handleCountryChange={handleCountryChange}
             handleProvinceChange={handleProvinceChange}
             handleCantonChange={handleCantonChange}
+            setAdminLevel1={setAdminLevel1}
+            setAdminLevel2={setAdminLevel2}
             setAdminLevel3={setAdminLevel3}
             setAddressLine={setAddressLine}
             selectClass={selectClass}
@@ -600,6 +750,8 @@ export default function ClientForm({
             discountRate={discountRate}
             preferredCurrency={preferredCurrency}
             taxExempt={taxExempt}
+            countryPreset={selectedCountryPreset}
+            currencyOptions={currencyOptions}
             setPaymentTerm={setPaymentTerm}
             setCreditDays={setCreditDays}
             setCreditLimit={setCreditLimit}

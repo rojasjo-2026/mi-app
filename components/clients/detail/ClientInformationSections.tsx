@@ -16,6 +16,11 @@ import {
   getPaymentTermLabel,
 } from "@/lib/clients/clientDetail.utils";
 import { getClientStatusLabel } from "@/lib/clients/clientStatus";
+import {
+  COUNTRY_PRESETS,
+  getCountryPreset,
+  type CountryPreset,
+} from "@/lib/settings/countryPresets";
 import { CollapsibleCard } from "@/components/clients/detail/CollapsibleCard";
 import { InfoRow } from "@/components/clients/detail/InfoRow";
 
@@ -25,8 +30,20 @@ type ClientInformationSectionsProps = {
   onToggle: (section: DetailSectionKey) => void;
 };
 
+const DEFAULT_COUNTRY_CODE = "CR";
+
+const fallbackCountryPreset =
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+
 function getClientDisplayName(client: ClientDetail) {
   return client.display_name || getFullName(client);
+}
+
+function getClientCountryPreset(client: ClientDetail): CountryPreset {
+  return (
+    getCountryPreset(client.country_code ?? client.identification_country) ??
+    fallbackCountryPreset
+  );
 }
 
 export function ClientInformationSections({
@@ -34,6 +51,11 @@ export function ClientInformationSections({
   openSections,
   onToggle,
 }: ClientInformationSectionsProps) {
+  const countryPreset = getClientCountryPreset(client);
+  const currency = client.preferred_currency || countryPreset.primaryCurrency;
+  const locale = countryPreset.locale;
+  const taxLabel = countryPreset.taxLabel || "IVA";
+
   return (
     <>
       <CollapsibleCard
@@ -77,12 +99,16 @@ export function ClientInformationSections({
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <InfoRow
+            label="País operativo"
+            value={`${countryPreset.countryName} (${countryPreset.countryCode})`}
+          />
+          <InfoRow
             label="Perfil de validación"
             value={getComplianceProfileLabel(client.compliance_profile)}
           />
           <InfoRow
             label="País de identificación"
-            value={client.identification_country || "CR"}
+            value={client.identification_country || countryPreset.countryCode}
           />
           <InfoRow
             label="Tipo de identificación"
@@ -97,7 +123,7 @@ export function ClientInformationSections({
             value={client.tax_id || client.identification_number || "-"}
           />
           <InfoRow
-            label="Exento de IVA"
+            label={`Exento de ${taxLabel}`}
             value={formatYesNo(client.tax_exempt)}
           />
         </div>
@@ -134,9 +160,22 @@ export function ClientInformationSections({
         onToggle={() => onToggle("location")}
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <InfoRow label="Provincia" value={client.admin_level_1 || "-"} />
-          <InfoRow label="Cantón" value={client.admin_level_2 || "-"} />
-          <InfoRow label="Distrito" value={client.admin_level_3 || "-"} />
+          <InfoRow
+            label="País operativo"
+            value={`${countryPreset.countryName} (${countryPreset.countryCode})`}
+          />
+          <InfoRow
+            label={countryPreset.adminLevel1Label}
+            value={client.admin_level_1 || "-"}
+          />
+          <InfoRow
+            label={countryPreset.adminLevel2Label}
+            value={client.admin_level_2 || "-"}
+          />
+          <InfoRow
+            label={countryPreset.adminLevel3Label ?? "Nivel administrativo 3"}
+            value={client.admin_level_3 || "-"}
+          />
 
           <div className="sm:col-span-2">
             <InfoRow label="Dirección" value={client.address_line || "-"} />
@@ -160,18 +199,15 @@ export function ClientInformationSections({
           />
           <InfoRow
             label="Límite de crédito"
-            value={formatCurrency(client.credit_limit)}
+            value={formatCurrency(client.credit_limit, currency, locale)}
           />
           <InfoRow
             label="Descuento por defecto"
             value={formatPercentage(client.default_discount_rate)}
           />
+          <InfoRow label="Moneda preferida" value={currency} />
           <InfoRow
-            label="Moneda preferida"
-            value={client.preferred_currency || "CRC"}
-          />
-          <InfoRow
-            label="Exento de IVA"
+            label={`Exento de ${taxLabel}`}
             value={formatYesNo(client.tax_exempt)}
           />
         </div>

@@ -1,5 +1,11 @@
 import FormSection from "@/components/clients/form/FormSection";
 import FormInput from "@/components/clients/form/FormInput";
+import type { CountryPreset } from "@/lib/settings/countryPresets";
+
+type CurrencyOption = {
+  value: string;
+  label: string;
+};
 
 type ClientFinanceSectionProps = {
   isOpen: boolean;
@@ -8,13 +14,15 @@ type ClientFinanceSectionProps = {
   creditDays: string;
   creditLimit: string;
   discountRate: string;
-  preferredCurrency: "CRC" | "USD";
+  preferredCurrency: string;
   taxExempt: boolean;
+  countryPreset: CountryPreset;
+  currencyOptions: CurrencyOption[];
   setPaymentTerm: (value: "CASH" | "CREDIT") => void;
   setCreditDays: (value: string) => void;
   setCreditLimit: (value: string) => void;
   setDiscountRate: (value: string) => void;
-  setPreferredCurrency: (value: "CRC" | "USD") => void;
+  setPreferredCurrency: (value: string) => void;
   setTaxExempt: (value: boolean) => void;
   selectClass: string;
   inputClass: string;
@@ -29,6 +37,8 @@ export default function ClientFinanceSection({
   discountRate,
   preferredCurrency,
   taxExempt,
+  countryPreset,
+  currencyOptions,
   setPaymentTerm,
   setCreditDays,
   setCreditLimit,
@@ -47,6 +57,25 @@ export default function ClientFinanceSection({
       <p className="mb-5 text-sm text-slate-500">
         Reglas comerciales opcionales para crédito, descuentos e impuestos.
       </p>
+
+      <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+        <p>
+          <span className="font-semibold text-slate-700">
+            País seleccionado:
+          </span>{" "}
+          {countryPreset.countryName}
+        </p>
+        <p className="mt-1">
+          <span className="font-semibold text-slate-700">
+            Impuesto sugerido:
+          </span>{" "}
+          {countryPreset.taxLabel} {countryPreset.defaultTaxRate}%
+        </p>
+        <p className="mt-1">
+          <span className="font-semibold text-slate-700">Moneda sugerida:</span>{" "}
+          {countryPreset.primaryCurrency} {countryPreset.currencySymbol}
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
@@ -83,7 +112,7 @@ export default function ClientFinanceSection({
               onChange={setCreditLimit}
               inputClass={inputClass}
               type="number"
-              placeholder="Ejemplo: 500000"
+              placeholder={`Ejemplo: ${countryPreset.currencySymbol} 500000`}
             />
           </>
         )}
@@ -103,13 +132,14 @@ export default function ClientFinanceSection({
           </label>
           <select
             value={preferredCurrency}
-            onChange={(e) =>
-              setPreferredCurrency(e.target.value as "CRC" | "USD")
-            }
+            onChange={(e) => setPreferredCurrency(e.target.value)}
             className={selectClass}
           >
-            <option value="CRC">Colones costarricenses</option>
-            <option value="USD">Dólares estadounidenses</option>
+            {currencyOptions.map((currency) => (
+              <option key={currency.value} value={currency.value}>
+                {currency.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -127,10 +157,11 @@ export default function ClientFinanceSection({
             />
             <div>
               <p className="text-sm font-semibold text-slate-800">
-                Exento de IVA
+                Exento de {countryPreset.taxLabel}
               </p>
               <p className="text-xs text-slate-500">
-                Marque esta opción si al cliente no se le debe aplicar IVA.
+                Marque esta opción si al cliente no se le debe aplicar{" "}
+                {countryPreset.taxLabel}.
               </p>
             </div>
           </label>

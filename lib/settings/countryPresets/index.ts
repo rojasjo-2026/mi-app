@@ -9,6 +9,27 @@ export type CountryTimezoneOption = {
 
 export type CountryTaxMode = "NATIONAL" | "REGIONAL" | "MIXED" | "NONE";
 
+export type CountryIdentificationType = {
+  code: string;
+  label: string;
+  appliesTo: "PERSON" | "COMPANY" | "BOTH";
+};
+
+export type CountryPhoneValidation = {
+  minDigits: number;
+  maxDigits: number;
+  nationalExample: string;
+  internationalExample: string;
+  requiresCountryPrefix: boolean;
+  notes?: string;
+};
+
+export type CountryRegionalTaxRules = {
+  appliesByRegion: boolean;
+  description: string;
+  notes?: string;
+};
+
 export type CountryPreset = {
   countryCode: string;
   countryName: string;
@@ -20,9 +41,13 @@ export type CountryPreset = {
   timezones: CountryTimezoneOption[];
   phonePrefix: string;
   phoneExample: string;
+  phoneValidation: CountryPhoneValidation;
   defaultTaxRate: number;
   taxLabel: string;
   taxMode: CountryTaxMode;
+  regionalTaxRules: CountryRegionalTaxRules;
+  identificationTypes: CountryIdentificationType[];
+  addressExample: string;
   adminLevel1Label: string;
   adminLevel2Label: string;
   adminLevel3Label?: string | null;

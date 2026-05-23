@@ -20,14 +20,16 @@ type ClientFinanceHistorySectionProps = {
   isOpen: boolean;
   onToggle: () => void;
   onRefresh: () => void;
+  currency?: string | null;
+  locale?: string;
 };
 
-function formatInvoiceDate(value?: string | Date | null) {
+function formatInvoiceDate(value?: string | Date | null, locale?: string) {
   if (!value) {
     return "-";
   }
 
-  return formatDateLabel(String(value));
+  return formatDateLabel(String(value), locale);
 }
 
 function getInvoiceStatusLabel(status?: string | null) {
@@ -76,12 +78,16 @@ function getInvoiceDescription(invoice: ClientInvoice) {
   );
 }
 
-function getLastPaymentLabel(summary: ClientInvoiceFinanceSummary) {
+function getLastPaymentLabel(
+  summary: ClientInvoiceFinanceSummary,
+  currency?: string | null,
+  locale?: string,
+) {
   if (!summary.lastPayment) {
     return "Sin pagos";
   }
 
-  return formatCurrency(summary.lastPayment.amount);
+  return formatCurrency(summary.lastPayment.amount, currency, locale);
 }
 
 export function ClientFinanceHistorySection({
@@ -92,7 +98,14 @@ export function ClientFinanceHistorySection({
   isOpen,
   onToggle,
   onRefresh,
+  currency,
+  locale,
 }: ClientFinanceHistorySectionProps) {
+  const formatMoney = (
+    value?: number | string | null,
+    invoiceCurrency?: string | null,
+  ) => formatCurrency(value, invoiceCurrency ?? currency, locale);
+
   return (
     <CollapsibleCard
       title="Facturas y pagos"
@@ -127,7 +140,7 @@ export function ClientFinanceHistorySection({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <CommercialSummaryCard
               label="Facturado real"
-              value={formatCurrency(summary.totalInvoiced)}
+              value={formatMoney(summary.totalInvoiced)}
               helper={`${summary.invoiceCount} factura${
                 summary.invoiceCount === 1 ? "" : "s"
               } activa${summary.invoiceCount === 1 ? "" : "s"}`}
@@ -135,13 +148,13 @@ export function ClientFinanceHistorySection({
 
             <CommercialSummaryCard
               label="Pagado real"
-              value={formatCurrency(summary.totalPaid)}
+              value={formatMoney(summary.totalPaid)}
               helper="Pagos registrados"
             />
 
             <CommercialSummaryCard
               label="Saldo pendiente"
-              value={formatCurrency(summary.pendingBalance)}
+              value={formatMoney(summary.pendingBalance)}
               helper={`${summary.pendingInvoiceCount} pendiente${
                 summary.pendingInvoiceCount === 1 ? "" : "s"
               }`}
@@ -149,7 +162,7 @@ export function ClientFinanceHistorySection({
 
             <CommercialSummaryCard
               label="Vencido"
-              value={formatCurrency(summary.overdueBalance)}
+              value={formatMoney(summary.overdueBalance)}
               helper={`${summary.overdueInvoiceCount} factura${
                 summary.overdueInvoiceCount === 1 ? "" : "s"
               } vencida${summary.overdueInvoiceCount === 1 ? "" : "s"}`}
@@ -157,12 +170,13 @@ export function ClientFinanceHistorySection({
 
             <CommercialSummaryCard
               label="Último pago"
-              value={getLastPaymentLabel(summary)}
+              value={getLastPaymentLabel(summary, currency, locale)}
               helper={
                 summary.lastPayment
                   ? formatInvoiceDate(
                       summary.lastPayment.payment_date ??
                         summary.lastPayment.created_at,
+                      locale,
                     )
                   : "Sin pagos registrados"
               }
@@ -214,23 +228,33 @@ export function ClientFinanceHistorySection({
                         </p>
 
                         <p className="mt-1 text-xs text-slate-500">
-                          Factura: {formatInvoiceDate(invoice.invoice_date)} ·
-                          Vence: {formatInvoiceDate(invoice.due_date)}
+                          Factura:{" "}
+                          {formatInvoiceDate(invoice.invoice_date, locale)} ·
+                          Vence: {formatInvoiceDate(invoice.due_date, locale)}
                         </p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[560px]">
                         <MiniInfoCard
                           label="Total"
-                          value={formatCurrency(invoice.total_amount)}
+                          value={formatMoney(
+                            invoice.total_amount,
+                            invoice.currency,
+                          )}
                         />
                         <MiniInfoCard
                           label="Pagado"
-                          value={formatCurrency(invoice.paid_amount)}
+                          value={formatMoney(
+                            invoice.paid_amount,
+                            invoice.currency,
+                          )}
                         />
                         <MiniInfoCard
                           label="Saldo"
-                          value={formatCurrency(invoice.balance_amount)}
+                          value={formatMoney(
+                            invoice.balance_amount,
+                            invoice.currency,
+                          )}
                         />
                         <MiniInfoCard
                           label="Pagos"
