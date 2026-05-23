@@ -9,6 +9,8 @@ import {
   type CountryTimezoneOption,
 } from "@/lib/settings/countryPresets";
 
+import CalendarBlockedDatesManager from "@/app/settings/components/CalendarBlockedDatesManager";
+
 type CurrencyCode = string;
 
 type AppSettings = {
@@ -246,6 +248,9 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [countryPresetMessage, setCountryPresetMessage] = useState("");
+  const [activeOperationSection, setActiveOperationSection] = useState<
+    string | null
+  >("Bloqueos de calendario");
 
   const selectedCountryPreset = useMemo(
     () => getCountryByCode(form.country_code),
@@ -884,21 +889,58 @@ export default function SettingsPage() {
             </p>
 
             <div className="mt-5 space-y-2">
-              {section.items.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
-                >
-                  <span className="text-sm font-medium text-slate-700">
-                    {item}
-                  </span>
+              {section.items.map((item) => {
+                const isCalendarBlockedItem =
+                  section.title === "Operación y agenda" &&
+                  item === "Bloqueos de calendario";
+                const isActive = activeOperationSection === item;
 
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                    Próximamente
-                  </span>
-                </div>
-              ))}
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => {
+                      if (!isCalendarBlockedItem) return;
+
+                      setActiveOperationSection((current) =>
+                        current === item ? null : item,
+                      );
+                    }}
+                    disabled={!isCalendarBlockedItem}
+                    className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
+                      isCalendarBlockedItem
+                        ? "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
+                        : "cursor-not-allowed border-slate-100 bg-slate-50 opacity-75"
+                    }`}
+                  >
+                    <span className="text-sm font-medium text-slate-700">
+                      {item}
+                    </span>
+
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        isCalendarBlockedItem
+                          ? isActive
+                            ? "bg-slate-900 text-white"
+                            : "bg-white text-slate-600"
+                          : "bg-white text-slate-500"
+                      }`}
+                    >
+                      {isCalendarBlockedItem
+                        ? isActive
+                          ? "Abierto"
+                          : "Gestionar"
+                        : "Próximamente"}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+
+            {section.title === "Operación y agenda" &&
+            activeOperationSection === "Bloqueos de calendario" ? (
+              <CalendarBlockedDatesManager />
+            ) : null}
           </article>
         ))}
       </section>
