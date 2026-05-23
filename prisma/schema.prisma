@@ -177,6 +177,14 @@ enum ActivityLogAction {
   SYSTEM_EVENT
 }
 
+enum CalendarNonWorkingDayType {
+  HOLIDAY
+  INTERNAL_CLOSURE
+  COLLECTIVE_VACATION
+  SPECIAL_EVENT
+  OTHER
+}
+
 // ======================================================
 // USERS / STAFF
 // ======================================================
@@ -721,6 +729,25 @@ model CalendarBlockedDate {
   updated_at               DateTime @updatedAt
 
   @@index([blocked_date])
+}
+
+model CalendarNonWorkingDay {
+  calendar_non_working_day_id String                    @id @default(uuid()) @db.Uuid
+  non_working_date            DateTime
+  title                       String
+  description                 String?
+  type                        CalendarNonWorkingDayType @default(HOLIDAY)
+  country_code                String                    @default("CR")
+  is_recurring_yearly         Boolean                   @default(false)
+  is_active                   Boolean                   @default(true)
+  created_at                  DateTime                  @default(now())
+  updated_at                  DateTime                  @updatedAt
+
+  @@unique([non_working_date, country_code])
+  @@index([non_working_date])
+  @@index([country_code])
+  @@index([type])
+  @@index([is_active])
 }
 
 // ======================================================

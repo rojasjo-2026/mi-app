@@ -100,6 +100,10 @@ export function getEventStyle(type: CalendarEventType) {
     return "bg-slate-200 text-slate-700 border-slate-300";
   }
 
+  if (type === "non_working") {
+    return "bg-amber-100 text-amber-800 border-amber-200";
+  }
+
   return "bg-slate-100 text-slate-700 border-slate-200";
 }
 
@@ -111,6 +115,7 @@ export function getEventLabel(type: CalendarEventType) {
   if (type === "installation") return "Instalación";
   if (type === "note") return "Nota";
   if (type === "blocked") return "Fecha bloqueada";
+  if (type === "non_working") return "Día no laborable";
 
   return "Evento";
 }

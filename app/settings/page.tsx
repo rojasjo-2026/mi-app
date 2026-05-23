@@ -10,6 +10,7 @@ import {
 } from "@/lib/settings/countryPresets";
 
 import CalendarBlockedDatesManager from "@/app/settings/components/CalendarBlockedDatesManager";
+import CalendarNonWorkingDaysManager from "@/app/settings/components/CalendarNonWorkingDaysManager";
 
 type CurrencyCode = string;
 
@@ -890,9 +891,12 @@ export default function SettingsPage() {
 
             <div className="mt-5 space-y-2">
               {section.items.map((item) => {
-                const isCalendarBlockedItem =
-                  section.title === "Operación y agenda" &&
-                  item === "Bloqueos de calendario";
+                const isOperationSection =
+                  section.title === "Operación y agenda";
+                const isManageableOperationItem =
+                  isOperationSection &&
+                  (item === "Días no laborables" ||
+                    item === "Bloqueos de calendario");
                 const isActive = activeOperationSection === item;
 
                 return (
@@ -900,15 +904,15 @@ export default function SettingsPage() {
                     key={item}
                     type="button"
                     onClick={() => {
-                      if (!isCalendarBlockedItem) return;
+                      if (!isManageableOperationItem) return;
 
                       setActiveOperationSection((current) =>
                         current === item ? null : item,
                       );
                     }}
-                    disabled={!isCalendarBlockedItem}
+                    disabled={!isManageableOperationItem}
                     className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
-                      isCalendarBlockedItem
+                      isManageableOperationItem
                         ? "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
                         : "cursor-not-allowed border-slate-100 bg-slate-50 opacity-75"
                     }`}
@@ -919,14 +923,14 @@ export default function SettingsPage() {
 
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        isCalendarBlockedItem
+                        isManageableOperationItem
                           ? isActive
                             ? "bg-slate-900 text-white"
                             : "bg-white text-slate-600"
                           : "bg-white text-slate-500"
                       }`}
                     >
-                      {isCalendarBlockedItem
+                      {isManageableOperationItem
                         ? isActive
                           ? "Abierto"
                           : "Gestionar"
@@ -936,6 +940,11 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+
+            {section.title === "Operación y agenda" &&
+            activeOperationSection === "Días no laborables" ? (
+              <CalendarNonWorkingDaysManager />
+            ) : null}
 
             {section.title === "Operación y agenda" &&
             activeOperationSection === "Bloqueos de calendario" ? (

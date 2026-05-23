@@ -5,7 +5,8 @@ export type CalendarEventType =
   | "upcoming"
   | "installation"
   | "note"
-  | "blocked";
+  | "blocked"
+  | "non_working";
 
 export type CalendarViewMode = "month" | "week" | "day";
 
@@ -14,7 +15,7 @@ export type CalendarEvent = {
   date: string;
   type: CalendarEventType;
   title: string;
-  description?: string;
+  description?: string | null;
 };
 
 export type ContextMenuState = {

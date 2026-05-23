@@ -58,16 +58,24 @@ export default function CalendarPage() {
     try {
       setIsLoadingEvents(true);
 
-      const [calendarResponse, notesResponse, blockedResponse] =
-        await Promise.all([
-          fetch("/api/calendar", { cache: "no-store" }),
-          fetch("/api/calendar-notes", { cache: "no-store" }),
-          fetch("/api/calendar-blocked", { cache: "no-store" }),
-        ]);
+      const [
+        calendarResponse,
+        notesResponse,
+        blockedResponse,
+        nonWorkingDaysResponse,
+      ] = await Promise.all([
+        fetch("/api/calendar", { cache: "no-store" }),
+        fetch("/api/calendar-notes", { cache: "no-store" }),
+        fetch("/api/calendar-blocked", { cache: "no-store" }),
+        fetch("/api/calendar-non-working-days?active_only=true", {
+          cache: "no-store",
+        }),
+      ]);
 
       const calendarResult = await calendarResponse.json();
       const notesResult = await notesResponse.json();
       const blockedResult = await blockedResponse.json();
+      const nonWorkingDaysResult = await nonWorkingDaysResponse.json();
 
       const calendarEvents =
         calendarResult.success && Array.isArray(calendarResult.data)
@@ -79,7 +87,12 @@ export default function CalendarPage() {
           ? blockedResult.data
           : [];
 
-      setEvents([...calendarEvents, ...blockedEvents]);
+      const nonWorkingDayEvents =
+        nonWorkingDaysResult.success && Array.isArray(nonWorkingDaysResult.data)
+          ? nonWorkingDaysResult.data
+          : [];
+
+      setEvents([...calendarEvents, ...blockedEvents, ...nonWorkingDayEvents]);
 
       setNotes(
         notesResult.success && Array.isArray(notesResult.data)
