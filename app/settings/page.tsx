@@ -86,6 +86,13 @@ const currencyOptions = Array.from(
   .map((currency) => String(currency))
   .sort();
 
+const taxModeLabels: Record<CountryPreset["taxMode"], string> = {
+  NATIONAL: "Nacional",
+  REGIONAL: "Regional",
+  MIXED: "Mixto",
+  NONE: "Sin impuesto",
+};
+
 const futureSections = [
   {
     title: "Operación y agenda",
@@ -420,7 +427,7 @@ export default function SettingsPage() {
                     company_phone: event.target.value,
                   }))
                 }
-                placeholder={`Ej. ${selectedCountryPreset.phonePrefix} 8888-8888`}
+                placeholder={`Ej. ${selectedCountryPreset.phoneExample}`}
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               />
             </label>
@@ -493,12 +500,27 @@ export default function SettingsPage() {
                 Valores sugeridos por país
               </p>
 
-              <div className="mt-3 grid gap-3 text-xs text-slate-600 md:grid-cols-3">
+              <div className="mt-3 grid gap-3 text-xs text-slate-600 md:grid-cols-2 xl:grid-cols-4">
                 <div>
                   <span className="font-semibold text-slate-700">
                     Prefijo telefónico:
                   </span>{" "}
                   {selectedCountryPreset.phonePrefix}
+                </div>
+
+                <div>
+                  <span className="font-semibold text-slate-700">
+                    Ejemplo teléfono:
+                  </span>{" "}
+                  {selectedCountryPreset.phoneExample}
+                </div>
+
+                <div>
+                  <span className="font-semibold text-slate-700">
+                    Moneda principal:
+                  </span>{" "}
+                  {selectedCountryPreset.primaryCurrency}{" "}
+                  {selectedCountryPreset.currencySymbol}
                 </div>
 
                 <div>
@@ -510,9 +532,31 @@ export default function SettingsPage() {
 
                 <div>
                   <span className="font-semibold text-slate-700">
+                    Formato regional:
+                  </span>{" "}
+                  {selectedCountryPreset.locale}
+                </div>
+
+                <div>
+                  <span className="font-semibold text-slate-700">
                     Formato de fecha:
                   </span>{" "}
                   {selectedCountryPreset.dateFormat}
+                </div>
+
+                <div>
+                  <span className="font-semibold text-slate-700">
+                    Impuesto sugerido:
+                  </span>{" "}
+                  {selectedCountryPreset.taxLabel}{" "}
+                  {selectedCountryPreset.defaultTaxRate}%
+                </div>
+
+                <div>
+                  <span className="font-semibold text-slate-700">
+                    Modo de impuesto:
+                  </span>{" "}
+                  {taxModeLabels[selectedCountryPreset.taxMode]}
                 </div>
               </div>
 
@@ -535,7 +579,8 @@ export default function SettingsPage() {
                     admin_level_1_label: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                placeholder={selectedCountryPreset.adminLevel1Label}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-300 placeholder:italic focus:border-slate-400"
               />
             </label>
 
@@ -551,7 +596,8 @@ export default function SettingsPage() {
                     admin_level_2_label: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                placeholder={selectedCountryPreset.adminLevel2Label}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-300 placeholder:italic focus:border-slate-400"
               />
             </label>
 
@@ -567,7 +613,8 @@ export default function SettingsPage() {
                     admin_level_3_label: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                placeholder={selectedCountryPreset.adminLevel3Label ?? ""}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-300 placeholder:italic focus:border-slate-400"
               />
             </label>
 

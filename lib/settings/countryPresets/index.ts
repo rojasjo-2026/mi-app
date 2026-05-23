@@ -7,15 +7,22 @@ export type CountryTimezoneOption = {
   label: string;
 };
 
+export type CountryTaxMode = "NATIONAL" | "REGIONAL" | "MIXED" | "NONE";
+
 export type CountryPreset = {
   countryCode: string;
   countryName: string;
   primaryCurrency: string;
   secondaryCurrency?: string | null;
+  currencySymbol: string;
+  locale: string;
   defaultTimezone: string;
   timezones: CountryTimezoneOption[];
   phonePrefix: string;
+  phoneExample: string;
   defaultTaxRate: number;
+  taxLabel: string;
+  taxMode: CountryTaxMode;
   adminLevel1Label: string;
   adminLevel2Label: string;
   adminLevel3Label?: string | null;
