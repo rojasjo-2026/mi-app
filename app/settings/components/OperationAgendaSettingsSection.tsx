@@ -6,6 +6,7 @@ import AgendaRulesManager from "@/app/settings/components/AgendaRulesManager";
 import BusinessWorkingHoursManager from "@/app/settings/components/BusinessWorkingHoursManager";
 import CalendarBlockedDatesManager from "@/app/settings/components/CalendarBlockedDatesManager";
 import CalendarNonWorkingDaysManager from "@/app/settings/components/CalendarNonWorkingDaysManager";
+import OperationalAssignmentManager from "@/app/settings/components/OperationalAssignmentManager";
 
 type OperationAgendaSettingsSectionProps = {
   activeOperationSection: string | null;
@@ -40,6 +41,7 @@ const manageableOperationItems = [
   "Días no laborables",
   "Reglas de agenda",
   "Bloqueos de calendario",
+  "Asignación operativa",
 ];
 
 export default function OperationAgendaSettingsSection({
@@ -134,6 +136,14 @@ export default function OperationAgendaSettingsSection({
           {section.title === "Operación y agenda" &&
           activeOperationSection === "Bloqueos de calendario" ? (
             <CalendarBlockedDatesManager />
+          ) : null}
+
+          {section.title === "Operación y agenda" &&
+          activeOperationSection === "Asignación operativa" ? (
+            <OperationalAssignmentManager
+              countryCode={countryCode}
+              countryName={countryName}
+            />
           ) : null}
         </article>
       ))}
