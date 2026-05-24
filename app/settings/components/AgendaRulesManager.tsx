@@ -363,7 +363,7 @@ function buildPayload(
   template: RuleTemplate,
 ) {
   return {
-    country_code: countryCode,
+    country_code: countryCode.trim().toUpperCase(),
     rule_key: template.rule_key,
     rule_name: template.rule_name,
     rule_description: template.rule_description,
@@ -371,19 +371,27 @@ function buildPayload(
     applies_to_key: template.applies_to_key,
     applies_to_name: template.applies_to_name,
     value_type: template.value_type,
-    value_number: template.value_type === "NUMBER" ? form.value_number : "",
-    value_decimal: template.value_type === "DECIMAL" ? form.value_decimal : "",
+
+    value_number:
+      template.value_type === "NUMBER" ? Number(form.value_number) : null,
+
+    value_decimal:
+      template.value_type === "DECIMAL" ? form.value_decimal.trim() : null,
+
     value_text:
       template.value_type === "TEXT" || template.value_type === "SELECT"
         ? form.value_text.trim()
-        : "",
+        : null,
+
     value_boolean:
-      template.value_type === "BOOLEAN" ? form.value_boolean === "true" : "",
+      template.value_type === "BOOLEAN" ? form.value_boolean === "true" : null,
+
     value_json:
       template.value_type === "JSON" ? JSON.parse(form.value_json) : null,
-    unit: template.unit,
-    notes: form.notes.trim(),
-    sort_order: "",
+
+    unit: template.unit || null,
+    notes: form.notes.trim() || null,
+    sort_order: null,
   };
 }
 
@@ -526,6 +534,8 @@ export default function AgendaRulesManager({
       setSaving(true);
       setError("");
       setSuccessMessage("");
+
+      setSelectedRuleKey(currentTemplate.rule_key);
 
       const payload = buildPayload(form, countryCode, currentTemplate);
 
