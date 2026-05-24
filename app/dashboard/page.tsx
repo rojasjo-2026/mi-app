@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  buildGoogleMapsRouteLink as buildOperationalGoogleMapsRouteLink,
+  getValidOperationalMapPoints,
+  parseOperationalCoordinate,
+} from "@/lib/operational-location/operationalLocation.utils";
+
 declare global {
   interface Window {
     google?: any;
@@ -83,16 +89,6 @@ function buildWhatsAppLink(phone: string, clientName?: string | null) {
   return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
 }
 
-function parseCoordinate(value: string | number | null | undefined) {
-  if (value === null || value === undefined || value === "") {
-    return null;
-  }
-
-  const num = typeof value === "number" ? value : Number(value);
-
-  return Number.isFinite(num) ? num : null;
-}
-
 function getFollowUpStatus(
   targetDate: string,
 ): "overdue" | "today" | "upcoming" {
@@ -151,56 +147,26 @@ function getMarkerColorByTargetDate(targetDate: string) {
 }
 
 function getValidMapPoints(items: FollowUpZoneGroup[]): MapPoint[] {
-  return items
-    .flatMap((group) => group.items)
-    .filter(
-      (item) =>
-        parseCoordinate(item.installation?.latitude) !== null &&
-        parseCoordinate(item.installation?.longitude) !== null,
-    )
-    .map((item) => ({
-      ...item,
-      lat: parseCoordinate(item.installation?.latitude)!,
-      lng: parseCoordinate(item.installation?.longitude)!,
-    }));
+  return getValidOperationalMapPoints(
+    items.flatMap((group) => group.items),
+    (item) => ({
+      latitude: item.installation?.latitude,
+      longitude: item.installation?.longitude,
+    }),
+  ).map((point) => ({
+    ...point.item,
+    lat: point.lat,
+    lng: point.lng,
+  }));
 }
 
 function buildGoogleMapsRouteLink(items: FollowUpByZoneItem[]) {
-  const validStops = items
-    .map((item) => {
-      const lat = parseCoordinate(item.installation?.latitude);
-      const lng = parseCoordinate(item.installation?.longitude);
-
-      if (lat === null || lng === null) {
-        return null;
-      }
-
-      return `${lat},${lng}`;
-    })
-    .filter((value): value is string => Boolean(value));
-
-  if (validStops.length === 0) {
-    return null;
-  }
-
-  if (validStops.length === 1) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(validStops[0])}`;
-  }
-
-  const origin = validStops[0];
-  const destination = validStops[validStops.length - 1];
-  const waypoints = validStops.slice(1, -1);
-
-  const url = new URL("https://www.google.com/maps/dir/");
-  url.searchParams.set("api", "1");
-  url.searchParams.set("origin", origin);
-  url.searchParams.set("destination", destination);
-
-  if (waypoints.length > 0) {
-    url.searchParams.set("waypoints", waypoints.join("|"));
-  }
-
-  return url.toString();
+  return buildOperationalGoogleMapsRouteLink(
+    items.map((item) => ({
+      latitude: item.installation?.latitude,
+      longitude: item.installation?.longitude,
+    })),
+  );
 }
 
 export default function DashboardPage() {
@@ -684,8 +650,12 @@ function FollowUpsByZone({
                       : null;
 
                     const hasCoordinates =
-                      parseCoordinate(item.installation?.latitude) !== null &&
-                      parseCoordinate(item.installation?.longitude) !== null;
+                      parseOperationalCoordinate(
+                        item.installation?.latitude,
+                      ) !== null &&
+                      parseOperationalCoordinate(
+                        item.installation?.longitude,
+                      ) !== null;
 
                     return (
                       <div

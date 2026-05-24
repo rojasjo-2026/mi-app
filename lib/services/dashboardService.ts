@@ -3,6 +3,8 @@ import {
   findPendingFollowUpsWithClientAndInstallation,
 } from "@/lib/repositories/dashboardRepository";
 
+import { getOperationalLocationLabel } from "@/lib/operational-location/operationalLocation.utils";
+
 type FilterType = "all" | "overdue" | "today" | "upcoming";
 
 function normalizeFilter(value: string | null): FilterType {
@@ -18,60 +20,7 @@ function normalizeFilter(value: string | null): FilterType {
   return "all";
 }
 
-function getZoneLabel(
-  installation: {
-    zone?: string | null;
-    city?: string | null;
-    address_line?: string | null;
-    latitude?: unknown;
-    longitude?: unknown;
-  } | null,
-  client: {
-    zone?: string | null;
-    admin_level_1?: string | null;
-    admin_level_2?: string | null;
-    admin_level_3?: string | null;
-    address_line?: string | null;
-  } | null,
-) {
-  const installationZone = installation?.zone?.trim() || "";
-  const installationCity = installation?.city?.trim() || "";
-  const installationAddress = installation?.address_line?.trim() || "";
-
-  if (installationZone && installationCity) {
-    return `${installationZone} - ${installationCity}`;
-  }
-
-  if (installationZone) return installationZone;
-  if (installationCity) return installationCity;
-  if (installationAddress) return installationAddress;
-
-  const clientZone = client?.zone?.trim() || "";
-  const clientLevel1 = client?.admin_level_1?.trim() || "";
-  const clientLevel2 = client?.admin_level_2?.trim() || "";
-  const clientLevel3 = client?.admin_level_3?.trim() || "";
-  const clientAddress = client?.address_line?.trim() || "";
-
-  if (clientZone && clientLevel3) {
-    return `${clientZone} - ${clientLevel3}`;
-  }
-
-  if (clientZone) return clientZone;
-  if (clientLevel3) return clientLevel3;
-  if (clientLevel2) return clientLevel2;
-  if (clientLevel1) return clientLevel1;
-  if (clientAddress) return clientAddress;
-
-  if (installation?.latitude && installation?.longitude) {
-    return "Ubicación GPS registrada";
-  }
-
-  return "Zona no definida";
-}
-
-export async function getFollowUpsByZoneService(filterValue: string | null) {
-  const filter = normalizeFilter(filterValue);
-
+function getDateRanges() {
   const now = new Date();
 
   const startOfToday = new Date(now);
@@ -82,6 +31,42 @@ export async function getFollowUpsByZoneService(filterValue: string | null) {
 
   const next7Days = new Date(startOfToday);
   next7Days.setDate(next7Days.getDate() + 7);
+
+  return {
+    startOfToday,
+    endOfToday,
+    next7Days,
+  };
+}
+
+function shouldIncludeFollowUpByFilter(
+  targetDate: Date,
+  filter: FilterType,
+  dateRanges: ReturnType<typeof getDateRanges>,
+) {
+  if (filter === "overdue") {
+    return targetDate < dateRanges.startOfToday;
+  }
+
+  if (filter === "today") {
+    return (
+      targetDate >= dateRanges.startOfToday &&
+      targetDate <= dateRanges.endOfToday
+    );
+  }
+
+  if (filter === "upcoming") {
+    return (
+      targetDate > dateRanges.endOfToday && targetDate <= dateRanges.next7Days
+    );
+  }
+
+  return true;
+}
+
+export async function getFollowUpsByZoneService(filterValue: string | null) {
+  const filter = normalizeFilter(filterValue);
+  const dateRanges = getDateRanges();
 
   const pendingStatus = await findPendingFollowUpStatus();
 
@@ -96,23 +81,13 @@ export async function getFollowUpsByZoneService(filterValue: string | null) {
     pendingStatus.follow_up_status_id,
   );
 
-  const filtered = followUps.filter((item) => {
-    const targetDate = new Date(item.target_date);
-
-    if (filter === "overdue") {
-      return targetDate < startOfToday;
-    }
-
-    if (filter === "today") {
-      return targetDate >= startOfToday && targetDate <= endOfToday;
-    }
-
-    if (filter === "upcoming") {
-      return targetDate > endOfToday && targetDate <= next7Days;
-    }
-
-    return true;
-  });
+  const filtered = followUps.filter((item) =>
+    shouldIncludeFollowUpByFilter(
+      new Date(item.target_date),
+      filter,
+      dateRanges,
+    ),
+  );
 
   const groupedMap = new Map<
     string,
@@ -138,7 +113,10 @@ export async function getFollowUpsByZoneService(filterValue: string | null) {
   >();
 
   for (const item of filtered) {
-    const zone = getZoneLabel(item.installation, item.client);
+    const zone = getOperationalLocationLabel({
+      installation: item.installation,
+      client: item.client,
+    });
 
     if (!groupedMap.has(zone)) {
       groupedMap.set(zone, []);
@@ -148,7 +126,7 @@ export async function getFollowUpsByZoneService(filterValue: string | null) {
       id: item.follow_up_id,
       target_date: item.target_date,
       priority: item.priority,
-      status: item.follow_up_status?.name || "Pending",
+      status: item.follow_up_status?.name || "Pendiente",
       client: item.client
         ? {
             id: item.client.client_id,
