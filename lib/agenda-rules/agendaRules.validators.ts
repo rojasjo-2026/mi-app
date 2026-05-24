@@ -18,11 +18,27 @@ export class AgendaRulesValidationError extends Error {
   }
 }
 
+function normalizeTechnicalKey(value: unknown, fieldName: string) {
+  const cleanValue = String(value || "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  if (!cleanValue) {
+    throw new AgendaRulesValidationError(`${fieldName} es requerido.`);
+  }
+
+  return cleanValue;
+}
+
 function normalizeRequiredText(value: unknown, fieldName: string) {
   const cleanValue = String(value || "").trim();
 
   if (!cleanValue) {
-    throw new AgendaRulesValidationError(`${fieldName} is required.`);
+    throw new AgendaRulesValidationError(`${fieldName} es requerido.`);
   }
 
   return cleanValue;
@@ -40,24 +56,18 @@ export function normalizeCountryCode(value: unknown) {
     .toUpperCase();
 
   if (!countryCode) {
-    throw new AgendaRulesValidationError("Country code is required.");
+    throw new AgendaRulesValidationError("El código de país es requerido.");
   }
 
   return countryCode;
 }
 
 export function normalizeRuleKey(value: unknown) {
-  return normalizeRequiredText(value, "Rule key")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "_");
+  return normalizeTechnicalKey(value, "La clave de regla");
 }
 
 export function normalizeAppliesToKey(value: unknown) {
-  return normalizeRequiredText(value, "Applies to key")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "_");
+  return normalizeTechnicalKey(value, "El valor de aplicación");
 }
 
 export function normalizeRuleScope(value: unknown) {
@@ -70,7 +80,7 @@ export function normalizeRuleScope(value: unknown) {
     return normalizedValue as AgendaRuleScope;
   }
 
-  throw new AgendaRulesValidationError("Invalid agenda rule scope.");
+  throw new AgendaRulesValidationError("El alcance de la regla no es válido.");
 }
 
 export function normalizeValueType(value: unknown) {
@@ -83,7 +93,7 @@ export function normalizeValueType(value: unknown) {
     return normalizedValue as AgendaRuleValueType;
   }
 
-  throw new AgendaRulesValidationError("Invalid agenda rule value type.");
+  throw new AgendaRulesValidationError("El tipo de valor no es válido.");
 }
 
 function normalizeBoolean(value: unknown) {
@@ -113,7 +123,7 @@ function normalizeOptionalInteger(value: unknown) {
   const parsedValue = Number(cleanValue);
 
   if (!Number.isFinite(parsedValue) || !Number.isInteger(parsedValue)) {
-    throw new AgendaRulesValidationError("Invalid number value.");
+    throw new AgendaRulesValidationError("El valor numérico no es válido.");
   }
 
   return parsedValue;
@@ -129,7 +139,7 @@ function normalizeOptionalDecimal(value: unknown) {
   const parsedValue = Number(cleanValue);
 
   if (!Number.isFinite(parsedValue)) {
-    throw new AgendaRulesValidationError("Invalid decimal value.");
+    throw new AgendaRulesValidationError("El valor decimal no es válido.");
   }
 
   return cleanValue;
@@ -150,7 +160,9 @@ function normalizeOptionalJsonValue(
     try {
       return JSON.parse(cleanValue) as Prisma.InputJsonValue;
     } catch {
-      throw new AgendaRulesValidationError("Invalid JSON value.");
+      throw new AgendaRulesValidationError(
+        "La configuración avanzada no tiene un formato válido.",
+      );
     }
   }
 
@@ -172,26 +184,28 @@ function validateValueByType(params: {
   value_json?: Prisma.InputJsonValue | null;
 }) {
   if (params.value_type === "NUMBER" && params.value_number === null) {
-    throw new AgendaRulesValidationError("Number value is required.");
+    throw new AgendaRulesValidationError("Debe ingresar un valor numérico.");
   }
 
   if (params.value_type === "DECIMAL" && params.value_decimal === null) {
-    throw new AgendaRulesValidationError("Decimal value is required.");
+    throw new AgendaRulesValidationError("Debe ingresar un valor decimal.");
   }
 
   if (
     (params.value_type === "TEXT" || params.value_type === "SELECT") &&
     !params.value_text
   ) {
-    throw new AgendaRulesValidationError("Text value is required.");
+    throw new AgendaRulesValidationError("Debe ingresar un valor de texto.");
   }
 
   if (params.value_type === "BOOLEAN" && params.value_boolean === null) {
-    throw new AgendaRulesValidationError("Boolean value is required.");
+    throw new AgendaRulesValidationError("Debe seleccionar Sí o No.");
   }
 
   if (params.value_type === "JSON" && params.value_json === null) {
-    throw new AgendaRulesValidationError("JSON value is required.");
+    throw new AgendaRulesValidationError(
+      "Debe ingresar una configuración avanzada.",
+    );
   }
 }
 
@@ -251,7 +265,7 @@ export function normalizeAgendaRuleCreateInput(
     country_code: normalizeCountryCode(input.country_code),
 
     rule_key: normalizeRuleKey(input.rule_key),
-    rule_name: normalizeRequiredText(input.rule_name, "Rule name"),
+    rule_name: normalizeRequiredText(input.rule_name, "El nombre de la regla"),
     rule_description: normalizeOptionalText(input.rule_description),
 
     rule_scope: normalizeRuleScope(input.rule_scope),
@@ -273,7 +287,7 @@ export function normalizeAgendaRuleUpdateInput(
   const id = String(input.id || "").trim();
 
   if (!id) {
-    throw new AgendaRulesValidationError("Agenda rule id is required.");
+    throw new AgendaRulesValidationError("El id de la regla es requerido.");
   }
 
   const normalizedInput: NormalizedAgendaRuleUpdateInput = {
@@ -291,7 +305,7 @@ export function normalizeAgendaRuleUpdateInput(
   if (input.rule_name !== undefined) {
     normalizedInput.rule_name = normalizeRequiredText(
       input.rule_name,
-      "Rule name",
+      "El nombre de la regla",
     );
   }
 
@@ -336,10 +350,11 @@ export function normalizeAgendaRuleUpdateInput(
   }
 
   if (input.value_boolean !== undefined) {
+    const rawBooleanValue = String(input.value_boolean || "").trim();
     const valueBoolean = normalizeBoolean(input.value_boolean);
 
-    if (valueBoolean === null) {
-      throw new AgendaRulesValidationError("Invalid boolean value.");
+    if (valueBoolean === null && rawBooleanValue) {
+      throw new AgendaRulesValidationError("El valor Sí / No no es válido.");
     }
 
     normalizedInput.value_boolean = valueBoolean;
@@ -365,7 +380,7 @@ export function normalizeAgendaRuleUpdateInput(
     const isActive = normalizeBoolean(input.is_active);
 
     if (isActive === null) {
-      throw new AgendaRulesValidationError("Invalid active value.");
+      throw new AgendaRulesValidationError("El estado activo no es válido.");
     }
 
     normalizedInput.is_active = isActive;
