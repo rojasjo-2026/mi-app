@@ -9,9 +9,10 @@ import {
   type CountryTimezoneOption,
 } from "@/lib/settings/countryPresets";
 
-import CalendarBlockedDatesManager from "@/app/settings/components/CalendarBlockedDatesManager";
-import CalendarNonWorkingDaysManager from "@/app/settings/components/CalendarNonWorkingDaysManager";
-import BusinessWorkingHoursManager from "@/app/settings/components/BusinessWorkingHoursManager";
+import GeneralSettingsSection from "@/app/settings/components/GeneralSettingsSection";
+import MaintenanceAutomationSettingsSection from "@/app/settings/components/MaintenanceAutomationSettingsSection";
+import OperationAgendaSettingsSection from "@/app/settings/components/OperationAgendaSettingsSection";
+import SettingsHeader from "@/app/settings/components/SettingsHeader";
 
 type CurrencyCode = string;
 
@@ -96,27 +97,6 @@ const taxModeLabels: Record<CountryPreset["taxMode"], string> = {
   MIXED: "Mixto",
   NONE: "Sin impuesto",
 };
-
-const futureSections = [
-  {
-    title: "Operación y agenda",
-    description:
-      "Controle horarios laborales, días no disponibles y reglas operativas del calendario.",
-    items: [
-      "Horario laboral",
-      "Días no laborables",
-      "Reglas de agenda",
-      "Bloqueos de calendario",
-      "Asignación operativa",
-    ],
-  },
-  {
-    title: "Accesos y permisos",
-    description:
-      "Administre usuarios, roles y permisos relacionados con el uso del sistema.",
-    items: ["Usuarios activos", "Roles", "Permisos", "Accesos administrativos"],
-  },
-];
 
 function buildDefaultFormFromPreset(preset: CountryPreset): SettingsForm {
   return {
@@ -330,6 +310,16 @@ export default function SettingsPage() {
     }
   }
 
+  function handleCountryChange(countryCode: string) {
+    const selectedCountry = getCountryByCode(countryCode);
+
+    setForm((current) => applyCountryPresetToForm(current, selectedCountry));
+
+    setCountryPresetMessage(
+      `Se aplicaron valores sugeridos para ${selectedCountry.countryName}. Puede ajustar moneda, impuesto, zona horaria y niveles administrativos antes de guardar.`,
+    );
+  }
+
   useEffect(() => {
     void loadSettings();
   }, []);
@@ -344,627 +334,40 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Configuración
-            </p>
-
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              Configuración del sistema
-            </h1>
-
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-              Centralice las reglas generales de la empresa, automatizaciones,
-              ubicación, moneda, impuestos, horarios y accesos. Estas
-              configuraciones servirán como base para adaptar el sistema al
-              entorno operativo de cada negocio.
-            </p>
-
-            {settingsId && (
-              <p className="mt-3 text-xs text-slate-400">
-                Registro activo: {settingsId}
-              </p>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={saving}
-            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {saving ? "Guardando..." : "Guardar configuración"}
-          </button>
-        </div>
-
-        {error && (
-          <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {error}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {successMessage}
-          </div>
-        )}
-      </section>
+      <SettingsHeader
+        settingsId={settingsId}
+        saving={saving}
+        error={error}
+        successMessage={successMessage}
+        onSave={() => void handleSave()}
+      />
 
       <section className="grid gap-5 xl:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900">
-            Configuración general
-          </h2>
+        <GeneralSettingsSection
+          form={form}
+          selectedCountryPreset={selectedCountryPreset}
+          timezoneOptions={timezoneOptions}
+          countryPresetMessage={countryPresetMessage}
+          countryOptions={COUNTRY_PRESET_OPTIONS}
+          currencyOptions={currencyOptions}
+          currencyNames={currencyNames}
+          taxModeLabels={taxModeLabels}
+          onFormChange={setForm}
+          onCountryChange={handleCountryChange}
+        />
 
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Defina los datos base de la empresa, ubicación, moneda, impuestos y
-            zona horaria. Al seleccionar un país, CLARIUS sugerirá valores
-            regionales que pueden modificarse manualmente.
-          </p>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Nombre de la empresa
-              </span>
-              <input
-                value={form.company_name || ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    company_name: event.target.value,
-                  }))
-                }
-                placeholder="Ej. Mi empresa"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Teléfono de la empresa
-              </span>
-              <input
-                value={form.company_phone || ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    company_phone: event.target.value,
-                  }))
-                }
-                placeholder={`Ej. ${selectedCountryPreset.phoneExample}`}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Correo de la empresa
-              </span>
-              <input
-                value={form.company_email || ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    company_email: event.target.value,
-                  }))
-                }
-                placeholder="correo@empresa.com"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Código de país
-              </span>
-              <select
-                value={form.country_code}
-                onChange={(event) => {
-                  const selectedCountry = getCountryByCode(event.target.value);
-
-                  setForm((current) =>
-                    applyCountryPresetToForm(current, selectedCountry),
-                  );
-
-                  setCountryPresetMessage(
-                    `Se aplicaron valores sugeridos para ${selectedCountry.countryName}. Puede ajustar moneda, impuesto, zona horaria y niveles administrativos antes de guardar.`,
-                  );
-                }}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                {COUNTRY_PRESET_OPTIONS.map((country) => (
-                  <option key={country.value} value={country.value}>
-                    {country.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-400">
-                Se usa para sugerir reglas regionales, formatos, moneda,
-                impuestos y zona horaria.
-              </p>
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">País</span>
-              <input
-                value={form.country_name}
-                readOnly
-                className="w-full cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 outline-none"
-              />
-            </label>
-
-            {countryPresetMessage && (
-              <div className="md:col-span-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-6 text-sky-800">
-                {countryPresetMessage}
-              </div>
-            )}
-
-            <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <p className="text-sm font-semibold text-slate-800">
-                Valores sugeridos por país
-              </p>
-
-              <div className="mt-3 grid gap-3 text-xs text-slate-600 md:grid-cols-2 xl:grid-cols-4">
-                <div>
-                  <span className="font-semibold text-slate-700">
-                    Prefijo telefónico:
-                  </span>{" "}
-                  {selectedCountryPreset.phonePrefix}
-                </div>
-
-                <div>
-                  <span className="font-semibold text-slate-700">
-                    Ejemplo teléfono:
-                  </span>{" "}
-                  {selectedCountryPreset.phoneExample}
-                </div>
-
-                <div>
-                  <span className="font-semibold text-slate-700">
-                    Moneda principal:
-                  </span>{" "}
-                  {selectedCountryPreset.primaryCurrency}{" "}
-                  {selectedCountryPreset.currencySymbol}
-                </div>
-
-                <div>
-                  <span className="font-semibold text-slate-700">
-                    Moneda secundaria:
-                  </span>{" "}
-                  {selectedCountryPreset.secondaryCurrency || "No definida"}
-                </div>
-
-                <div>
-                  <span className="font-semibold text-slate-700">
-                    Formato regional:
-                  </span>{" "}
-                  {selectedCountryPreset.locale}
-                </div>
-
-                <div>
-                  <span className="font-semibold text-slate-700">
-                    Formato de fecha:
-                  </span>{" "}
-                  {selectedCountryPreset.dateFormat}
-                </div>
-
-                <div>
-                  <span className="font-semibold text-slate-700">
-                    Impuesto sugerido:
-                  </span>{" "}
-                  {selectedCountryPreset.taxLabel}{" "}
-                  {selectedCountryPreset.defaultTaxRate}%
-                </div>
-
-                <div>
-                  <span className="font-semibold text-slate-700">
-                    Modo de impuesto:
-                  </span>{" "}
-                  {taxModeLabels[selectedCountryPreset.taxMode]}
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Validación y datos regionales
-                </p>
-
-                <div className="mt-3 grid gap-4 text-xs text-slate-600 md:grid-cols-2">
-                  <div className="md:col-span-2">
-                    <span className="font-semibold text-slate-700">
-                      Tipos de identificación:
-                    </span>
-
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {selectedCountryPreset.identificationTypes.map(
-                        (identificationType) => (
-                          <span
-                            key={identificationType.code}
-                            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-medium text-slate-600"
-                          >
-                            {identificationType.label}
-                          </span>
-                        ),
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-semibold text-slate-700">
-                      Ejemplo de dirección:
-                    </span>{" "}
-                    {selectedCountryPreset.addressExample}
-                  </div>
-
-                  <div>
-                    <span className="font-semibold text-slate-700">
-                      Teléfono:
-                    </span>{" "}
-                    {selectedCountryPreset.phoneValidation.minDigits ===
-                    selectedCountryPreset.phoneValidation.maxDigits
-                      ? `${selectedCountryPreset.phoneValidation.minDigits} dígitos`
-                      : `${selectedCountryPreset.phoneValidation.minDigits}-${selectedCountryPreset.phoneValidation.maxDigits} dígitos`}
-                    {" · "}
-                    Ej.{" "}
-                    {selectedCountryPreset.phoneValidation.internationalExample}
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <span className="font-semibold text-slate-700">
-                      Regla fiscal:
-                    </span>{" "}
-                    {selectedCountryPreset.regionalTaxRules.description}
-                  </div>
-                </div>
-              </div>
-
-              <p className="mt-3 text-xs leading-5 text-slate-400">
-                Estos valores son una guía regional. La moneda principal, zona
-                horaria, impuesto, niveles administrativos, identificación y
-                reglas fiscales pueden ajustarse o validarse según la operación
-                real de cada negocio.
-              </p>
-            </div>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Nivel administrativo 1
-              </span>
-              <input
-                value={form.admin_level_1_label}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    admin_level_1_label: event.target.value,
-                  }))
-                }
-                placeholder={selectedCountryPreset.adminLevel1Label}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-300 placeholder:italic focus:border-slate-400"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Nivel administrativo 2
-              </span>
-              <input
-                value={form.admin_level_2_label}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    admin_level_2_label: event.target.value,
-                  }))
-                }
-                placeholder={selectedCountryPreset.adminLevel2Label}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-300 placeholder:italic focus:border-slate-400"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Nivel administrativo 3
-              </span>
-              <input
-                value={form.admin_level_3_label || ""}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    admin_level_3_label: event.target.value,
-                  }))
-                }
-                placeholder={selectedCountryPreset.adminLevel3Label ?? ""}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-300 placeholder:italic focus:border-slate-400"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Zona horaria
-              </span>
-              <select
-                value={form.timezone}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    timezone: event.target.value,
-                  }))
-                }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                {timezoneOptions.map((timezoneOption) => (
-                  <option
-                    key={timezoneOption.value}
-                    value={timezoneOption.value}
-                  >
-                    {timezoneOption.label} - {timezoneOption.value}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-400">
-                Si el país tiene más de una zona horaria, seleccione la que
-                corresponde a la operación principal.
-              </p>
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Moneda principal
-              </span>
-              <select
-                value={form.default_currency}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    default_currency: event.target.value,
-                  }))
-                }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              >
-                {currencyOptions.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency} - {currencyNames[currency] || "Moneda"}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-400">
-                Se autocompleta según el país, pero puede cambiarse si la
-                empresa opera con otra moneda.
-              </p>
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Impuesto por defecto (%)
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={0.01}
-                value={form.default_tax_rate}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    default_tax_rate: Number(event.target.value),
-                  }))
-                }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-              />
-              <p className="text-xs text-slate-400">
-                Es una tasa sugerida. Puede ajustarse según la operación,
-                provincia, estado o régimen fiscal aplicable.
-              </p>
-            </label>
-          </div>
-        </article>
-
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900">
-            Automatización de mantenimiento
-          </h2>
-
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Configure cómo y cuándo el sistema debe contactar clientes por
-            mantenimientos próximos.
-          </p>
-
-          <div className="mt-6 space-y-4">
-            <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <div>
-                <p className="text-sm font-semibold text-slate-800">
-                  WhatsApp activo
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Permite que el sistema utilice WhatsApp para comunicaciones.
-                </p>
-              </div>
-
-              <input
-                type="checkbox"
-                checked={form.whatsapp_enabled}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    whatsapp_enabled: event.target.checked,
-                  }))
-                }
-                className="h-5 w-5 rounded border-slate-300"
-              />
-            </label>
-
-            <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <div>
-                <p className="text-sm font-semibold text-slate-800">
-                  Contacto automático
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Activa el envío automático de mensajes para mantenimientos.
-                </p>
-              </div>
-
-              <input
-                type="checkbox"
-                checked={form.auto_contact_enabled}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    auto_contact_enabled: event.target.checked,
-                  }))
-                }
-                className="h-5 w-5 rounded border-slate-300"
-              />
-            </label>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Días antes para contactar
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={form.maintenance_contact_days_before}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      maintenance_contact_days_before: Number(
-                        event.target.value,
-                      ),
-                    }))
-                  }
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-                />
-                <p className="text-xs text-slate-400">
-                  Este valor aplica de forma general para los clientes que
-                  permiten contacto por WhatsApp.
-                </p>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Hora automática de envío
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={23}
-                  value={form.automatic_send_hour}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      automatic_send_hour: Number(event.target.value),
-                    }))
-                  }
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-                />
-                <p className="text-xs text-slate-400">
-                  Use formato 24 horas. Ejemplo: 9 = 9:00 a. m.
-                </p>
-              </label>
-            </div>
-
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-800">
-              Estos valores funcionarán como configuración general para la
-              automatización de mantenimientos. Cada cliente seguirá controlando
-              únicamente si permite o no el contacto por WhatsApp.
-            </div>
-          </div>
-        </article>
+        <MaintenanceAutomationSettingsSection
+          form={form}
+          onFormChange={setForm}
+        />
       </section>
 
-      <section className="grid gap-5 md:grid-cols-2">
-        {futureSections.map((section) => (
-          <article
-            key={section.title}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md"
-          >
-            <h2 className="text-lg font-bold text-slate-900">
-              {section.title}
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              {section.description}
-            </p>
-
-            <div className="mt-5 space-y-2">
-              {section.items.map((item) => {
-                const isOperationSection =
-                  section.title === "Operación y agenda";
-                const manageableOperationItems = [
-                  "Horario laboral",
-                  "Días no laborables",
-                  "Bloqueos de calendario",
-                ];
-                const isManageableOperationItem =
-                  isOperationSection && manageableOperationItems.includes(item);
-                const isActive = activeOperationSection === item;
-
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => {
-                      if (!isManageableOperationItem) return;
-
-                      setActiveOperationSection((current) =>
-                        current === item ? null : item,
-                      );
-                    }}
-                    disabled={!isManageableOperationItem}
-                    className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
-                      isManageableOperationItem
-                        ? "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
-                        : "cursor-not-allowed border-slate-100 bg-slate-50 opacity-75"
-                    }`}
-                  >
-                    <span className="text-sm font-medium text-slate-700">
-                      {item}
-                    </span>
-
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        isManageableOperationItem
-                          ? isActive
-                            ? "bg-slate-900 text-white"
-                            : "bg-white text-slate-600"
-                          : "bg-white text-slate-500"
-                      }`}
-                    >
-                      {isManageableOperationItem
-                        ? isActive
-                          ? "Abierto"
-                          : "Gestionar"
-                        : "Próximamente"}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {section.title === "Operación y agenda" &&
-            activeOperationSection === "Horario laboral" ? (
-              <BusinessWorkingHoursManager
-                countryCode={form.country_code}
-                countryName={form.country_name}
-              />
-            ) : null}
-
-            {section.title === "Operación y agenda" &&
-            activeOperationSection === "Días no laborables" ? (
-              <CalendarNonWorkingDaysManager />
-            ) : null}
-
-            {section.title === "Operación y agenda" &&
-            activeOperationSection === "Bloqueos de calendario" ? (
-              <CalendarBlockedDatesManager />
-            ) : null}
-          </article>
-        ))}
-      </section>
+      <OperationAgendaSettingsSection
+        activeOperationSection={activeOperationSection}
+        onActiveOperationSectionChange={setActiveOperationSection}
+        countryCode={form.country_code}
+        countryName={form.country_name}
+      />
     </div>
   );
 }
