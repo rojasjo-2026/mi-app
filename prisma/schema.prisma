@@ -195,6 +195,22 @@ enum BusinessWeekDay {
   SUNDAY
 }
 
+enum AgendaRuleValueType {
+  NUMBER
+  DECIMAL
+  BOOLEAN
+  TEXT
+  SELECT
+  JSON
+}
+
+enum AgendaRuleScope {
+  GLOBAL
+  WORK_CATEGORY
+  WORK_TYPE
+  ZONE
+}
+
 // ======================================================
 // USERS / STAFF
 // ======================================================
@@ -778,6 +794,48 @@ model BusinessWorkingHour {
   @@index([day_of_week])
   @@index([country_code])
   @@index([is_working_day])
+  @@index([is_active])
+}
+
+// ======================================================
+// AGENDA RULES
+// ======================================================
+
+model AgendaRule {
+  agenda_rule_id String @id @default(uuid()) @db.Uuid
+
+  country_code String
+
+  rule_key         String
+  rule_name        String
+  rule_description String?
+
+  rule_scope      AgendaRuleScope
+  applies_to_key  String
+  applies_to_name String?
+
+  value_type    AgendaRuleValueType
+  value_number  Int?
+  value_decimal Decimal?            @db.Decimal(12, 2)
+  value_text    String?
+  value_boolean Boolean?
+  value_json    Json?
+
+  unit       String?
+  notes      String?
+  sort_order Int?
+
+  is_active Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([country_code, rule_key, rule_scope, applies_to_key])
+  @@index([country_code])
+  @@index([rule_key])
+  @@index([rule_scope])
+  @@index([applies_to_key])
+  @@index([value_type])
   @@index([is_active])
 }
 
