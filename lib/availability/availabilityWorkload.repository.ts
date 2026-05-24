@@ -32,21 +32,36 @@ function normalizeOptionalId(value: string | null | undefined) {
   return cleanValue || null;
 }
 
-function getDayRange(dateValue: Date | string) {
-  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+function getDateOnlyParts(dateValue: Date | string) {
+  const rawValue =
+    dateValue instanceof Date
+      ? `${dateValue.getFullYear()}-${String(dateValue.getMonth() + 1).padStart(
+          2,
+          "0",
+        )}-${String(dateValue.getDate()).padStart(2, "0")}`
+      : String(dateValue).trim().slice(0, 10);
 
-  if (Number.isNaN(date.getTime())) {
+  const match = rawValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) {
     throw new Error("La fecha no es válida.");
   }
 
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  };
+}
 
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
+function getDayRange(dateValue: Date | string) {
+  const { year, month, day } = getDateOnlyParts(dateValue);
+
+  const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
   return {
-    date,
+    date: startOfDay,
     startOfDay,
     endOfDay,
   };
@@ -89,19 +104,14 @@ function buildFollowUpZoneFilter(operationalZoneId: string | null) {
 export async function countInstallationsForAvailability(
   params: AvailabilityWorkloadQuery,
 ) {
-  const countryCode = normalizeCountryCode(params.country_code);
   const operationalZoneId = normalizeOptionalId(params.operational_zone_id);
   const { startOfDay, endOfDay } = getDayRange(params.date);
 
   return prisma.installation.count({
     where: {
-      is_active: true,
       installation_date: {
         gte: startOfDay,
         lte: endOfDay,
-      },
-      client: {
-        country_code: countryCode,
       },
       ...buildInstallationZoneFilter(operationalZoneId),
     },
@@ -111,31 +121,37 @@ export async function countInstallationsForAvailability(
 export async function countFollowUpsForAvailability(
   params: AvailabilityWorkloadQuery,
 ) {
-  const countryCode = normalizeCountryCode(params.country_code);
   const operationalZoneId = normalizeOptionalId(params.operational_zone_id);
   const { startOfDay, endOfDay } = getDayRange(params.date);
+  const zoneFilter = buildFollowUpZoneFilter(operationalZoneId);
 
   return prisma.followUp.count({
     where: {
-      client: {
-        country_code: countryCode,
+      follow_up_status: {
+        code: {
+          not: "completed",
+        },
       },
-      OR: [
+      AND: [
         {
-          scheduled_date: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
+          OR: [
+            {
+              scheduled_date: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+            {
+              scheduled_date: null,
+              target_date: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+          ],
         },
-        {
-          scheduled_date: null,
-          target_date: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
-        },
+        zoneFilter,
       ],
-      ...buildFollowUpZoneFilter(operationalZoneId),
     },
   });
 }

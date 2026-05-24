@@ -2,10 +2,32 @@
 
 import type { CalendarEvent } from "@/lib/calendar/calendar-types";
 
+type CalendarAvailabilityDay = {
+  date: string;
+  can_offer_day: boolean;
+  reason: string | null;
+  workload: {
+    total_jobs: number;
+    total_installations: number;
+    total_maintenances: number;
+    has_installation: boolean;
+  };
+  capacity: {
+    max_jobs_per_day: number | null;
+    max_installations_per_day: number | null;
+    max_maintenances_per_day: number | null;
+    remaining_jobs_capacity: number | null;
+    remaining_installations_capacity: number | null;
+    remaining_maintenances_capacity: number | null;
+  };
+};
+
 type Props = {
   sidePanelRef: React.RefObject<HTMLElement | null>;
   selectedDate: Date;
   selectedEvents: CalendarEvent[];
+  selectedAvailability?: CalendarAvailabilityDay;
+  isLoadingAvailability?: boolean;
   noteText: string;
   noteError: string;
   isSavingNote: boolean;
@@ -19,10 +41,42 @@ type Props = {
   renderEventCard: (event: CalendarEvent) => React.ReactNode;
 };
 
+function getAvailabilityStatusLabel(
+  availability?: CalendarAvailabilityDay,
+  isBlocked = false,
+) {
+  if (isBlocked) {
+    return "Fecha bloqueada";
+  }
+
+  if (!availability) {
+    return "Sin cálculo disponible";
+  }
+
+  return availability.can_offer_day ? "Disponible" : "No disponible";
+}
+
+function getAvailabilityCardClass(
+  availability?: CalendarAvailabilityDay,
+  isBlocked = false,
+) {
+  if (isBlocked || availability?.can_offer_day === false) {
+    return "border-red-200 bg-red-50 text-red-800";
+  }
+
+  if (availability?.can_offer_day) {
+    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
 export default function CalendarSidePanel({
   sidePanelRef,
   selectedDate,
   selectedEvents,
+  selectedAvailability,
+  isLoadingAvailability = false,
   noteText,
   noteError,
   isSavingNote,
@@ -35,6 +89,16 @@ export default function CalendarSidePanel({
   isUpdatingBlockedDate,
   renderEventCard,
 }: Props) {
+  const totalJobs = selectedAvailability?.workload.total_jobs ?? 0;
+  const totalInstallations =
+    selectedAvailability?.workload.total_installations ?? 0;
+  const totalMaintenances =
+    selectedAvailability?.workload.total_maintenances ?? 0;
+
+  const maxJobs = selectedAvailability?.capacity.max_jobs_per_day ?? null;
+  const remainingJobs =
+    selectedAvailability?.capacity.remaining_jobs_capacity ?? null;
+
   return (
     <aside
       ref={sidePanelRef}
@@ -50,6 +114,72 @@ export default function CalendarSidePanel({
             year: "numeric",
           })}
         </h2>
+      </div>
+
+      <div
+        className={`mb-5 rounded-2xl border p-4 ${getAvailabilityCardClass(
+          selectedAvailability,
+          isSelectedDateBlocked,
+        )}`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] opacity-70">
+              Disponibilidad del día
+            </p>
+
+            <p className="mt-2 text-base font-bold">
+              {isLoadingAvailability
+                ? "Calculando..."
+                : getAvailabilityStatusLabel(
+                    selectedAvailability,
+                    isSelectedDateBlocked,
+                  )}
+            </p>
+          </div>
+
+          {maxJobs !== null ? (
+            <span className="rounded-full border border-current/20 bg-white/60 px-3 py-1 text-xs font-bold">
+              {totalJobs}/{maxJobs}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+          <div className="rounded-xl border border-current/10 bg-white/60 p-3">
+            <p className="font-semibold opacity-70">Trabajos</p>
+            <p className="mt-1 text-sm font-bold">{totalJobs}</p>
+          </div>
+
+          <div className="rounded-xl border border-current/10 bg-white/60 p-3">
+            <p className="font-semibold opacity-70">Espacios</p>
+            <p className="mt-1 text-sm font-bold">
+              {remainingJobs !== null ? remainingJobs : "-"}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-current/10 bg-white/60 p-3">
+            <p className="font-semibold opacity-70">Instalaciones</p>
+            <p className="mt-1 text-sm font-bold">{totalInstallations}</p>
+          </div>
+
+          <div className="rounded-xl border border-current/10 bg-white/60 p-3">
+            <p className="font-semibold opacity-70">Mantenimientos</p>
+            <p className="mt-1 text-sm font-bold">{totalMaintenances}</p>
+          </div>
+        </div>
+
+        {selectedAvailability?.reason ? (
+          <p className="mt-3 text-xs leading-5 opacity-80">
+            {selectedAvailability.reason}
+          </p>
+        ) : null}
+
+        {isSelectedDateBlocked ? (
+          <p className="mt-3 text-xs font-semibold opacity-80">
+            Esta fecha está bloqueada manualmente en el calendario.
+          </p>
+        ) : null}
       </div>
 
       <div className="mb-6 space-y-3">

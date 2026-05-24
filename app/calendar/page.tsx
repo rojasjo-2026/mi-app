@@ -26,6 +26,72 @@ import {
   monthNames,
 } from "@/lib/calendar/calendar-utils";
 
+type CalendarAvailabilityDay = {
+  date: string;
+  can_offer_day: boolean;
+  reason: string | null;
+  workload: {
+    total_jobs: number;
+    total_installations: number;
+    total_maintenances: number;
+    has_installation: boolean;
+  };
+  capacity: {
+    max_jobs_per_day: number | null;
+    max_installations_per_day: number | null;
+    max_maintenances_per_day: number | null;
+    remaining_jobs_capacity: number | null;
+    remaining_installations_capacity: number | null;
+    remaining_maintenances_capacity: number | null;
+  };
+};
+
+type AvailabilityRangeResponse = {
+  success: boolean;
+  data?:
+    | CalendarAvailabilityDay
+    | {
+        results?: CalendarAvailabilityDay[];
+      };
+  message?: string;
+};
+
+function getInclusiveDayCount(startDate: Date, endDate: Date) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+  return Math.max(
+    Math.round((end.getTime() - start.getTime()) / millisecondsPerDay) + 1,
+    1,
+  );
+}
+
+function mapAvailabilityByDate(items: CalendarAvailabilityDay[]) {
+  return items.reduce<Record<string, CalendarAvailabilityDay>>((acc, item) => {
+    acc[item.date] = item;
+    return acc;
+  }, {});
+}
+
+function isAvailabilityRangeData(
+  data: AvailabilityRangeResponse["data"],
+): data is { results?: CalendarAvailabilityDay[] } {
+  return Boolean(data && "results" in data);
+}
+
+function isAvailabilityDayData(
+  data: AvailabilityRangeResponse["data"],
+): data is CalendarAvailabilityDay {
+  return Boolean(
+    data && "date" in data && "workload" in data && "capacity" in data,
+  );
+}
+
 export default function CalendarPage() {
   const today = new Date();
   const todayKey = formatDateKey(today);
@@ -45,6 +111,10 @@ export default function CalendarPage() {
   const [noteError, setNoteError] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [availabilityByDate, setAvailabilityByDate] = useState<
+    Record<string, CalendarAvailabilityDay>
+  >({});
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
 
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
@@ -108,9 +178,64 @@ export default function CalendarPage() {
     }
   }
 
+  async function loadAvailabilityForVisibleMonth(monthDate: Date) {
+    const startDate = new Date(
+      monthDate.getFullYear(),
+      monthDate.getMonth(),
+      1,
+    );
+
+    const endDate = new Date(
+      monthDate.getFullYear(),
+      monthDate.getMonth() + 1,
+      0,
+    );
+
+    const startDateKey = formatDateKey(startDate);
+    const days = getInclusiveDayCount(startDate, endDate);
+
+    try {
+      setIsLoadingAvailability(true);
+
+      const response = await fetch(
+        `/api/availability/daily?country_code=CR&date=${startDateKey}&days=${days}`,
+        { cache: "no-store" },
+      );
+
+      const result: AvailabilityRangeResponse = await response.json();
+
+      if (!response.ok || !result.success || !result.data) {
+        throw new Error(
+          result.message || "No se pudo cargar la disponibilidad.",
+        );
+      }
+
+      let availabilityItems: CalendarAvailabilityDay[] = [];
+
+      if (isAvailabilityRangeData(result.data)) {
+        availabilityItems = Array.isArray(result.data.results)
+          ? result.data.results
+          : [];
+      } else if (isAvailabilityDayData(result.data)) {
+        availabilityItems = [result.data];
+      }
+
+      setAvailabilityByDate(mapAvailabilityByDate(availabilityItems));
+    } catch (error) {
+      console.error("Error loading calendar availability:", error);
+      setAvailabilityByDate({});
+    } finally {
+      setIsLoadingAvailability(false);
+    }
+  }
+
   useEffect(() => {
-    loadCalendarEvents();
+    void loadCalendarEvents();
   }, []);
+
+  useEffect(() => {
+    void loadAvailabilityForVisibleMonth(currentMonth);
+  }, [currentMonth]);
 
   useEffect(() => {
     const closeContextMenu = () => setContextMenu(null);
@@ -621,7 +746,7 @@ export default function CalendarPage() {
         onChangeView={setCalendarView}
         onToday={goToToday}
         onCreateMaintenance={handleGoToNewFollowUp}
-        isLoadingEvents={isLoadingEvents}
+        isLoadingEvents={isLoadingEvents || isLoadingAvailability}
       />
 
       <CalendarStats
@@ -675,6 +800,8 @@ export default function CalendarPage() {
               allEvents={allEvents}
               today={today}
               selectedDate={selectedDate}
+              availabilityByDate={availabilityByDate}
+              isLoadingAvailability={isLoadingAvailability}
               onSelectDate={handleSelectDate}
               onRightClick={handleRightClick}
             />
@@ -704,6 +831,8 @@ export default function CalendarPage() {
           sidePanelRef={sidePanelRef}
           selectedDate={selectedDate}
           selectedEvents={selectedEvents}
+          selectedAvailability={availabilityByDate[selectedDateKey]}
+          isLoadingAvailability={isLoadingAvailability}
           noteText={noteText}
           noteError={noteError}
           isSavingNote={isSavingNote}
