@@ -63,7 +63,7 @@ export async function getAgendaRules(
       data: mapAgendaRules(rules),
       message:
         rules.length === 0
-          ? "No agenda rules have been configured yet."
+          ? "No hay reglas de agenda configuradas todavía."
           : undefined,
     },
   };
@@ -90,7 +90,7 @@ export async function createAgendaRule(
         body: {
           success: false,
           message:
-            "An agenda rule already exists for this country, key, scope and target.",
+            "Ya existe una regla de agenda para este país, regla, alcance y aplicación.",
           data: mapAgendaRule(existingRule),
         },
       };
@@ -156,7 +156,7 @@ export async function updateAgendaRule(
         status: 404,
         body: {
           success: false,
-          message: "Agenda rule not found.",
+          message: "No se encontró la regla de agenda.",
         },
       };
     }
@@ -258,7 +258,7 @@ export async function updateAgendaRule(
         body: {
           success: false,
           message:
-            "Another agenda rule already exists for this country, key, scope and target.",
+            "Ya existe otra regla de agenda para este país, regla, alcance y aplicación.",
         },
       };
     }
@@ -319,7 +319,7 @@ export async function deleteAgendaRule(
       status: 400,
       body: {
         success: false,
-        message: "Agenda rule id is required.",
+        message: "El id de la regla de agenda es requerido.",
       },
     };
   }
@@ -335,7 +335,7 @@ export async function deleteAgendaRule(
       status: 404,
       body: {
         success: false,
-        message: "Agenda rule not found.",
+        message: "No se encontró la regla de agenda.",
       },
     };
   }
