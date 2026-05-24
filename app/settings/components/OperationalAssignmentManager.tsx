@@ -1,40 +1,54 @@
 "use client";
 
+import OperationalZonesManager from "@/app/settings/components/OperationalZonesManager";
+
 type OperationalAssignmentManagerProps = {
   countryCode: string;
   countryName: string;
 };
 
-const pendingAreas = [
+const configurationAreas = [
   {
     title: "Técnicos disponibles",
     description:
       "Definir qué técnicos pueden recibir trabajos según su estado, rol y disponibilidad operativa.",
+    status: "Pendiente de definir",
+    available: false,
   },
   {
     title: "Capacidad por técnico",
     description:
       "Configurar cuánto puede asumir cada técnico sin que CLARIUS imponga tiempos o cantidades por defecto.",
+    status: "Pendiente de definir",
+    available: false,
   },
   {
     title: "Zonas de trabajo",
     description:
       "Las zonas las define el usuario según su operación. CLARIUS puede usar GPS para sugerir cercanía, rutas o posibles agrupaciones.",
+    status: "Disponible",
+    available: true,
   },
   {
     title: "Tipo de trabajo",
     description:
       "Separar instalaciones, mantenimientos y otros servicios porque no consumen la misma capacidad ni el mismo tiempo.",
+    status: "Pendiente de definir",
+    available: false,
   },
   {
     title: "Carga diaria",
     description:
       "Evaluar trabajos existentes en agenda, instalaciones programadas, mantenimientos, bloqueos y reglas configuradas.",
+    status: "Pendiente de definir",
+    available: false,
   },
   {
     title: "Disponibilidad para WhatsApp",
     description:
       "Usar la disponibilidad real para ofrecer al cliente solo opciones válidas por WhatsApp.",
+    status: "Pendiente de definir",
+    available: false,
   },
 ];
 
@@ -91,9 +105,9 @@ export default function OperationalAssignmentManager({
         </div>
 
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
-          Esta pantalla queda como base visual. La asignación real se conectará
-          después con técnicos, instalaciones, mantenimientos, reglas de agenda,
-          ubicación GPS y el motor de disponibilidad.
+          Esta pantalla queda como base visual y operativa. La asignación real
+          se conectará después con técnicos, instalaciones, mantenimientos,
+          reglas de agenda, ubicación GPS y el motor de disponibilidad.
         </div>
 
         <div className="mt-5">
@@ -131,11 +145,11 @@ export default function OperationalAssignmentManager({
 
         <div className="mt-6">
           <h4 className="text-sm font-bold text-slate-900">
-            Áreas pendientes de configuración
+            Áreas de configuración operativa
           </h4>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            {pendingAreas.map((area) => (
+            {configurationAreas.map((area) => (
               <div
                 key={area.title}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-4"
@@ -148,13 +162,24 @@ export default function OperationalAssignmentManager({
                   {area.description}
                 </p>
 
-                <span className="mt-3 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500">
-                  Pendiente de definir
+                <span
+                  className={`mt-3 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${
+                    area.available
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-slate-200 bg-slate-50 text-slate-500"
+                  }`}
+                >
+                  {area.status}
                 </span>
               </div>
             ))}
           </div>
         </div>
+
+        <OperationalZonesManager
+          countryCode={countryCode}
+          countryName={countryName}
+        />
 
         <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4">
           <h4 className="text-sm font-bold text-blue-900">
@@ -176,10 +201,10 @@ export default function OperationalAssignmentManager({
       </div>
 
       <div className="mt-5 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-800">
-        Siguiente paso recomendado: definir cómo CLARIUS identificará técnicos
-        disponibles y capacidad operativa sin crear zonas automáticas. Las zonas
-        deben ser criterio del usuario; GPS solo debe apoyar sugerencias,
-        cercanía y rutas.
+        Siguiente paso recomendado: después de validar zonas operativas, definir
+        cómo CLARIUS identificará técnicos disponibles y capacidad operativa sin
+        crear valores automáticos. Las zonas deben ser criterio del usuario; GPS
+        solo debe apoyar sugerencias, cercanía y rutas.
       </div>
     </div>
   );

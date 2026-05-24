@@ -9,6 +9,7 @@ import {
   type CountryPreset,
 } from "@/lib/settings/countryPresets";
 import InstallationCommercialSection from "./InstallationCommercialSection";
+import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
 
 type TechnicianOption = {
   user_id: string;
@@ -31,6 +32,7 @@ type InstallationFormData = {
   billing_status?: string | null;
   billing_notes?: string | null;
   installation_status?: string | null;
+  operational_zone_id?: string | null;
   address_line?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
@@ -83,6 +85,7 @@ export default function InstallationForm({
   const [billingStatus, setBillingStatus] = useState("PENDING");
   const [billingNotes, setBillingNotes] = useState("");
   const [installationStatus, setInstallationStatus] = useState("OPEN");
+  const [operationalZoneId, setOperationalZoneId] = useState("");
 
   const [addressLine, setAddressLine] = useState("");
   const [adminLevel1, setAdminLevel1] = useState("");
@@ -159,6 +162,7 @@ export default function InstallationForm({
     setBillingStatus(initialData.billing_status ?? "PENDING");
     setBillingNotes(initialData.billing_notes ?? "");
     setInstallationStatus(initialData.installation_status ?? "OPEN");
+    setOperationalZoneId(initialData.operational_zone_id ?? "");
     setAddressLine(initialData.address_line ?? "");
     setAdminLevel1(initialData.admin_level_1 ?? "");
     setAdminLevel2(initialData.admin_level_2 ?? "");
@@ -311,6 +315,7 @@ export default function InstallationForm({
         ...(mode === "edit" && {
           installation_status: installationStatus || "OPEN",
         }),
+        operational_zone_id: operationalZoneId || null,
         address_line: addressLine || null,
         admin_level_1: adminLevel1 || null,
         admin_level_2: adminLevel2 || null,
@@ -574,6 +579,16 @@ export default function InstallationForm({
                   Este país viene de la Configuración del sistema y define los
                   nombres de ubicación usados para esta instalación.
                 </p>
+              </div>
+
+              <div className="md:col-span-2">
+                <OperationalZoneSelect
+                  value={operationalZoneId}
+                  countryCode={businessCountryPreset.countryCode}
+                  label="Zona operativa"
+                  helperText="Seleccione la zona operativa de esta instalación. Esta información será usada por el motor de disponibilidad para agrupar trabajos por zona."
+                  onChange={setOperationalZoneId}
+                />
               </div>
 
               {shouldUseCostaRicaLocationCatalog ? (

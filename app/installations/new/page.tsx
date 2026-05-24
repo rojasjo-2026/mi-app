@@ -12,14 +12,79 @@ import ClientSearchSection from "@/components/installations/ClientSearchSection"
 import InstallationLocationSection from "@/components/installations/InstallationLocationSection";
 import InstallationCoordinatesSection from "@/components/installations/InstallationCoordinatesSection";
 import InstallationCommercialSection from "@/components/installations/InstallationCommercialSection";
+import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
 
-declare global {
-  interface Window {
-    google?: any;
-    webkitSpeechRecognition?: any;
-    SpeechRecognition?: any;
-  }
-}
+type GooglePlaceAutocompleteResult = {
+  formatted_address?: string;
+  geometry?: {
+    location: {
+      lat: () => number;
+      lng: () => number;
+    };
+  };
+};
+
+type GooglePlaceAutocomplete = {
+  addListener: (eventName: "place_changed", callback: () => void) => void;
+  getPlace: () => GooglePlaceAutocompleteResult;
+};
+
+type GoogleMapsBrowserApi = {
+  maps?: {
+    places?: {
+      Autocomplete: new (
+        input: HTMLInputElement,
+        options: {
+          componentRestrictions?: { country: string };
+          fields: string[];
+        },
+      ) => GooglePlaceAutocomplete;
+    };
+  };
+};
+
+type SpeechRecognitionAlternativeLike = {
+  transcript?: string;
+};
+
+type SpeechRecognitionResultLike = {
+  [index: number]: SpeechRecognitionAlternativeLike | undefined;
+};
+
+type SpeechRecognitionResultListLike = {
+  [index: number]: SpeechRecognitionResultLike | undefined;
+};
+
+type SpeechRecognitionResultEventLike = {
+  results: SpeechRecognitionResultListLike;
+};
+
+type SpeechRecognitionErrorEventLike = {
+  error?: string;
+};
+
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+type BrowserWindowWithGoogle = Window & {
+  google?: GoogleMapsBrowserApi;
+};
+
+type BrowserWindowWithSpeech = Window & {
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  SpeechRecognition?: SpeechRecognitionConstructor;
+};
 
 type Client = {
   client_id: string;
@@ -33,6 +98,7 @@ type Client = {
   admin_level_2?: string | null;
   admin_level_3?: string | null;
   zone?: string | null;
+  operational_zone_id?: string | null;
   reference_point?: string | null;
   location_notes?: string | null;
   latitude?: number | string | null;
@@ -252,7 +318,7 @@ function findBestLocationMatch(address: NominatimResponse["address"]) {
 
 export default function NewInstallationPage() {
   const addressRef = useRef<HTMLInputElement | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   const [businessCountryPreset, setBusinessCountryPreset] =
     useState<CountryPreset>(fallbackCountryPreset);
@@ -269,6 +335,7 @@ export default function NewInstallationPage() {
   const [billingStatus, setBillingStatus] = useState("PENDING");
   const [billingNotes, setBillingNotes] = useState("");
   const [technicianName, setTechnicianName] = useState("");
+  const [operationalZoneId, setOperationalZoneId] = useState("");
 
   const [useClientAddress, setUseClientAddress] = useState(false);
 
@@ -359,6 +426,7 @@ export default function NewInstallationPage() {
     setAdminLevel3("");
     setAddressLine("");
     setReferencePoint("");
+    setOperationalZoneId("");
     setLatitude("");
     setLongitude("");
   }
@@ -369,6 +437,7 @@ export default function NewInstallationPage() {
     setAdminLevel3(client.admin_level_3 || "");
     setAddressLine(client.address_line || "");
     setReferencePoint(client.reference_point || "");
+    setOperationalZoneId(client.operational_zone_id || "");
     setLatitude(
       client.latitude !== null && client.latitude !== undefined
         ? String(client.latitude)
@@ -392,8 +461,9 @@ export default function NewInstallationPage() {
   }
 
   function startVoiceRecognition() {
+    const browserWindow = window as BrowserWindowWithSpeech;
     const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+      browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       setError("El navegador no soporta reconocimiento de voz");
@@ -413,7 +483,7 @@ export default function NewInstallationPage() {
       setMessage("Escuchando nota por voz...");
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionResultEventLike) => {
       const text = event.results?.[0]?.[0]?.transcript || "";
 
       if (text.trim()) {
@@ -422,7 +492,7 @@ export default function NewInstallationPage() {
       }
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
       console.error("Error de voz:", event?.error);
       setError("No se pudo capturar la nota por voz");
       setIsListening(false);
@@ -489,17 +559,18 @@ export default function NewInstallationPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!window.google?.maps?.places || !addressRef.current) {
+      const browserWindow = window as BrowserWindowWithGoogle;
+      const GoogleAutocomplete =
+        browserWindow.google?.maps?.places?.Autocomplete;
+
+      if (!GoogleAutocomplete || !addressRef.current) {
         return;
       }
 
-      const autocomplete = new window.google.maps.places.Autocomplete(
-        addressRef.current,
-        {
-          componentRestrictions: { country: mapsCountryRestriction },
-          fields: ["geometry", "formatted_address"],
-        },
-      );
+      const autocomplete = new GoogleAutocomplete(addressRef.current, {
+        componentRestrictions: { country: mapsCountryRestriction },
+        fields: ["geometry", "formatted_address"],
+      });
 
       autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace();
@@ -749,6 +820,7 @@ export default function NewInstallationPage() {
         billing_status: billingStatus || "PENDING",
         billing_notes: billingNotes || null,
         technician_name: technicianName || null,
+        operational_zone_id: operationalZoneId || null,
         address_line: addressLine || null,
         admin_level_1: adminLevel1 || null,
         admin_level_2: adminLevel2 || null,
@@ -794,9 +866,11 @@ export default function NewInstallationPage() {
           window.location.href = "/installations";
         }
       }, 500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || "No se pudo crear la instalación");
+      setError(
+        err instanceof Error ? err.message : "No se pudo crear la instalación",
+      );
     } finally {
       setSaving(false);
     }
@@ -960,24 +1034,34 @@ export default function NewInstallationPage() {
               isOpen={openSections.location}
               onToggle={() => toggleSection("location")}
             >
-              <InstallationLocationSection
-                useClientAddress={useClientAddress}
-                hasSelectedClient={!!selectedClient}
-                provinciaOptions={provinciaOptions}
-                cantonOptions={cantonOptions}
-                distritoOptions={distritoOptions}
-                adminLevel1={adminLevel1}
-                adminLevel2={adminLevel2}
-                adminLevel3={adminLevel3}
-                addressLine={addressLine}
-                referencePoint={referencePoint}
-                addressRef={addressRef}
-                handleProvinceChange={handleProvinceChange}
-                handleCantonChange={handleCantonChange}
-                setAdminLevel3={setAdminLevel3}
-                setAddressLine={setAddressLine}
-                setReferencePoint={setReferencePoint}
-              />
+              <div className="space-y-5">
+                <InstallationLocationSection
+                  useClientAddress={useClientAddress}
+                  hasSelectedClient={!!selectedClient}
+                  provinciaOptions={provinciaOptions}
+                  cantonOptions={cantonOptions}
+                  distritoOptions={distritoOptions}
+                  adminLevel1={adminLevel1}
+                  adminLevel2={adminLevel2}
+                  adminLevel3={adminLevel3}
+                  addressLine={addressLine}
+                  referencePoint={referencePoint}
+                  addressRef={addressRef}
+                  handleProvinceChange={handleProvinceChange}
+                  handleCantonChange={handleCantonChange}
+                  setAdminLevel3={setAdminLevel3}
+                  setAddressLine={setAddressLine}
+                  setReferencePoint={setReferencePoint}
+                />
+
+                <OperationalZoneSelect
+                  value={operationalZoneId}
+                  countryCode={businessCountryPreset.countryCode}
+                  label="Zona operativa"
+                  helperText="Seleccione una zona creada por el usuario. Esta zona ayudará al motor de disponibilidad a agrupar instalaciones, mantenimientos y rutas."
+                  onChange={setOperationalZoneId}
+                />
+              </div>
             </CollapsibleSection>
 
             <CollapsibleSection

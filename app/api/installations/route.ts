@@ -70,6 +70,7 @@ export async function GET(req: Request) {
       client_id: searchParams.get("client_id") || undefined,
       status: searchParams.get("status") || undefined,
       zone: searchParams.get("zone") || undefined,
+      operational_zone_id: searchParams.get("operational_zone_id") || undefined,
       admin_level_1: searchParams.get("admin_level_1") || undefined,
       admin_level_2: searchParams.get("admin_level_2") || undefined,
       admin_level_3: searchParams.get("admin_level_3") || undefined,

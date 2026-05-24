@@ -98,6 +98,7 @@ export async function GET(req: Request) {
     const followUps = await getFollowUpsService({
       client_id: searchParams.get("client_id") || undefined,
       installation_id: searchParams.get("installation_id") || undefined,
+      operational_zone_id: searchParams.get("operational_zone_id") || undefined,
       status: searchParams.get("status") || undefined,
       priority: searchParams.get("priority") || undefined,
     });

@@ -48,6 +48,7 @@ export type UpdateInstallationData = Partial<{
   technician_id: string | null;
   address_line: string | null;
   zone: string | null;
+  operational_zone_id: string | null;
   city: string | null;
   admin_level_1: string | null;
   admin_level_2: string | null;
@@ -78,6 +79,7 @@ export type CreateInstallationData = {
   technician_id: string | null;
   address_line: string | null;
   zone: string | null;
+  operational_zone_id: string | null;
   city: string | null;
   admin_level_1: string | null;
   admin_level_2: string | null;
@@ -98,6 +100,7 @@ export type FindInstallationsParams = {
   client_id?: string;
   status?: string;
   zone?: string;
+  operational_zone_id?: string;
   admin_level_1?: string;
   admin_level_2?: string;
   admin_level_3?: string;
@@ -146,6 +149,7 @@ export async function findInstallations(params: FindInstallationsParams) {
     client_id,
     status,
     zone,
+    operational_zone_id,
     admin_level_1,
     admin_level_2,
     admin_level_3,
@@ -157,6 +161,7 @@ export async function findInstallations(params: FindInstallationsParams) {
     ...(client_id ? { client_id } : {}),
     ...(isInstallationStatus(status) ? { installation_status: status } : {}),
     ...(zone ? { zone: { contains: zone, mode: "insensitive" } } : {}),
+    ...(operational_zone_id ? { operational_zone_id } : {}),
     ...(admin_level_1
       ? {
           admin_level_1: {

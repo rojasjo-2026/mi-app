@@ -45,6 +45,7 @@ type CreateFollowUpInput = {
   billing_notes?: string | null;
   maintenance_type?: string | null;
   technician_id?: string | null;
+  operational_zone_id?: string | null;
 };
 
 type UpdateFollowUpInput = {
@@ -61,6 +62,7 @@ type UpdateFollowUpInput = {
   billing_notes?: string | null;
   maintenance_type?: string | null;
   technician_id?: string | null;
+  operational_zone_id?: string | null;
 };
 
 type ExistingFollowUp = NonNullable<
@@ -268,6 +270,7 @@ async function createInvoiceSafelyFromFollowUp(followUpId: string) {
 export async function getFollowUpsService(params: {
   client_id?: string;
   installation_id?: string;
+  operational_zone_id?: string;
   status?: string;
   priority?: string | number | null;
 }) {
@@ -281,6 +284,7 @@ export async function getFollowUpsService(params: {
   const filters: FindFollowUpsParams = {
     client_id: params.client_id,
     installation_id: params.installation_id,
+    operational_zone_id: params.operational_zone_id,
     status: params.status,
     ...(parsedPriority !== undefined && parsedPriority !== null
       ? { priority: parsedPriority }
@@ -308,17 +312,22 @@ export async function createFollowUpService(body: CreateFollowUpInput) {
     return { success: false, code: "client_not_found" };
   }
 
-  if (body.installation_id) {
-    const installation = await findInstallationById(body.installation_id);
+  const installation = body.installation_id
+    ? await findInstallationById(body.installation_id)
+    : null;
 
-    if (!installation) {
-      return { success: false, code: "installation_not_found" };
-    }
-
-    if (installation.client_id !== clientId) {
-      return { success: false, code: "installation_client_mismatch" };
-    }
+  if (body.installation_id && !installation) {
+    return { success: false, code: "installation_not_found" };
   }
+
+  if (installation && installation.client_id !== clientId) {
+    return { success: false, code: "installation_client_mismatch" };
+  }
+
+  const operationalZoneId =
+    toTrimmedStringOrFallback(body.operational_zone_id, null) ??
+    installation?.operational_zone_id ??
+    null;
 
   const pendingStatus = await findPendingFollowUpStatus();
 
@@ -343,6 +352,7 @@ export async function createFollowUpService(body: CreateFollowUpInput) {
   const followUp = await createFollowUp({
     client_id: clientId,
     installation_id: body.installation_id?.trim() || null,
+    operational_zone_id: operationalZoneId,
     follow_up_status_id: pendingStatus.follow_up_status_id,
     target_date: targetDate,
     due_date: dueDate,
@@ -414,9 +424,15 @@ export async function createFollowUpFromInstallationService(
     };
   }
 
+  const operationalZoneId =
+    toTrimmedStringOrFallback(body.operational_zone_id, null) ??
+    installation.operational_zone_id ??
+    null;
+
   const followUp = await createFollowUp({
     client_id: installation.client_id,
     installation_id: installation.installation_id,
+    operational_zone_id: operationalZoneId,
     follow_up_status_id: pendingStatus.follow_up_status_id,
     target_date: targetDate,
     due_date: dueDate,
@@ -638,6 +654,13 @@ export async function updateFollowUpByIdService(
 
   if (body.notes !== undefined) {
     updateData.notes = toTrimmedStringOrFallback(body.notes, null);
+  }
+
+  if (body.operational_zone_id !== undefined) {
+    updateData.operational_zone_id = toTrimmedStringOrFallback(
+      body.operational_zone_id,
+      null,
+    );
   }
 
   if (body.estimated_amount !== undefined) {

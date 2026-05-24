@@ -25,6 +25,7 @@ type InstallationDetail = {
   billing_status?: string | null;
   billing_notes?: string | null;
   installation_status?: string | null;
+  operational_zone_id?: string | null;
   address_line?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
@@ -75,7 +76,7 @@ export default function EditInstallationPage() {
       }
     }
 
-    loadInstallation();
+    void loadInstallation();
   }, [id]);
 
   if (loading) {

@@ -23,6 +23,7 @@ const followUpDetailInclude = {
 export type CreateFollowUpData = {
   client_id: string;
   installation_id: string | null;
+  operational_zone_id?: string | null;
   follow_up_status_id: number;
   target_date: Date;
   due_date: Date | null;
@@ -46,6 +47,7 @@ export type UpdateFollowUpData = Partial<{
   reason: string | null;
   priority: number;
   notes: string | null;
+  operational_zone_id: string | null;
 
   estimated_amount: number | null;
   final_amount: number | null;
@@ -59,6 +61,7 @@ export type UpdateFollowUpData = Partial<{
 export type FindFollowUpsParams = {
   client_id?: string;
   installation_id?: string;
+  operational_zone_id?: string;
   status?: string;
   priority?: number;
 };
@@ -82,6 +85,7 @@ export async function findInstallationById(id: string) {
     select: {
       installation_id: true,
       client_id: true,
+      operational_zone_id: true,
     },
   });
 }
@@ -230,12 +234,14 @@ export async function updateFollowUp(id: string, data: UpdateFollowUpData) {
 }
 
 export async function findFollowUps(params: FindFollowUpsParams) {
-  const { client_id, installation_id, status, priority } = params;
+  const { client_id, installation_id, operational_zone_id, status, priority } =
+    params;
 
   return prisma.followUp.findMany({
     where: {
       ...(client_id ? { client_id } : {}),
       ...(installation_id ? { installation_id } : {}),
+      ...(operational_zone_id ? { operational_zone_id } : {}),
       ...(priority !== undefined ? { priority } : {}),
       ...(status
         ? {

@@ -44,6 +44,7 @@ type UpdateInstallationInput = {
   technician_id?: string | null;
   address_line?: string | null;
   zone?: string | null;
+  operational_zone_id?: string | null;
   city?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
@@ -75,6 +76,7 @@ type CreateInstallationInput = {
   technician_id?: string | null;
   address_line?: string | null;
   zone?: string | null;
+  operational_zone_id?: string | null;
   city?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
@@ -241,6 +243,14 @@ const INSTALLATION_ACTIVITY_FIELDS: InstallationActivityField[] = [
     fieldName: "zone",
     title: "Zona de instalación actualizada",
     description: "Se actualizó la zona de la instalación.",
+    category: "INSTALLATION",
+    visibility: "PUBLIC_INTERNAL",
+    action: "UPDATED",
+  },
+  {
+    fieldName: "operational_zone_id",
+    title: "Zona operativa de instalación actualizada",
+    description: "Se actualizó la zona operativa asociada a la instalación.",
     category: "INSTALLATION",
     visibility: "PUBLIC_INTERNAL",
     action: "UPDATED",
@@ -672,6 +682,10 @@ export async function createInstallationService(body: CreateInstallationInput) {
 
   const addressLine = toTrimmedStringOrFallback(body.address_line, null);
   const zone = toTrimmedStringOrFallback(body.zone, null);
+  const operationalZoneId = toTrimmedStringOrFallback(
+    body.operational_zone_id,
+    null,
+  );
   const adminLevel1 = toTrimmedStringOrFallback(body.admin_level_1, null);
   const adminLevel2 = toTrimmedStringOrFallback(body.admin_level_2, null);
   const adminLevel3 = toTrimmedStringOrFallback(body.admin_level_3, null);
@@ -720,6 +734,7 @@ export async function createInstallationService(body: CreateInstallationInput) {
     technician_id: toTrimmedStringOrFallback(body.technician_id, null),
     address_line: addressLine,
     zone,
+    operational_zone_id: operationalZoneId,
     city: city || null,
     admin_level_1: adminLevel1,
     admin_level_2: adminLevel2,
@@ -917,6 +932,10 @@ export async function updateInstallationByIdService(
       existing.address_line,
     ),
     zone: toNullableStringOnUpdate(body.zone, existing.zone),
+    operational_zone_id:
+      body.operational_zone_id !== undefined
+        ? toTrimmedStringOrFallback(body.operational_zone_id, null)
+        : existing.operational_zone_id,
     city,
     admin_level_1: adminLevel1,
     admin_level_2: adminLevel2,
@@ -1046,6 +1065,11 @@ export async function updateInstallationByIdService(
       field_name: "zone",
       old_value: existing.zone,
       new_value: updated.zone,
+    },
+    {
+      field_name: "operational_zone_id",
+      old_value: existing.operational_zone_id,
+      new_value: updated.operational_zone_id,
     },
     {
       field_name: "city",

@@ -7,11 +7,13 @@ import {
   COUNTRY_PRESETS,
   getCountryPreset,
 } from "@/lib/settings/countryPresets";
+import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
 
 type InstallationOption = {
   installation_id: string;
   description?: string | null;
   installation_date?: string | null;
+  operational_zone_id?: string | null;
   client_id?: string | null;
   client?: {
     first_name?: string | null;
@@ -47,6 +49,7 @@ function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
     getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
 
   return {
+    countryCode: countryPreset.countryCode,
     currency: settings?.default_currency || countryPreset.primaryCurrency,
     locale: countryPreset.locale,
   };
@@ -156,6 +159,9 @@ export default function FollowUpNewClientPage() {
   const [error, setError] = useState("");
 
   const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
+  const [businessCountryCode, setBusinessCountryCode] = useState(
+    defaultBusinessMeta.countryCode,
+  );
   const [businessCurrency, setBusinessCurrency] = useState(
     defaultBusinessMeta.currency,
   );
@@ -168,6 +174,7 @@ export default function FollowUpNewClientPage() {
   const [priority, setPriority] = useState("2");
   const [reason, setReason] = useState("");
   const [technicianId, setTechnicianId] = useState("");
+  const [operationalZoneId, setOperationalZoneId] = useState("");
 
   const [maintenanceType, setMaintenanceType] = useState("");
   const [estimatedAmount, setEstimatedAmount] = useState("");
@@ -190,6 +197,7 @@ export default function FollowUpNewClientPage() {
 
         const businessMeta = getBusinessCountryMeta(result.data);
 
+        setBusinessCountryCode(businessMeta.countryCode);
         setBusinessCurrency(businessMeta.currency);
         setBusinessLocale(businessMeta.locale);
       } catch {
@@ -252,6 +260,10 @@ export default function FollowUpNewClientPage() {
     );
   }, [installations, installationId]);
 
+  useEffect(() => {
+    setOperationalZoneId(selectedInstallation?.operational_zone_id || "");
+  }, [selectedInstallation?.operational_zone_id]);
+
   const selectedTechnician = useMemo(() => {
     return technicians.find((item) => item.user_id === technicianId) || null;
   }, [technicians, technicianId]);
@@ -288,6 +300,7 @@ export default function FollowUpNewClientPage() {
         priority: Number(priority),
         reason: reason.trim() || null,
         technician_id: technicianId || null,
+        operational_zone_id: operationalZoneId || null,
         maintenance_type: maintenanceType || null,
         estimated_amount: estimatedAmount ? Number(estimatedAmount) : null,
         cost_amount: costAmount ? Number(costAmount) : null,
@@ -448,6 +461,16 @@ export default function FollowUpNewClientPage() {
                   <p className="mt-2 text-xs text-slate-500">
                     Este campo es opcional y puede ajustarse después.
                   </p>
+                </div>
+
+                <div>
+                  <OperationalZoneSelect
+                    value={operationalZoneId}
+                    countryCode={businessCountryCode}
+                    label="Zona operativa"
+                    helperText="Por defecto se toma de la instalación seleccionada. Puede ajustarse si este mantenimiento debe procesarse en otra zona."
+                    onChange={setOperationalZoneId}
+                  />
                 </div>
 
                 <div>
@@ -612,6 +635,17 @@ export default function FollowUpNewClientPage() {
                         selectedInstallation.installation_date,
                         businessLocale,
                       )}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                      Zona operativa
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-800">
+                      {operationalZoneId
+                        ? "Zona asignada"
+                        : "Sin zona operativa"}
                     </p>
                   </div>
 
