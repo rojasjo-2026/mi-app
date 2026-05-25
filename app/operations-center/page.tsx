@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { OperationsAvailabilityPanel } from "./components/OperationsAvailabilityPanel";
 import { OperationsHeader } from "./components/OperationsHeader";
+import { OperationsRangeGroups } from "./components/OperationsRangeGroups";
 import { OperationsRoutePanel } from "./components/OperationsRoutePanel";
 import { OperationsSummaryCards } from "./components/OperationsSummaryCards";
 import { OperationsWorkList } from "./components/OperationsWorkList";
@@ -19,6 +20,7 @@ export default function OperationsCenterPage() {
     selectedDate,
     setSelectedDate,
 
+    events,
     selectedDateEvents,
     installations,
     maintenances,
@@ -51,50 +53,65 @@ export default function OperationsCenterPage() {
           </div>
         ) : null}
 
-        {viewMode !== "day" ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
-            La vista de{" "}
-            <span className="font-semibold">
-              {viewMode === "week" ? "semana" : "mes"}
-            </span>{" "}
-            ya está preparada en la interfaz. En el siguiente paso se agregará
-            el resumen de agrupaciones operativas por rango de fechas.
-          </div>
-        ) : null}
-
-        <OperationsSummaryCards
-          selectedDateEvents={selectedDateEvents}
-          installations={installations}
-          maintenances={maintenances}
-          availability={availability}
-          loadingEvents={loadingEvents}
-          loadingAvailability={loadingAvailability}
-        />
-
-        <OperationsZoneGroups
-          selectedDateEvents={selectedDateEvents}
-          onUseGroupAsRoute={handleUseGroupAsRoute}
-        />
-
-        <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <OperationsWorkList
-            selectedDateEvents={selectedDateEvents}
-            loadingEvents={loadingEvents}
-            onRefresh={() => void loadCalendarEvents()}
-          />
-
-          <div className="space-y-6">
-            <OperationsRoutePanel
-              routeStopsText={routeStopsText}
-              onRouteStopsTextChange={setRouteStopsText}
-            />
-
-            <OperationsAvailabilityPanel
+        {viewMode === "day" ? (
+          <>
+            <OperationsSummaryCards
+              selectedDateEvents={selectedDateEvents}
+              installations={installations}
+              maintenances={maintenances}
               availability={availability}
+              loadingEvents={loadingEvents}
               loadingAvailability={loadingAvailability}
             />
-          </div>
-        </section>
+
+            <OperationsZoneGroups
+              selectedDateEvents={selectedDateEvents}
+              onUseGroupAsRoute={handleUseGroupAsRoute}
+            />
+
+            <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+              <OperationsWorkList
+                selectedDateEvents={selectedDateEvents}
+                loadingEvents={loadingEvents}
+                onRefresh={() => void loadCalendarEvents()}
+              />
+
+              <div className="space-y-6">
+                <OperationsRoutePanel
+                  routeStopsText={routeStopsText}
+                  onRouteStopsTextChange={setRouteStopsText}
+                />
+
+                <OperationsAvailabilityPanel
+                  availability={availability}
+                  loadingAvailability={loadingAvailability}
+                />
+              </div>
+            </section>
+          </>
+        ) : (
+          <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <OperationsRangeGroups
+              events={events}
+              selectedDate={selectedDate}
+              viewMode={viewMode}
+              onUseGroupAsRoute={handleUseGroupAsRoute}
+            />
+
+            <div className="space-y-6">
+              <OperationsRoutePanel
+                routeStopsText={routeStopsText}
+                onRouteStopsTextChange={setRouteStopsText}
+              />
+
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-500 shadow-sm">
+                En la vista de {viewMode === "week" ? "semana" : "mes"}, las
+                agrupaciones se muestran según las rutas configuradas y los
+                trabajos programados dentro del rango seleccionado.
+              </div>
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );
