@@ -1,5 +1,15 @@
 import { prisma } from "@/lib/prisma";
 
+type OperationalZoneInfo = {
+  operational_zone_id: string;
+  name: string;
+  reference_address: string | null;
+} | null;
+
+type DecimalLike = {
+  toNumber?: () => number;
+};
+
 function formatDate(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -15,6 +25,48 @@ function getClientFullName(client: {
   return `${client.first_name} ${client.last_name_1}`.trim();
 }
 
+function decimalToNumber(value: DecimalLike | number | null | undefined) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value.toNumber === "function") {
+    return value.toNumber();
+  }
+
+  return null;
+}
+
+function getOperationalZonePayload(zone: OperationalZoneInfo) {
+  return {
+    operational_zone_id: zone?.operational_zone_id ?? null,
+    operational_zone_name: zone?.name ?? "Sin agrupación asignada",
+    operational_zone_reference_address: zone?.reference_address ?? null,
+  };
+}
+
+function getBestOperationalZone(
+  primaryZone: OperationalZoneInfo,
+  fallbackZone?: OperationalZoneInfo,
+) {
+  return primaryZone ?? fallbackZone ?? null;
+}
+
+function buildCoordinateRouteAddress(params: {
+  latitude: number | null;
+  longitude: number | null;
+}) {
+  if (params.latitude === null || params.longitude === null) {
+    return null;
+  }
+
+  return `${params.latitude},${params.longitude}`;
+}
+
 export async function getCalendarEventsService() {
   const today = new Date();
 
@@ -27,10 +79,40 @@ export async function getCalendarEventsService() {
       reason: true,
       priority: true,
       billing_status: true,
+      operational_zone_id: true,
+      operational_zone: {
+        select: {
+          operational_zone_id: true,
+          name: true,
+          reference_address: true,
+        },
+      },
       client: {
         select: {
           first_name: true,
           last_name_1: true,
+          latitude: true,
+          longitude: true,
+          operational_zone: {
+            select: {
+              operational_zone_id: true,
+              name: true,
+              reference_address: true,
+            },
+          },
+        },
+      },
+      installation: {
+        select: {
+          latitude: true,
+          longitude: true,
+          operational_zone: {
+            select: {
+              operational_zone_id: true,
+              name: true,
+              reference_address: true,
+            },
+          },
         },
       },
       follow_up_status: {
@@ -51,10 +133,29 @@ export async function getCalendarEventsService() {
       installation_date: true,
       description: true,
       billing_status: true,
+      operational_zone_id: true,
+      latitude: true,
+      longitude: true,
+      operational_zone: {
+        select: {
+          operational_zone_id: true,
+          name: true,
+          reference_address: true,
+        },
+      },
       client: {
         select: {
           first_name: true,
           last_name_1: true,
+          latitude: true,
+          longitude: true,
+          operational_zone: {
+            select: {
+              operational_zone_id: true,
+              name: true,
+              reference_address: true,
+            },
+          },
         },
       },
     },
@@ -88,6 +189,28 @@ export async function getCalendarEventsService() {
 
       const clientName = getClientFullName(followUp.client);
 
+      const operationalZone = getBestOperationalZone(
+        followUp.operational_zone,
+        followUp.installation?.operational_zone ??
+          followUp.client.operational_zone,
+      );
+
+      const routeLatitude =
+        decimalToNumber(followUp.installation?.latitude) ??
+        decimalToNumber(followUp.client.latitude);
+
+      const routeLongitude =
+        decimalToNumber(followUp.installation?.longitude) ??
+        decimalToNumber(followUp.client.longitude);
+
+      const routeAddress =
+        buildCoordinateRouteAddress({
+          latitude: routeLatitude,
+          longitude: routeLongitude,
+        }) ??
+        operationalZone?.reference_address ??
+        null;
+
       return {
         id: followUp.follow_up_id,
         entity_type: "follow_up",
@@ -104,11 +227,36 @@ export async function getCalendarEventsService() {
         billing_status: followUp.billing_status,
         is_confirmed: Boolean(followUp.scheduled_date),
         is_completed: Boolean(followUp.completed_at),
+        ...getOperationalZonePayload(operationalZone),
+        route_latitude: routeLatitude,
+        route_longitude: routeLongitude,
+        route_address: routeAddress,
       };
     });
 
   const installationEvents = installations.map((installation) => {
     const clientName = getClientFullName(installation.client);
+
+    const operationalZone = getBestOperationalZone(
+      installation.operational_zone,
+      installation.client.operational_zone,
+    );
+
+    const routeLatitude =
+      decimalToNumber(installation.latitude) ??
+      decimalToNumber(installation.client.latitude);
+
+    const routeLongitude =
+      decimalToNumber(installation.longitude) ??
+      decimalToNumber(installation.client.longitude);
+
+    const routeAddress =
+      buildCoordinateRouteAddress({
+        latitude: routeLatitude,
+        longitude: routeLongitude,
+      }) ??
+      operationalZone?.reference_address ??
+      null;
 
     return {
       id: installation.installation_id,
@@ -119,6 +267,10 @@ export async function getCalendarEventsService() {
       title: `Instalación - ${clientName}`,
       description: installation.description || "Instalación registrada.",
       billing_status: installation.billing_status,
+      ...getOperationalZonePayload(operationalZone),
+      route_latitude: routeLatitude,
+      route_longitude: routeLongitude,
+      route_address: routeAddress,
     };
   });
 
