@@ -63,14 +63,41 @@ function normalizeOptionalId(value: string | null | undefined) {
   return cleanValue || null;
 }
 
-function normalizeDateOnly(value: Date | string) {
-  const date = value instanceof Date ? value : new Date(value);
+function getDateOnlyParts(value: Date | string) {
+  const rawValue =
+    value instanceof Date
+      ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(
+          2,
+          "0",
+        )}-${String(value.getDate()).padStart(2, "0")}`
+      : String(value).trim().slice(0, 10);
 
-  if (Number.isNaN(date.getTime())) {
-    return "";
+  const match = rawValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) {
+    throw new Error("La fecha no es válida.");
   }
 
-  return date.toISOString().slice(0, 10);
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  };
+}
+
+function createLocalDateOnly(value: Date | string) {
+  const { year, month, day } = getDateOnlyParts(value);
+
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+function normalizeDateOnly(value: Date | string) {
+  const { year, month, day } = getDateOnlyParts(value);
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(
+    2,
+    "0",
+  )}`;
 }
 
 function mapAvailabilityResult(params: {
@@ -159,11 +186,7 @@ export async function evaluateAvailabilityForDateRange(params: {
 }) {
   const countryCode = normalizeCountryCode(params.country_code);
   const operationalZoneId = normalizeOptionalId(params.operational_zone_id);
-
-  const startDate =
-    params.start_date instanceof Date
-      ? params.start_date
-      : new Date(params.start_date);
+  const startDate = createLocalDateOnly(params.start_date);
 
   if (Number.isNaN(startDate.getTime())) {
     throw new Error("La fecha inicial no es válida.");

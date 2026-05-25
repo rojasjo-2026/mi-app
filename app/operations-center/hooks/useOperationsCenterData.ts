@@ -4,18 +4,93 @@ import { useEffect, useMemo, useState } from "react";
 
 import type {
   AvailabilityApiResponse,
+  AvailabilityByDateMap,
   AvailabilityData,
+  AvailabilityRangeApiResponse,
   CalendarApiResponse,
   CalendarEvent,
+  OperationsViewMode,
 } from "../types";
 import { getTodayDate } from "../utils";
 
-export function useOperationsCenterData(countryCode = "CR") {
+function parseDateOnly(dateValue: string) {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatDateOnly(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getWeekStartDate(dateValue: string) {
+  const date = parseDateOnly(dateValue);
+  const day = date.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(date);
+  monday.setDate(date.getDate() + mondayOffset);
+
+  return formatDateOnly(monday);
+}
+
+function getMonthStartDate(dateValue: string) {
+  const date = parseDateOnly(dateValue);
+  return formatDateOnly(new Date(date.getFullYear(), date.getMonth(), 1));
+}
+
+function getMonthDays(dateValue: string) {
+  const date = parseDateOnly(dateValue);
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
+function getAvailabilityRangeConfig(params: {
+  selectedDate: string;
+  viewMode: OperationsViewMode;
+}) {
+  if (params.viewMode === "week") {
+    return {
+      startDate: getWeekStartDate(params.selectedDate),
+      days: 7,
+    };
+  }
+
+  if (params.viewMode === "month") {
+    return {
+      startDate: getMonthStartDate(params.selectedDate),
+      days: getMonthDays(params.selectedDate),
+    };
+  }
+
+  return {
+    startDate: params.selectedDate,
+    days: 1,
+  };
+}
+
+function buildAvailabilityByDateMap(
+  results: AvailabilityData[],
+): AvailabilityByDateMap {
+  return results.reduce<AvailabilityByDateMap>((accumulator, item) => {
+    accumulator[item.date] = item;
+    return accumulator;
+  }, {});
+}
+
+export function useOperationsCenterData(
+  countryCode = "CR",
+  viewMode: OperationsViewMode = "day",
+) {
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [availability, setAvailability] = useState<AvailabilityData | null>(
     null,
   );
+  const [availabilityByDate, setAvailabilityByDate] =
+    useState<AvailabilityByDateMap>({});
 
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
@@ -86,13 +161,64 @@ export function useOperationsCenterData(countryCode = "CR") {
         );
       }
 
-      setAvailability(result.data ?? null);
+      const nextAvailability = result.data ?? null;
+
+      setAvailability(nextAvailability);
+      setAvailabilityByDate(
+        nextAvailability ? { [nextAvailability.date]: nextAvailability } : {},
+      );
     } catch (err) {
       setAvailability(null);
+      setAvailabilityByDate({});
       setError(
         err instanceof Error
           ? err.message
           : "Ocurrió un error al cargar la disponibilidad.",
+      );
+    } finally {
+      setLoadingAvailability(false);
+    }
+  }
+
+  async function loadAvailabilityRange(params: {
+    startDate: string;
+    days: number;
+  }) {
+    try {
+      setLoadingAvailability(true);
+      setError("");
+
+      const response = await fetch(
+        `/api/availability/daily?country_code=${encodeURIComponent(
+          countryCode,
+        )}&date=${encodeURIComponent(params.startDate)}&days=${encodeURIComponent(
+          String(params.days),
+        )}`,
+        {
+          cache: "no-store",
+        },
+      );
+
+      const result: AvailabilityRangeApiResponse = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || "No se pudo cargar la disponibilidad del rango.",
+        );
+      }
+
+      const rangeResults = result.data?.results ?? [];
+      const nextAvailabilityByDate = buildAvailabilityByDateMap(rangeResults);
+
+      setAvailabilityByDate(nextAvailabilityByDate);
+      setAvailability(nextAvailabilityByDate[selectedDate] ?? null);
+    } catch (err) {
+      setAvailability(null);
+      setAvailabilityByDate({});
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Ocurrió un error al cargar la disponibilidad del rango.",
       );
     } finally {
       setLoadingAvailability(false);
@@ -104,8 +230,21 @@ export function useOperationsCenterData(countryCode = "CR") {
   }, []);
 
   useEffect(() => {
-    void loadAvailability(selectedDate);
-  }, [selectedDate]);
+    if (viewMode === "day") {
+      void loadAvailability(selectedDate);
+      return;
+    }
+
+    const rangeConfig = getAvailabilityRangeConfig({
+      selectedDate,
+      viewMode,
+    });
+
+    void loadAvailabilityRange({
+      startDate: rangeConfig.startDate,
+      days: rangeConfig.days,
+    });
+  }, [selectedDate, viewMode]);
 
   return {
     selectedDate,
@@ -116,6 +255,7 @@ export function useOperationsCenterData(countryCode = "CR") {
     installations,
     maintenances,
     availability,
+    availabilityByDate,
 
     loadingEvents,
     loadingAvailability,
@@ -124,5 +264,6 @@ export function useOperationsCenterData(countryCode = "CR") {
 
     loadCalendarEvents,
     loadAvailability,
+    loadAvailabilityRange,
   };
 }

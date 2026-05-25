@@ -25,13 +25,14 @@ export default function OperationsCenterPage() {
     installations,
     maintenances,
     availability,
+    availabilityByDate,
 
     loadingEvents,
     loadingAvailability,
     error,
 
     loadCalendarEvents,
-  } = useOperationsCenterData("CR");
+  } = useOperationsCenterData("CR", viewMode);
 
   function handleUseGroupAsRoute(routeStops: string[]) {
     setRouteStopsText(routeStops.join("\n"));
@@ -95,6 +96,8 @@ export default function OperationsCenterPage() {
               events={events}
               selectedDate={selectedDate}
               viewMode={viewMode}
+              availabilityByDate={availabilityByDate}
+              loadingAvailability={loadingAvailability}
               onUseGroupAsRoute={handleUseGroupAsRoute}
             />
 

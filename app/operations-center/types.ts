@@ -23,6 +23,7 @@ export type CalendarEvent = {
 export type AvailabilityData = {
   country_code: string;
   date: string;
+  operational_zone_id?: string | null;
   can_offer_day: boolean;
   reason: string | null;
   workload: {
@@ -41,6 +42,14 @@ export type AvailabilityData = {
   };
 };
 
+export type AvailabilityRangeData = {
+  country_code: string;
+  start_date: string;
+  days: number;
+  operational_zone_id: string | null;
+  results: AvailabilityData[];
+};
+
 export type CalendarApiResponse = {
   success: boolean;
   data?: CalendarEvent[];
@@ -50,6 +59,12 @@ export type CalendarApiResponse = {
 export type AvailabilityApiResponse = {
   success: boolean;
   data?: AvailabilityData;
+  message?: string;
+};
+
+export type AvailabilityRangeApiResponse = {
+  success: boolean;
+  data?: AvailabilityRangeData;
   message?: string;
 };
 
@@ -65,3 +80,5 @@ export type OperationsZoneGroup = {
 };
 
 export type OperationsViewMode = "day" | "week" | "month";
+
+export type AvailabilityByDateMap = Record<string, AvailabilityData>;
