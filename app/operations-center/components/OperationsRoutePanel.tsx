@@ -24,6 +24,8 @@ export function OperationsRoutePanel({
       .filter((stop) => stop.length > 0);
   }, [routeStopsText]);
 
+  const hasRouteStops = routeStops.length > 0;
+
   function handleUseCurrentLocation() {
     setRouteError("");
 
@@ -65,7 +67,7 @@ export function OperationsRoutePanel({
 
     if (!googleMapsUrl) {
       setRouteError(
-        "Ingrese un punto de salida y al menos una dirección de destino.",
+        "Ingrese un punto de salida y al menos una parada para abrir la ruta.",
       );
       return;
     }
@@ -73,14 +75,29 @@ export function OperationsRoutePanel({
     window.open(googleMapsUrl, "_blank", "noopener,noreferrer");
   }
 
+  function handleClearStops() {
+    setRouteError("");
+    onRouteStopsTextChange("");
+  }
+
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-bold text-slate-900">Ruta en Google Maps</h2>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">
+            Ruta en Google Maps
+          </h2>
 
-      <p className="mt-1 text-sm leading-6 text-slate-500">
-        CLARIUS prepara las paradas con los datos del sistema. Google Maps se
-        encarga de navegación, tráfico y tiempos reales.
-      </p>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            CLARIUS prepara las paradas con los datos del sistema. Google Maps
+            se encarga de navegación, tráfico y tiempos reales.
+          </p>
+        </div>
+
+        <span className="w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+          {routeStops.length} paradas
+        </span>
+      </div>
 
       <div className="mt-5 space-y-4">
         <label className="space-y-2">
@@ -106,6 +123,41 @@ export function OperationsRoutePanel({
             ? "Obteniendo ubicación..."
             : "Usar mi ubicación actual"}
         </button>
+
+        {hasRouteStops ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-slate-700">
+                Paradas cargadas
+              </p>
+
+              <button
+                type="button"
+                onClick={handleClearStops}
+                className="text-xs font-semibold text-rose-600 transition hover:text-rose-700"
+              >
+                Limpiar
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {routeStops.map((stop, index) => (
+                <div
+                  key={`${stop}-${index}`}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2"
+                >
+                  <p className="text-xs font-semibold text-slate-500">
+                    Parada {index + 1}
+                  </p>
+
+                  <p className="mt-1 break-words text-sm font-medium text-slate-800">
+                    {stop}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <label className="space-y-2">
           <span className="text-sm font-semibold text-slate-700">

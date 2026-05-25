@@ -63,3 +63,5 @@ export type OperationsZoneGroup = {
   total_maintenances: number;
   route_stops: string[];
 };
+
+export type OperationsViewMode = "day" | "week" | "month";
