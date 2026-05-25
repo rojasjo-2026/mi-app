@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const menuItems = [
   { href: "/", label: "Dashboard" },
+  { href: "/operations-center", label: "Centro operativo" },
   { href: "/clients", label: "Clientes" },
   { href: "/installations", label: "Instalaciones" },
   { href: "/follow-ups", label: "Mantenimientos" },
