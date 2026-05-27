@@ -22,6 +22,32 @@ type ContactFlowConversationProps = {
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
 };
 
+function buildInitialMaintenanceWhatsAppTemplate() {
+  return `Hola,
+
+Le contactamos porque tiene un mantenimiento próximo registrado.
+
+Por favor responda con una de las siguientes opciones:
+
+1. Confirmar mantenimiento
+2. Reprogramar
+3. Ya no me interesa
+4. Hablar con un asesor`;
+}
+
+function buildReminderMaintenanceWhatsAppTemplate() {
+  return `Hola,
+
+Le damos seguimiento al mantenimiento pendiente.
+
+Por favor responda con una de las siguientes opciones:
+
+1. Confirmar mantenimiento
+2. Reprogramar
+3. Ya no me interesa
+4. Hablar con un asesor`;
+}
+
 export default function ContactFlowConversation({
   messages,
   messagesLoading,
@@ -121,17 +147,27 @@ export default function ContactFlowConversation({
 
         <div className="border-t border-slate-200 bg-[#f0f2f5] p-3">
           <div className="mb-3 flex flex-wrap gap-2">
-            {(["1", "2", "3", "4"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => void onSendMessage(option)}
-                disabled={sending || sendingMedia}
-                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {option}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={() =>
+                void onSendMessage(buildInitialMaintenanceWhatsAppTemplate())
+              }
+              disabled={sending || sendingMedia}
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Mensaje inicial
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                void onSendMessage(buildReminderMaintenanceWhatsAppTemplate())
+              }
+              disabled={sending || sendingMedia}
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Recordatorio
+            </button>
           </div>
 
           <div className="flex flex-col gap-3">
