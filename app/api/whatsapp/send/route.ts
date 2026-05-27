@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { recordContactMessageSentActivitySafely } from "@/lib/services/whatsapp/whatsappActivityLogService";
 import { sendWhatsAppTextMessage } from "@/lib/services/whatsappService";
 
 type SendWhatsAppRequestBody = {
@@ -98,6 +99,19 @@ export async function POST(request: Request) {
         metadata: result.raw !== undefined ? (result.raw as object) : undefined,
         sent_at: now,
       },
+    });
+
+    await recordContactMessageSentActivitySafely({
+      clientId: contactFlow.client_id,
+      contactFlowId: contactFlow.contact_flow_id,
+      messageId: savedMessage.message_id,
+      followUpId: contactFlow.follow_up_id,
+      installationId: contactFlow.installation_id,
+      phoneNumber: contactFlow.client.phone_primary,
+      waMessageId: result.wa_message_id,
+      deliveryStatus: savedMessage.delivery_status,
+      isMock: result.isMock,
+      messageText: message,
     });
 
     await prisma.maintenanceContactFlow.update({
