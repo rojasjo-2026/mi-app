@@ -1,49 +1,91 @@
-export function sanitizePhoneNumber(value?: string | null): string | null {
-  if (!value) return null;
+const DEFAULT_COUNTRY_CODE =
+  process.env.DEFAULT_COUNTRY_CODE ||
+  process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE ||
+  "506";
 
-  const cleaned = value.replace(/\D/g, "");
-  return cleaned || null;
+export function sanitizePhoneNumber(value?: string | null) {
+  const trimmedValue = value?.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  return trimmedValue.replace(/[^\d+]/g, "");
 }
 
 export function normalizePhoneNumber(
   value?: string | null,
-  phoneCountryCode?: string | null,
-): string | null {
-  const cleaned = sanitizePhoneNumber(value);
-  const cleanedCountryCode = sanitizePhoneNumber(phoneCountryCode);
+  countryCode = DEFAULT_COUNTRY_CODE,
+) {
+  const digits = value?.replace(/\D/g, "") ?? "";
 
-  if (!cleaned) return null;
-
-  if (!cleanedCountryCode) {
-    return cleaned;
+  if (!digits) {
+    return null;
   }
 
-  if (cleaned.startsWith(cleanedCountryCode)) {
-    return cleaned;
+  if (digits.length === 8 && countryCode) {
+    return `${countryCode}${digits}`;
   }
 
-  return `${cleanedCountryCode}${cleaned}`;
+  return digits;
 }
 
 export function buildPhoneCandidates(
-  rawFrom: string | null,
-  normalizedFrom: string | null,
-): string[] {
-  const values = [rawFrom, normalizedFrom].filter((value): value is string =>
-    Boolean(value),
-  );
+  ...values: Array<string | null | undefined>
+) {
+  const candidates = new Set<string>();
 
-  return [...new Set(values)];
+  for (const value of values) {
+    const sanitizedValue = sanitizePhoneNumber(value);
+    const digitsOnly = sanitizedValue?.replace(/\D/g, "") ?? "";
+
+    if (sanitizedValue) {
+      candidates.add(sanitizedValue);
+    }
+
+    if (digitsOnly) {
+      candidates.add(digitsOnly);
+      candidates.add(`+${digitsOnly}`);
+    }
+
+    if (
+      digitsOnly &&
+      DEFAULT_COUNTRY_CODE &&
+      digitsOnly.startsWith(DEFAULT_COUNTRY_CODE) &&
+      digitsOnly.length > DEFAULT_COUNTRY_CODE.length
+    ) {
+      const localNumber = digitsOnly.slice(DEFAULT_COUNTRY_CODE.length);
+
+      if (localNumber) {
+        candidates.add(localNumber);
+        candidates.add(`+${localNumber}`);
+      }
+    }
+
+    if (
+      digitsOnly &&
+      DEFAULT_COUNTRY_CODE &&
+      digitsOnly.length === 8 &&
+      !digitsOnly.startsWith(DEFAULT_COUNTRY_CODE)
+    ) {
+      candidates.add(`${DEFAULT_COUNTRY_CODE}${digitsOnly}`);
+      candidates.add(`+${DEFAULT_COUNTRY_CODE}${digitsOnly}`);
+    }
+  }
+
+  return Array.from(candidates).filter(Boolean);
 }
 
-export function parseUnixTimestamp(value?: string): Date {
-  if (!value) return new Date();
-
-  const numericValue = Number(value);
-
-  if (Number.isNaN(numericValue)) {
+export function parseUnixTimestamp(timestamp?: string | null) {
+  if (!timestamp) {
     return new Date();
   }
 
-  return new Date(numericValue * 1000);
+  const parsedTimestamp = Number(timestamp);
+
+  if (!Number.isFinite(parsedTimestamp)) {
+    return new Date();
+  }
+
+  return new Date(parsedTimestamp * 1000);
 }
