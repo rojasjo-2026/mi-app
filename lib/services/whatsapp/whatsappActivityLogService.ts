@@ -86,6 +86,38 @@ export async function recordContactMessageSentActivitySafely(
   }
 }
 
+export async function recordContactMessageReceivedActivitySafely(
+  input: ContactMessageActivityInput,
+) {
+  try {
+    return createActivityLog({
+      client_id: input.clientId,
+      entity_type: "CONTACT_MESSAGE",
+      entity_id: input.messageId,
+      category: "CONTACT",
+      action: "CONTACT_MESSAGE_RECEIVED",
+      visibility: "PUBLIC_INTERNAL",
+      title: "WhatsApp message received",
+      description: "A WhatsApp message was received from the client.",
+      created_by: input.createdBy ?? null,
+      metadata: {
+        contact_flow_id: input.contactFlowId,
+        message_id: input.messageId,
+        follow_up_id: input.followUpId,
+        installation_id: input.installationId ?? null,
+        phone_number: input.phoneNumber ?? null,
+        wa_message_id: input.waMessageId ?? null,
+        delivery_status: input.deliveryStatus ?? null,
+        message_preview: buildMessagePreview(input.messageText),
+        source: "whatsapp",
+      } as Prisma.InputJsonValue,
+    });
+  } catch (error) {
+    console.error("Error recording contact message received activity:", error);
+    return null;
+  }
+}
+
 function buildMessagePreview(messageText?: string | null) {
   const value = messageText?.trim();
 

@@ -5,6 +5,7 @@ import {
   buildAutomaticReply,
   resolveInboundFlowUpdate,
 } from "@/lib/services/contactFlowAutomationService";
+import { recordContactMessageReceivedActivitySafely } from "@/lib/services/whatsapp/whatsappActivityLogService";
 import { syncFollowUpWithAutomation } from "@/lib/services/whatsapp/followUpWhatsappSyncService";
 import {
   buildPhoneCandidates,
@@ -56,7 +57,7 @@ export async function handleIncomingMessage(
 
   const persistedPhone = normalizedFrom ?? rawFrom ?? null;
 
-  await prisma.maintenanceContactMessage.create({
+  const savedInboundMessage = await prisma.maintenanceContactMessage.create({
     data: {
       contact_flow_id: contactFlow.contact_flow_id,
       direction: "INBOUND",
@@ -73,6 +74,18 @@ export async function handleIncomingMessage(
       } as Prisma.InputJsonValue,
       received_at: receivedAt,
     },
+  });
+
+  await recordContactMessageReceivedActivitySafely({
+    clientId: contactFlow.client_id,
+    contactFlowId: contactFlow.contact_flow_id,
+    messageId: savedInboundMessage.message_id,
+    followUpId: contactFlow.follow_up_id,
+    installationId: contactFlow.installation_id,
+    phoneNumber: persistedPhone,
+    waMessageId,
+    deliveryStatus: savedInboundMessage.delivery_status,
+    messageText,
   });
 
   const automationResult = resolveInboundFlowUpdate(messageText);
