@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
+import { recordContactFlowCreatedActivitySafely } from "@/lib/services/whatsapp/whatsappActivityLogService";
 
 const contactFlowInclude = {
   client: true,
@@ -217,6 +218,14 @@ export async function POST(req: Request) {
         status: "PENDING",
       },
       include: contactFlowInclude,
+    });
+
+    await recordContactFlowCreatedActivitySafely({
+      clientId: createdFlow.client_id,
+      contactFlowId: createdFlow.contact_flow_id,
+      followUpId: createdFlow.follow_up_id,
+      installationId: createdFlow.installation_id,
+      phoneNumber: createdFlow.contact_phone,
     });
 
     return NextResponse.json(
