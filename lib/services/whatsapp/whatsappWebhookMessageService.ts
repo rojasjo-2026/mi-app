@@ -5,7 +5,10 @@ import {
   buildAutomaticReply,
   resolveInboundFlowUpdate,
 } from "@/lib/services/contactFlowAutomationService";
-import { recordContactMessageReceivedActivitySafely } from "@/lib/services/whatsapp/whatsappActivityLogService";
+import {
+  recordContactMessageReceivedActivitySafely,
+  recordContactStatusChangedActivitySafely,
+} from "@/lib/services/whatsapp/whatsappActivityLogService";
 import { syncFollowUpWithAutomation } from "@/lib/services/whatsapp/followUpWhatsappSyncService";
 import {
   buildPhoneCandidates,
@@ -88,6 +91,7 @@ export async function handleIncomingMessage(
     messageText,
   });
 
+  const previousStatus = contactFlow.status;
   const automationResult = resolveInboundFlowUpdate(messageText);
 
   await prisma.maintenanceContactFlow.update({
@@ -105,6 +109,21 @@ export async function handleIncomingMessage(
       closed_at: automationResult.shouldClose ? receivedAt : null,
     },
   });
+
+  if (previousStatus !== automationResult.status) {
+    await recordContactStatusChangedActivitySafely({
+      clientId: contactFlow.client_id,
+      contactFlowId: contactFlow.contact_flow_id,
+      followUpId: contactFlow.follow_up_id,
+      installationId: contactFlow.installation_id,
+      phoneNumber: persistedPhone,
+      oldStatus: previousStatus,
+      newStatus: automationResult.status,
+      inboundMessageId: savedInboundMessage.message_id,
+      inboundMessageText: messageText,
+      manualReason: automationResult.manualReason,
+    });
+  }
 
   try {
     await syncFollowUpWithAutomation({
