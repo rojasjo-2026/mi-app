@@ -54,18 +54,31 @@ export function buildAutomaticReplyMessage(
 ) {
   const firstName = params.clientName?.trim() || "cliente";
   const installationLabel = params.installationName?.trim() || "su instalación";
+  const manualReason = params.automationResult.manualReason || "";
+
+  if (
+    params.automationResult.status === "MANUAL_REQUIRED" &&
+    (manualReason.includes("confirmó disponibilidad") ||
+      manualReason.includes("validar agenda"))
+  ) {
+    const dateLabel = formatReplyDate(params.scheduledDate);
+
+    return `Hola ${firstName}, recibimos su confirmación de disponibilidad para el mantenimiento de ${installationLabel}${
+      dateLabel ? `, previsto para el ${dateLabel}` : ""
+    }. Antes de confirmar la visita, nuestro equipo validará la agenda, la zona operativa y la capacidad disponible. Le contactaremos con la confirmación final o con una fecha segura disponible.`;
+  }
 
   if (params.automationResult.status === "CONFIRMED") {
     const dateLabel = formatReplyDate(params.scheduledDate);
 
-    return `Hola ${firstName}, recibimos su confirmación para el mantenimiento de ${installationLabel}${
-      dateLabel ? ` programado para el ${dateLabel}` : ""
-    }. Nuestro equipo validará la disponibilidad operativa y le contactará si necesitamos coordinar algún detalle adicional.`;
+    return `Hola ${firstName}, su mantenimiento para ${installationLabel} quedó confirmado correctamente${
+      dateLabel ? ` para el ${dateLabel}` : ""
+    }. Le estaremos contactando si necesitamos coordinar algún detalle adicional.`;
   }
 
   if (
     params.automationResult.status === "MANUAL_REQUIRED" &&
-    params.automationResult.manualReason?.includes("reprogramar")
+    manualReason.includes("reprogramar")
   ) {
     return `Hola ${firstName}, recibimos su solicitud para coordinar otra fecha para el mantenimiento de ${installationLabel}. Un asesor revisará la agenda disponible y le contactará para ofrecerle una opción segura.`;
   }
@@ -76,7 +89,7 @@ export function buildAutomaticReplyMessage(
 
   if (
     params.automationResult.status === "MANUAL_REQUIRED" &&
-    params.automationResult.manualReason?.includes("asesor")
+    manualReason.includes("asesor")
   ) {
     return `Hola ${firstName}, recibimos su solicitud para hablar con un asesor. Un miembro del equipo le contactará pronto para darle seguimiento a ${installationLabel}.`;
   }

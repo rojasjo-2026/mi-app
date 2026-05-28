@@ -38,9 +38,10 @@ export function resolveInboundFlowUpdate(
     includesAny(normalized, ["perfecto", "de acuerdo", "esta bien"])
   ) {
     return {
-      status: "CONFIRMED",
-      requiresManualAction: false,
-      manualReason: null,
+      status: "MANUAL_REQUIRED",
+      requiresManualAction: true,
+      manualReason:
+        "El cliente confirmó disponibilidad. Se debe validar agenda, zona operativa y capacidad antes de confirmar el mantenimiento.",
       selectedDate: null,
       shouldClose: false,
     };
