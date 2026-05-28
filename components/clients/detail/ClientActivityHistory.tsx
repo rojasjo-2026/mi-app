@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
+import { MiniInfoCard } from "@/components/clients/detail/MiniInfoCard";
 import type { ClientActivityLog } from "@/lib/clients/clientDetail.types";
 import {
   formatActivityValue,
@@ -10,7 +12,6 @@ import {
   getActivityCategoryLabel,
   getActivityFieldLabel,
 } from "@/lib/clients/clientDetail.utils";
-import { MiniInfoCard } from "@/components/clients/detail/MiniInfoCard";
 
 type ClientActivityHistoryProps = {
   activityLogs: ClientActivityLog[];
@@ -19,6 +20,168 @@ type ClientActivityHistoryProps = {
   hasMore?: boolean;
   onLoadMore?: () => void;
 };
+
+type ActivityMetadata = Record<string, unknown>;
+
+type ClientActivityLogWithMetadata = ClientActivityLog & {
+  metadata?: unknown;
+};
+
+const WHATSAPP_ACTION_LABELS: Record<string, string> = {
+  CONTACT_FLOW_CREATED: "Gestión de WhatsApp iniciada",
+  CONTACT_MESSAGE_SENT: "Mensaje enviado",
+  CONTACT_MESSAGE_RECEIVED: "Mensaje recibido",
+  CONTACT_STATUS_CHANGED: "Estado actualizado",
+};
+
+const WHATSAPP_TITLES: Record<string, string> = {
+  CONTACT_FLOW_CREATED: "Gestión de contacto por WhatsApp iniciada",
+  CONTACT_MESSAGE_SENT: "Mensaje de WhatsApp enviado",
+  CONTACT_MESSAGE_RECEIVED: "Mensaje de WhatsApp recibido",
+  CONTACT_STATUS_CHANGED: "Estado de contacto actualizado",
+};
+
+function getActivityMetadata(activity: ClientActivityLog): ActivityMetadata {
+  const metadata = (activity as ClientActivityLogWithMetadata).metadata;
+
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return {};
+  }
+
+  return metadata as ActivityMetadata;
+}
+
+function getMetadataText(metadata: ActivityMetadata, key: string) {
+  const value = metadata[key];
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+
+  return trimmedValue || null;
+}
+
+function getContactStatusLabel(status?: string | null) {
+  switch (status) {
+    case "PENDING":
+      return "Pendiente";
+    case "MESSAGE_SENT":
+      return "Mensaje enviado";
+    case "WAITING_RESPONSE":
+      return "Esperando respuesta";
+    case "OPTIONS_SENT":
+      return "Opciones enviadas";
+    case "DATE_SELECTED":
+      return "Fecha seleccionada";
+    case "CONFIRMED":
+      return "Confirmado";
+    case "MANUAL_REQUIRED":
+      return "Requiere gestión manual";
+    case "NO_RESPONSE":
+      return "Sin respuesta";
+    case "REJECTED":
+      return "Rechazado";
+    case "CLOSED":
+      return "Cerrado";
+    default:
+      return status || "Sin estado";
+  }
+}
+
+function isWhatsAppActivity(activity: ClientActivityLog) {
+  return (
+    activity.category === "CONTACT" &&
+    [
+      "CONTACT_FLOW_CREATED",
+      "CONTACT_MESSAGE_SENT",
+      "CONTACT_MESSAGE_RECEIVED",
+      "CONTACT_STATUS_CHANGED",
+    ].includes(activity.action)
+  );
+}
+
+function getDisplayActionLabel(activity: ClientActivityLog) {
+  if (isWhatsAppActivity(activity)) {
+    return WHATSAPP_ACTION_LABELS[activity.action] || "Evento de WhatsApp";
+  }
+
+  return getActivityActionLabel(activity.action);
+}
+
+function getDisplayTitle(activity: ClientActivityLog) {
+  if (isWhatsAppActivity(activity)) {
+    return WHATSAPP_TITLES[activity.action] || activity.title;
+  }
+
+  return activity.title;
+}
+
+function getDisplayDescription(activity: ClientActivityLog) {
+  if (!isWhatsAppActivity(activity)) {
+    return activity.description;
+  }
+
+  const metadata = getActivityMetadata(activity);
+  const messagePreview =
+    getMetadataText(metadata, "message_preview") ||
+    getMetadataText(metadata, "inbound_message_preview");
+
+  if (activity.action === "CONTACT_FLOW_CREATED") {
+    return "Se inició una gestión de contacto por WhatsApp para este mantenimiento.";
+  }
+
+  if (activity.action === "CONTACT_MESSAGE_SENT") {
+    return messagePreview
+      ? `Se envió un mensaje al cliente: "${messagePreview}"`
+      : "Se envió un mensaje de WhatsApp al cliente.";
+  }
+
+  if (activity.action === "CONTACT_MESSAGE_RECEIVED") {
+    return messagePreview
+      ? `El cliente respondió por WhatsApp: "${messagePreview}"`
+      : "Se recibió un mensaje de WhatsApp del cliente.";
+  }
+
+  if (activity.action === "CONTACT_STATUS_CHANGED") {
+    const oldStatus = getContactStatusLabel(
+      getMetadataText(metadata, "old_status"),
+    );
+    const newStatus = getContactStatusLabel(
+      getMetadataText(metadata, "new_status"),
+    );
+
+    return `El estado de la gestión cambió de ${oldStatus} a ${newStatus}.`;
+  }
+
+  return activity.description;
+}
+
+function getWhatsAppDetails(activity: ClientActivityLog) {
+  if (!isWhatsAppActivity(activity)) {
+    return null;
+  }
+
+  const metadata = getActivityMetadata(activity);
+
+  const messagePreview =
+    getMetadataText(metadata, "message_preview") ||
+    getMetadataText(metadata, "inbound_message_preview");
+
+  const newStatus = getMetadataText(metadata, "new_status");
+  const phoneNumber = getMetadataText(metadata, "phone_number");
+  const followUpId = getMetadataText(metadata, "follow_up_id");
+  const installationId = getMetadataText(metadata, "installation_id");
+
+  return {
+    messagePreview,
+    newStatus,
+    phoneNumber,
+    followUpId,
+    installationId,
+  };
+}
 
 export function ClientActivityHistory({
   activityLogs,
@@ -123,95 +286,160 @@ export function ClientActivityHistory({
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredLogs.map((activity) => (
-            <div
-              key={activity.activity_id}
-              className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${getActivityCategoryClass(
-                        activity.category,
-                      )}`}
-                    >
-                      {getActivityCategoryLabel(activity.category)}
-                    </span>
+          {filteredLogs.map((activity) => {
+            const whatsAppDetails = getWhatsAppDetails(activity);
 
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                      {getActivityActionLabel(activity.action)}
-                    </span>
-                  </div>
+            return (
+              <div
+                key={activity.activity_id}
+                className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getActivityCategoryClass(
+                          activity.category,
+                        )}`}
+                      >
+                        {getActivityCategoryLabel(activity.category)}
+                      </span>
 
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {activity.title}
-                  </p>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                        {getDisplayActionLabel(activity)}
+                      </span>
 
-                  {activity.description && (
-                    <p className="mt-1 text-sm leading-5 text-slate-600">
-                      {activity.description}
+                      {isWhatsAppActivity(activity) && (
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                          WhatsApp
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="mt-2 text-sm font-semibold text-slate-900">
+                      {getDisplayTitle(activity)}
                     </p>
-                  )}
-                </div>
 
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  {formatDateTimeLabel(activity.created_at)}
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                <MiniInfoCard
-                  label="Módulo"
-                  value={getActivityCategoryLabel(activity.category)}
-                />
-
-                <MiniInfoCard
-                  label="Campo"
-                  value={getActivityFieldLabel(activity.field_name)}
-                />
-
-                <MiniInfoCard
-                  label="Usuario"
-                  value={activity.created_by || "Sistema"}
-                />
-              </div>
-
-              {(activity.old_value || activity.new_value) && (
-                <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-                    Ver cambios
-                  </summary>
-
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                        Antes
+                    {getDisplayDescription(activity) && (
+                      <p className="mt-1 text-sm leading-5 text-slate-600">
+                        {getDisplayDescription(activity)}
                       </p>
-                      <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
-                        {formatActivityValue(
-                          activity.old_value,
-                          activity.field_name,
-                        )}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                        Después
-                      </p>
-                      <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
-                        {formatActivityValue(
-                          activity.new_value,
-                          activity.field_name,
-                        )}
-                      </p>
-                    </div>
+                    )}
                   </div>
-                </details>
-              )}
-            </div>
-          ))}
+
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {formatDateTimeLabel(activity.created_at)}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <MiniInfoCard
+                    label="Módulo"
+                    value={getActivityCategoryLabel(activity.category)}
+                  />
+
+                  <MiniInfoCard
+                    label={isWhatsAppActivity(activity) ? "Canal" : "Campo"}
+                    value={
+                      isWhatsAppActivity(activity)
+                        ? "WhatsApp"
+                        : getActivityFieldLabel(activity.field_name)
+                    }
+                  />
+
+                  <MiniInfoCard
+                    label="Usuario"
+                    value={activity.created_by || "Sistema"}
+                  />
+                </div>
+
+                {whatsAppDetails && (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <MiniInfoCard
+                      label="Teléfono"
+                      value={whatsAppDetails.phoneNumber || "No registrado"}
+                    />
+
+                    <MiniInfoCard
+                      label="Estado"
+                      value={
+                        whatsAppDetails.newStatus
+                          ? getContactStatusLabel(whatsAppDetails.newStatus)
+                          : "No aplica"
+                      }
+                    />
+
+                    <MiniInfoCard
+                      label="Mensaje"
+                      value={whatsAppDetails.messagePreview || "No aplica"}
+                    />
+                  </div>
+                )}
+
+                {whatsAppDetails?.followUpId && (
+                  <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+                      Ver contexto operativo
+                    </summary>
+
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                          Mantenimiento
+                        </p>
+                        <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
+                          {whatsAppDetails.followUpId}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                          Instalación
+                        </p>
+                        <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
+                          {whatsAppDetails.installationId || "No registrada"}
+                        </p>
+                      </div>
+                    </div>
+                  </details>
+                )}
+
+                {(activity.old_value || activity.new_value) && (
+                  <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+                      Ver cambios
+                    </summary>
+
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                          Antes
+                        </p>
+                        <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
+                          {formatActivityValue(
+                            activity.old_value,
+                            activity.field_name,
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                          Después
+                        </p>
+                        <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-800">
+                          {formatActivityValue(
+                            activity.new_value,
+                            activity.field_name,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </details>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
