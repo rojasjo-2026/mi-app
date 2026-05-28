@@ -137,11 +137,13 @@ export function buildReminderMessage(params: {
 
 export function buildAutomaticReply(params: {
   messageText: string;
+  automationResult?: AutomationResult;
   clientName?: string | null;
   installationName?: string | null;
   scheduledDate?: Date | string | null;
 }) {
-  const automationResult = resolveInboundFlowUpdate(params.messageText);
+  const automationResult =
+    params.automationResult ?? resolveInboundFlowUpdate(params.messageText);
 
   return buildAutomaticReplyMessage({
     automationResult,

@@ -6,6 +6,10 @@ import {
   resolveInboundFlowUpdate,
 } from "@/lib/services/contactFlowAutomationService";
 import {
+  evaluateContactFlowAvailability,
+  mergeAutomationWithAvailability,
+} from "@/lib/services/contact-flow/contactFlowAvailabilityService";
+import {
   recordContactMessageReceivedActivitySafely,
   recordContactStatusChangedActivitySafely,
 } from "@/lib/services/whatsapp/whatsappActivityLogService";
@@ -92,7 +96,17 @@ export async function handleIncomingMessage(
   });
 
   const previousStatus = contactFlow.status;
-  const automationResult = resolveInboundFlowUpdate(messageText);
+
+  const baseAutomationResult = resolveInboundFlowUpdate(messageText);
+
+  const availabilityResult = await evaluateContactFlowAvailability(
+    contactFlow.contact_flow_id,
+  );
+
+  const automationResult = mergeAutomationWithAvailability({
+    automationResult: baseAutomationResult,
+    availabilityResult,
+  });
 
   await prisma.maintenanceContactFlow.update({
     where: {
@@ -143,6 +157,7 @@ export async function handleIncomingMessage(
 
   const autoReply = buildAutomaticReply({
     messageText,
+    automationResult,
     clientName: contactFlow.client.first_name,
     installationName: contactFlow.installation?.description || null,
     scheduledDate:
@@ -177,6 +192,11 @@ export async function handleIncomingMessage(
       metadata: {
         provider: "meta-whatsapp",
         isMock: sendResult.isMock,
+        availability_checked: availabilityResult.checked,
+        availability_can_offer_day: availabilityResult.canOfferDay,
+        availability_reason: availabilityResult.reason,
+        availability_date: availabilityResult.date?.toISOString() ?? null,
+        operational_zone_id: availabilityResult.operationalZoneId,
         raw: sendResult.success ? (sendResult.raw ?? null) : null,
         error: sendResult.success
           ? null
