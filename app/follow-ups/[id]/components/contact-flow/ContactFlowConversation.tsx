@@ -2,6 +2,11 @@
 
 import { useState, type KeyboardEvent, type RefObject } from "react";
 
+import {
+  buildInitialContactMessageTemplate,
+  buildReminderMessageTemplate,
+} from "@/lib/services/contact-flow/contactFlowMessageTemplatesService";
+
 import MessageContent from "./MessageContent";
 import { formatDateTime, getDeliveryLabel } from "./contactFlowFormatters";
 import type { ContactFlowMessage } from "./contactFlowTypes";
@@ -20,33 +25,9 @@ type ContactFlowConversationProps = {
   onSelectedFileChange: (file: File | null) => void;
   onInputMessageChange: (value: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  clientName?: string | null;
+  installationName?: string | null;
 };
-
-function buildInitialMaintenanceWhatsAppTemplate() {
-  return `Hola,
-
-Le contactamos porque tiene un mantenimiento próximo registrado.
-
-Por favor responda con una de las siguientes opciones:
-
-1. Confirmar mantenimiento
-2. Reprogramar
-3. Ya no me interesa
-4. Hablar con un asesor`;
-}
-
-function buildReminderMaintenanceWhatsAppTemplate() {
-  return `Hola,
-
-Le damos seguimiento al mantenimiento pendiente.
-
-Por favor responda con una de las siguientes opciones:
-
-1. Confirmar mantenimiento
-2. Reprogramar
-3. Ya no me interesa
-4. Hablar con un asesor`;
-}
 
 export default function ContactFlowConversation({
   messages,
@@ -62,8 +43,20 @@ export default function ContactFlowConversation({
   onSelectedFileChange,
   onInputMessageChange,
   onKeyDown,
+  clientName,
+  installationName,
 }: ContactFlowConversationProps) {
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  const initialMessage = buildInitialContactMessageTemplate({
+    clientName: clientName ?? undefined,
+    installationName: installationName ?? undefined,
+  });
+
+  const reminderMessage = buildReminderMessageTemplate({
+    clientName: clientName ?? undefined,
+    installationName: installationName ?? undefined,
+  });
 
   return (
     <>
@@ -149,9 +142,7 @@ export default function ContactFlowConversation({
           <div className="mb-3 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() =>
-                void onSendMessage(buildInitialMaintenanceWhatsAppTemplate())
-              }
+              onClick={() => void onSendMessage(initialMessage)}
               disabled={sending || sendingMedia}
               className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -160,9 +151,7 @@ export default function ContactFlowConversation({
 
             <button
               type="button"
-              onClick={() =>
-                void onSendMessage(buildReminderMaintenanceWhatsAppTemplate())
-              }
+              onClick={() => void onSendMessage(reminderMessage)}
               disabled={sending || sendingMedia}
               className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >

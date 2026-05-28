@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import {
+  buildInitialContactMessageTemplate,
+  buildReminderMessageTemplate,
+} from "@/lib/services/contact-flow/contactFlowMessageTemplatesService";
+
 import type {
   ContactFlowMessage,
   MessagesApiResponse,
@@ -21,44 +26,6 @@ type Props = {
   onClose: () => void;
   onMessageSent?: () => Promise<void> | void;
 };
-
-function buildInitialWhatsAppTemplate(
-  clientName?: string,
-  installationName?: string,
-) {
-  const safeClientName = clientName?.trim() || "cliente";
-  const safeInstallationName = installationName?.trim() || "su instalación";
-
-  return `Hola ${safeClientName},
-
-Le contactamos porque el mantenimiento de ${safeInstallationName} se aproxima.
-
-Por favor responda con una de las siguientes opciones:
-
-1. Confirmar mantenimiento
-2. Reprogramar
-3. Ya no me interesa
-4. Hablar con un asesor`;
-}
-
-function buildReminderWhatsAppTemplate(
-  clientName?: string,
-  installationName?: string,
-) {
-  const safeClientName = clientName?.trim() || "cliente";
-  const safeInstallationName = installationName?.trim() || "su instalación";
-
-  return `Hola ${safeClientName},
-
-Le damos seguimiento al mantenimiento pendiente de ${safeInstallationName}.
-
-Por favor responda con una de las siguientes opciones:
-
-1. Confirmar mantenimiento
-2. Reprogramar
-3. Ya no me interesa
-4. Hablar con un asesor`;
-}
 
 function getFriendlyWhatsAppError(result: SendMessageApiResponse) {
   if (result.error === "WhatsApp is disabled in the general settings.") {
@@ -173,6 +140,16 @@ export default function ContactFlowChat({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const initialMessage = buildInitialContactMessageTemplate({
+    clientName,
+    installationName,
+  });
+
+  const reminderMessage = buildReminderMessageTemplate({
+    clientName,
+    installationName,
+  });
 
   async function loadMessages(showLoader = true) {
     try {
@@ -437,11 +414,7 @@ export default function ContactFlowChat({
           <div className="mb-3 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() =>
-                void handleSendMessage(
-                  buildInitialWhatsAppTemplate(clientName, installationName),
-                )
-              }
+              onClick={() => void handleSendMessage(initialMessage)}
               disabled={sending || sendingMedia}
               className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -450,11 +423,7 @@ export default function ContactFlowChat({
 
             <button
               type="button"
-              onClick={() =>
-                void handleSendMessage(
-                  buildReminderWhatsAppTemplate(clientName, installationName),
-                )
-              }
+              onClick={() => void handleSendMessage(reminderMessage)}
               disabled={sending || sendingMedia}
               className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
