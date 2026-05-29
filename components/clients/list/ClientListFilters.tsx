@@ -28,21 +28,26 @@ export function ClientListFilters({
   onSortChange,
 }: ClientListFiltersProps) {
   return (
-    <div className="space-y-5">
-      <div>
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+      <div className="relative">
+        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+          🔎
+        </span>
+
         <input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Buscar cliente por nombre, teléfono, email o ubicación..."
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+          placeholder="Buscar por nombre, teléfono, email o ubicación..."
+          className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
         />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+      <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_1fr_240px] xl:items-end">
         <div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-slate-400">
             Estado
           </p>
+
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -51,6 +56,7 @@ export function ClientListFilters({
             >
               Todos
             </button>
+
             <button
               type="button"
               onClick={() => onStatusFilterChange("ACTIVE")}
@@ -58,6 +64,7 @@ export function ClientListFilters({
             >
               Activos
             </button>
+
             <button
               type="button"
               onClick={() => onStatusFilterChange("PROSPECT")}
@@ -65,6 +72,7 @@ export function ClientListFilters({
             >
               Prospectos
             </button>
+
             <button
               type="button"
               onClick={() => onStatusFilterChange("ON_HOLD")}
@@ -72,6 +80,7 @@ export function ClientListFilters({
             >
               En espera
             </button>
+
             <button
               type="button"
               onClick={() => onStatusFilterChange("INACTIVE")}
@@ -83,9 +92,10 @@ export function ClientListFilters({
         </div>
 
         <div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-slate-400">
             WhatsApp
           </p>
+
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -94,6 +104,7 @@ export function ClientListFilters({
             >
               Todos
             </button>
+
             <button
               type="button"
               onClick={() => onWhatsFilterChange("with")}
@@ -101,6 +112,7 @@ export function ClientListFilters({
             >
               Con WhatsApp
             </button>
+
             <button
               type="button"
               onClick={() => onWhatsFilterChange("without")}
@@ -111,24 +123,25 @@ export function ClientListFilters({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 lg:min-w-[220px]">
+        <div>
           <label
             htmlFor="sort"
-            className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500"
+            className="mb-3 block text-xs font-black uppercase tracking-[0.22em] text-slate-400"
           >
             Ordenar por
           </label>
+
           <select
             id="sort"
             value={sort}
             onChange={(e) => onSortChange(e.target.value as SortType)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           >
             <option value="name">Nombre</option>
             <option value="recent">Más recientes</option>
           </select>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
