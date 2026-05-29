@@ -1,5 +1,7 @@
-import FormSection from "@/components/clients/form/FormSection";
+"use client";
+
 import FormInput from "@/components/clients/form/FormInput";
+import ClientFormSectionHeader from "@/components/clients/form/ClientFormSectionHeader";
 import type { CountryPreset } from "@/lib/settings/countryPresets";
 
 type LocationOption = {
@@ -61,123 +63,128 @@ export default function ClientLocationSection({
     countryPreset.adminLevel3Label ?? "Nivel administrativo 3";
 
   return (
-    <FormSection title="Ubicación" isOpen={isOpen} onToggle={onToggle}>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <p className="text-sm font-semibold text-slate-800">País operativo</p>
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <ClientFormSectionHeader
+        icon="📍"
+        title="Ubicación"
+        description="Define la zona administrativa y dirección principal del cliente."
+        isOpen={isOpen}
+        onToggle={onToggle}
+      />
 
-          <p className="mt-1 text-sm font-medium text-slate-700">
-            {countryPreset.countryName}
-          </p>
+      {isOpen && (
+        <div className="p-5 md:p-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {isCostaRica ? (
+              <>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-700">
+                    {countryPreset.adminLevel1Label}
+                  </label>
 
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Este país viene de la Configuración del sistema y se aplica al
-            negocio completo. Desde aquí no se cambia por cliente.
-          </p>
-        </div>
+                  <select
+                    value={adminLevel1}
+                    onChange={(e) => handleProvinceChange(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">
+                      Seleccione {countryPreset.adminLevel1Label.toLowerCase()}
+                    </option>
 
-        {isCostaRica ? (
-          <>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
-                {countryPreset.adminLevel1Label}
-              </label>
-              <select
-                value={adminLevel1}
-                onChange={(e) => handleProvinceChange(e.target.value)}
-                className={selectClass}
-              >
-                <option value="">
-                  Seleccione {countryPreset.adminLevel1Label.toLowerCase()}
-                </option>
-                {provinciaOptions.map((provincia) => (
-                  <option key={provincia} value={provincia}>
-                    {provincia}
-                  </option>
-                ))}
-              </select>
-            </div>
+                    {provinciaOptions.map((provincia) => (
+                      <option key={provincia} value={provincia}>
+                        {provincia}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
-                {countryPreset.adminLevel2Label}
-              </label>
-              <select
-                value={adminLevel2}
-                onChange={(e) => handleCantonChange(e.target.value)}
-                disabled={!adminLevel1}
-                className={selectClass}
-              >
-                <option value="">
-                  Seleccione {countryPreset.adminLevel2Label.toLowerCase()}
-                </option>
-                {cantonOptions.map((canton) => (
-                  <option key={canton.nombre} value={canton.nombre}>
-                    {canton.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-700">
+                    {countryPreset.adminLevel2Label}
+                  </label>
 
-            <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
-                {adminLevel3Label}
-              </label>
-              <select
-                value={adminLevel3}
-                onChange={(e) => setAdminLevel3(e.target.value)}
-                disabled={!adminLevel1 || !adminLevel2}
-                className={selectClass}
-              >
-                <option value="">
-                  Seleccione {adminLevel3Label.toLowerCase()}
-                </option>
-                {distritoOptions.map((distrito) => (
-                  <option key={distrito.nombre} value={distrito.nombre}>
-                    {distrito.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
-        ) : (
-          <>
+                  <select
+                    value={adminLevel2}
+                    onChange={(e) => handleCantonChange(e.target.value)}
+                    disabled={!adminLevel1}
+                    className={selectClass}
+                  >
+                    <option value="">
+                      Seleccione {countryPreset.adminLevel2Label.toLowerCase()}
+                    </option>
+
+                    {cantonOptions.map((canton) => (
+                      <option key={canton.nombre} value={canton.nombre}>
+                        {canton.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm font-semibold text-slate-700">
+                    {adminLevel3Label}
+                  </label>
+
+                  <select
+                    value={adminLevel3}
+                    onChange={(e) => setAdminLevel3(e.target.value)}
+                    disabled={!adminLevel1 || !adminLevel2}
+                    className={selectClass}
+                  >
+                    <option value="">
+                      Seleccione {adminLevel3Label.toLowerCase()}
+                    </option>
+
+                    {distritoOptions.map((distrito) => (
+                      <option key={distrito.nombre} value={distrito.nombre}>
+                        {distrito.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <>
+                <FormInput
+                  label={countryPreset.adminLevel1Label}
+                  value={adminLevel1}
+                  onChange={setAdminLevel1}
+                  inputClass={inputClass}
+                  placeholder={countryPreset.adminLevel1Label}
+                />
+
+                <FormInput
+                  label={countryPreset.adminLevel2Label}
+                  value={adminLevel2}
+                  onChange={setAdminLevel2}
+                  inputClass={inputClass}
+                  placeholder={countryPreset.adminLevel2Label}
+                />
+
+                <FormInput
+                  label={adminLevel3Label}
+                  value={adminLevel3}
+                  onChange={setAdminLevel3}
+                  inputClass={inputClass}
+                  placeholder={adminLevel3Label}
+                  full
+                />
+              </>
+            )}
+
             <FormInput
-              label={countryPreset.adminLevel1Label}
-              value={adminLevel1}
-              onChange={setAdminLevel1}
+              label="Dirección"
+              value={addressLine}
+              onChange={setAddressLine}
               inputClass={inputClass}
-              placeholder={countryPreset.adminLevel1Label}
-            />
-
-            <FormInput
-              label={countryPreset.adminLevel2Label}
-              value={adminLevel2}
-              onChange={setAdminLevel2}
-              inputClass={inputClass}
-              placeholder={countryPreset.adminLevel2Label}
-            />
-
-            <FormInput
-              label={adminLevel3Label}
-              value={adminLevel3}
-              onChange={setAdminLevel3}
-              inputClass={inputClass}
-              placeholder={adminLevel3Label}
+              placeholder="Detalle adicional de la dirección"
               full
             />
-          </>
-        )}
-
-        <FormInput
-          label="Dirección"
-          value={addressLine}
-          onChange={setAddressLine}
-          inputClass={inputClass}
-          placeholder="Detalle adicional de la dirección"
-          full
-        />
-      </div>
-    </FormSection>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

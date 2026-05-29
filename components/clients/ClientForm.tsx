@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { provincias } from "@/lib/data/costa-rica-locations";
 import {
-  CLIENT_STATUS_OPTIONS,
   normalizeClientStatus,
   type ClientStatus,
 } from "@/lib/clients/clientStatus";
@@ -29,6 +28,11 @@ import ClientContactSection from "@/components/clients/form/ClientContactSection
 import ClientLocationSection from "@/components/clients/form/ClientLocationSection";
 import ClientFinanceSection from "@/components/clients/form/ClientFinanceSection";
 import ClientBillingSection from "@/components/clients/form/ClientBillingSection";
+import ClientFormPageHeader from "@/components/clients/form/ClientFormPageHeader";
+import ClientFormSummaryPanel, {
+  type CompletionItem,
+} from "@/components/clients/form/ClientFormSummaryPanel";
+import ClientFormStickyActions from "@/components/clients/form/ClientFormStickyActions";
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
 type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
@@ -138,6 +142,25 @@ const GLOBAL_IDENTIFICATION_OPTIONS = [
 
 function getCountryByCode(countryCode?: string | null): CountryPreset {
   return getCountryPreset(countryCode) ?? fallbackCountryPreset;
+}
+
+function getClientTypeLabel(clientType: ClientType) {
+  if (clientType === "COMPANY") return "Empresa";
+  if (clientType === "OTHER") return "Otro";
+  return "Persona física";
+}
+
+function getComplianceProfileLabel(profile: ClientComplianceProfile) {
+  return profile === "COSTA_RICA" ? "Costa Rica" : "Global";
+}
+
+function getPaymentTermLabel(paymentTerm: "CASH" | "CREDIT") {
+  return paymentTerm === "CREDIT" ? "Crédito" : "Contado";
+}
+
+function getCountryDisplayName(countryCode: string) {
+  if (countryCode === "CR") return "Costa Rica";
+  return countryCode || "Sin país definido";
 }
 
 export default function ClientForm({
@@ -630,172 +653,203 @@ export default function ClientForm({
   }
 
   const inputClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200";
+    "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50";
 
   const selectClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:bg-slate-100 disabled:text-slate-400";
+    "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100 disabled:text-slate-400";
+
+  const previewName = resolveDisplayName().trim() || "Cliente en borrador";
+
+  const personalComplete =
+    clientType === "PERSON"
+      ? Boolean(firstName.trim() && lastName1.trim() && taxId.trim())
+      : clientType === "COMPANY"
+        ? Boolean((companyName.trim() || legalName.trim()) && taxId.trim())
+        : Boolean((displayName.trim() || legalName.trim()) && taxId.trim());
+
+  const contactComplete = Boolean(phonePrimary.trim());
+
+  const locationComplete = Boolean(countryCode);
+
+  const financeComplete = Boolean(paymentTerm && preferredCurrency);
+
+  const billingComplete =
+    billingSameAsClient ||
+    Boolean(
+      billingName.trim() ||
+      billingEmail.trim() ||
+      billingPhone.trim() ||
+      billingAddress.trim(),
+    );
+
+  const completionItems: CompletionItem[] = [
+    { label: "Información del cliente", completed: personalComplete },
+    { label: "Información de contacto", completed: contactComplete },
+    { label: "Ubicación", completed: locationComplete },
+    { label: "Configuración financiera", completed: financeComplete },
+    { label: "Datos de facturación", completed: billingComplete },
+  ];
+
+  const totalSections = completionItems.length;
+
+  const completedSections = completionItems.filter(
+    (item) => item.completed,
+  ).length;
+
+  const progressPercent = Math.round((completedSections / totalSections) * 100);
 
   return (
-    <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <div className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              {mode === "create" ? "Nuevo cliente" : "Editar cliente"}
-            </div>
+    <main className="min-h-screen bg-slate-50 p-6 text-slate-900 md:p-8">
+      <form
+        onSubmit={handleSubmit}
+        className="mx-auto flex w-full max-w-[1500px] flex-col gap-6"
+      >
+        <ClientFormPageHeader mode={mode} saving={saving} onBack={handleBack} />
 
-            <h1 className="text-3xl font-bold text-slate-900">
-              {mode === "create" ? "Crear cliente" : "Editar cliente"}
-            </h1>
+        <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+          <div className="space-y-4">
+            <ClientBasicInfoSection
+              isOpen={openSections.personal}
+              onToggle={() => toggleSection("personal")}
+              clientType={clientType}
+              complianceProfile={complianceProfile}
+              identificationType={identificationType}
+              taxId={taxId}
+              firstName={firstName}
+              lastName1={lastName1}
+              lastName2={lastName2}
+              displayName={displayName}
+              legalName={legalName}
+              companyName={companyName}
+              commercialName={commercialName}
+              mainContactName={mainContactName}
+              identificationOptions={identificationOptions}
+              inputClass={inputClass}
+              selectClass={selectClass}
+              handleClientTypeChange={handleClientTypeChange}
+              handleComplianceProfileChange={handleComplianceProfileChange}
+              setFirstName={setFirstName}
+              setLastName1={setLastName1}
+              setLastName2={setLastName2}
+              setDisplayName={setDisplayName}
+              setLegalName={setLegalName}
+              setCompanyName={setCompanyName}
+              setCommercialName={setCommercialName}
+              setMainContactName={setMainContactName}
+              setIdentificationType={setIdentificationType}
+              setTaxId={setTaxId}
+              getIdentificationHelpText={getIdentificationHelpText}
+            />
 
-            <p className="text-sm text-slate-600">
-              {mode === "create"
-                ? "Registrar un nuevo cliente en el sistema"
-                : "Actualizar información del cliente"}
-            </p>
+            <ClientContactSection
+              mode={mode}
+              phonePrimary={phonePrimary}
+              phoneSecondary={phoneSecondary}
+              email={email}
+              clientStatus={clientStatus}
+              whatsappOptIn={whatsappOptIn}
+              phoneExample={selectedCountryPreset.phoneExample}
+              inputClass={inputClass}
+              selectClass={selectClass}
+              isOpen={openSections.contact}
+              onToggle={() => toggleSection("contact")}
+              setPhonePrimary={setPhonePrimary}
+              setPhoneSecondary={setPhoneSecondary}
+              setEmail={setEmail}
+              setClientStatus={setClientStatus}
+              setWhatsappOptIn={setWhatsappOptIn}
+            />
+
+            <ClientLocationSection
+              isOpen={openSections.location}
+              onToggle={() => toggleSection("location")}
+              countryCode={countryCode}
+              countryPreset={selectedCountryPreset}
+              countryOptions={COUNTRY_PRESET_OPTIONS}
+              adminLevel1={adminLevel1}
+              adminLevel2={adminLevel2}
+              adminLevel3={adminLevel3}
+              addressLine={addressLine}
+              provinciaOptions={provinciaOptions}
+              cantonOptions={cantonOptions}
+              distritoOptions={distritoOptions}
+              handleCountryChange={handleCountryChange}
+              handleProvinceChange={handleProvinceChange}
+              handleCantonChange={handleCantonChange}
+              setAdminLevel1={setAdminLevel1}
+              setAdminLevel2={setAdminLevel2}
+              setAdminLevel3={setAdminLevel3}
+              setAddressLine={setAddressLine}
+              selectClass={selectClass}
+              inputClass={inputClass}
+            />
+
+            <ClientFinanceSection
+              isOpen={openSections.finance}
+              onToggle={() => toggleSection("finance")}
+              paymentTerm={paymentTerm}
+              creditDays={creditDays}
+              creditLimit={creditLimit}
+              discountRate={discountRate}
+              preferredCurrency={preferredCurrency}
+              taxExempt={taxExempt}
+              countryPreset={selectedCountryPreset}
+              currencyOptions={currencyOptions}
+              setPaymentTerm={setPaymentTerm}
+              setCreditDays={setCreditDays}
+              setCreditLimit={setCreditLimit}
+              setDiscountRate={setDiscountRate}
+              setPreferredCurrency={setPreferredCurrency}
+              setTaxExempt={setTaxExempt}
+              selectClass={selectClass}
+              inputClass={inputClass}
+            />
+
+            <ClientBillingSection
+              isOpen={openSections.billing}
+              onToggle={() => toggleSection("billing")}
+              billingSameAsClient={billingSameAsClient}
+              billingName={billingName}
+              billingEmail={billingEmail}
+              billingPhone={billingPhone}
+              billingAddress={billingAddress}
+              setBillingSameAsClient={setBillingSameAsClient}
+              setBillingName={setBillingName}
+              setBillingEmail={setBillingEmail}
+              setBillingPhone={setBillingPhone}
+              setBillingAddress={setBillingAddress}
+              inputClass={inputClass}
+            />
+
+            {message && <AlertMessage type="success" text={message} />}
+            {error && <AlertMessage type="error" text={error} />}
           </div>
 
-          <button
-            type="button"
-            onClick={handleBack}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Volver
-          </button>
-        </section>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <ClientBasicInfoSection
-            isOpen={openSections.personal}
-            onToggle={() => toggleSection("personal")}
-            clientType={clientType}
-            complianceProfile={complianceProfile}
-            identificationType={identificationType}
-            taxId={taxId}
-            firstName={firstName}
-            lastName1={lastName1}
-            lastName2={lastName2}
-            displayName={displayName}
-            legalName={legalName}
-            companyName={companyName}
-            commercialName={commercialName}
-            mainContactName={mainContactName}
-            identificationOptions={identificationOptions}
-            inputClass={inputClass}
-            selectClass={selectClass}
-            handleClientTypeChange={handleClientTypeChange}
-            handleComplianceProfileChange={handleComplianceProfileChange}
-            setFirstName={setFirstName}
-            setLastName1={setLastName1}
-            setLastName2={setLastName2}
-            setDisplayName={setDisplayName}
-            setLegalName={setLegalName}
-            setCompanyName={setCompanyName}
-            setCommercialName={setCommercialName}
-            setMainContactName={setMainContactName}
-            setIdentificationType={setIdentificationType}
-            setTaxId={setTaxId}
-            getIdentificationHelpText={getIdentificationHelpText}
-          />
-
-          <ClientContactSection
+          <ClientFormSummaryPanel
             mode={mode}
-            phonePrimary={phonePrimary}
-            phoneSecondary={phoneSecondary}
-            email={email}
-            clientStatus={clientStatus}
+            previewName={previewName}
+            clientTypeLabel={getClientTypeLabel(clientType)}
+            countryLabel={getCountryDisplayName(countryCode)}
+            complianceLabel={getComplianceProfileLabel(complianceProfile)}
             whatsappOptIn={whatsappOptIn}
-            phoneExample={selectedCountryPreset.phoneExample}
-            inputClass={inputClass}
-            selectClass={selectClass}
-            isOpen={openSections.contact}
-            onToggle={() => toggleSection("contact")}
-            setPhonePrimary={setPhonePrimary}
-            setPhoneSecondary={setPhoneSecondary}
-            setEmail={setEmail}
-            setClientStatus={setClientStatus}
-            setWhatsappOptIn={setWhatsappOptIn}
-          />
-
-          <ClientLocationSection
-            isOpen={openSections.location}
-            onToggle={() => toggleSection("location")}
-            countryCode={countryCode}
-            countryPreset={selectedCountryPreset}
-            countryOptions={COUNTRY_PRESET_OPTIONS}
-            adminLevel1={adminLevel1}
-            adminLevel2={adminLevel2}
-            adminLevel3={adminLevel3}
-            addressLine={addressLine}
-            provinciaOptions={provinciaOptions}
-            cantonOptions={cantonOptions}
-            distritoOptions={distritoOptions}
-            handleCountryChange={handleCountryChange}
-            handleProvinceChange={handleProvinceChange}
-            handleCantonChange={handleCantonChange}
-            setAdminLevel1={setAdminLevel1}
-            setAdminLevel2={setAdminLevel2}
-            setAdminLevel3={setAdminLevel3}
-            setAddressLine={setAddressLine}
-            selectClass={selectClass}
-            inputClass={inputClass}
-          />
-
-          <ClientFinanceSection
-            isOpen={openSections.finance}
-            onToggle={() => toggleSection("finance")}
-            paymentTerm={paymentTerm}
-            creditDays={creditDays}
-            creditLimit={creditLimit}
-            discountRate={discountRate}
-            preferredCurrency={preferredCurrency}
-            taxExempt={taxExempt}
-            countryPreset={selectedCountryPreset}
-            currencyOptions={currencyOptions}
-            setPaymentTerm={setPaymentTerm}
-            setCreditDays={setCreditDays}
-            setCreditLimit={setCreditLimit}
-            setDiscountRate={setDiscountRate}
-            setPreferredCurrency={setPreferredCurrency}
-            setTaxExempt={setTaxExempt}
-            selectClass={selectClass}
-            inputClass={inputClass}
-          />
-
-          <ClientBillingSection
-            isOpen={openSections.billing}
-            onToggle={() => toggleSection("billing")}
             billingSameAsClient={billingSameAsClient}
-            billingName={billingName}
-            billingEmail={billingEmail}
-            billingPhone={billingPhone}
-            billingAddress={billingAddress}
-            setBillingSameAsClient={setBillingSameAsClient}
-            setBillingName={setBillingName}
-            setBillingEmail={setBillingEmail}
-            setBillingPhone={setBillingPhone}
-            setBillingAddress={setBillingAddress}
-            inputClass={inputClass}
+            paymentTermLabel={getPaymentTermLabel(paymentTerm)}
+            preferredCurrency={preferredCurrency}
+            completedSections={completedSections}
+            totalSections={totalSections}
+            progressPercent={progressPercent}
+            completionItems={completionItems}
           />
+        </div>
 
-          {message && <AlertMessage type="success" text={message} />}
-          {error && <AlertMessage type="error" text={error} />}
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {saving
-                ? "Guardando..."
-                : mode === "create"
-                  ? "Guardar cliente"
-                  : "Guardar cambios"}
-            </button>
-          </div>
-        </form>
-      </div>
+        <ClientFormStickyActions
+          mode={mode}
+          saving={saving}
+          completedSections={completedSections}
+          totalSections={totalSections}
+          onBack={handleBack}
+        />
+      </form>
     </main>
   );
 }
