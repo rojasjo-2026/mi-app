@@ -215,8 +215,15 @@ export default function ClientDetailPage() {
       <div className="mx-auto max-w-7xl space-y-6">
         <ClientDetailHeader
           client={client}
+          installationsCount={installations.length}
           onEdit={() => router.push(`/clients/${client.client_id}/edit`)}
           onBack={() => router.push("/clients")}
+          onCreateInstallation={() =>
+            router.push(`/installations/new?client_id=${client.client_id}`)
+          }
+          onScheduleMaintenance={() =>
+            router.push(`/follow-ups/new?client_id=${client.client_id}`)
+          }
         />
 
         <ClientDetailSummaryCards
