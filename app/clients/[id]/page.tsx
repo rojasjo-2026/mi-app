@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { History } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import type {
   DetailSectionKey,
@@ -138,13 +139,13 @@ export default function ClientDetailPage() {
     commercial: true,
     financeHistory: true,
     main: true,
-    identification: true,
+    identification: false,
     business: false,
     location: true,
     finance: false,
     billing: false,
     installations: true,
-    history: false,
+    history: true,
   });
 
   function toggleDetailSection(section: DetailSectionKey) {
@@ -185,7 +186,7 @@ export default function ClientDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto w-full max-w-[1500px]">
           <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
             <p className="text-sm font-medium text-slate-600">
               Cargando cliente...
@@ -199,7 +200,7 @@ export default function ClientDetailPage() {
   if (error || !client) {
     return (
       <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto w-full max-w-[1500px]">
           <section className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
             <p className="text-sm font-medium text-red-600">
               {error || "Cliente no encontrado"}
@@ -212,7 +213,7 @@ export default function ClientDetailPage() {
 
   return (
     <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto w-full max-w-[1500px] space-y-6">
         <ClientDetailHeader
           client={client}
           installationsCount={installations.length}
@@ -264,6 +265,7 @@ export default function ClientDetailPage() {
 
         <ClientInstallationsSection
           filteredInstallations={filteredInstallations}
+          totalInstallationsCount={installations.length}
           installationSearch={installationSearch}
           installationFilter={installationFilter}
           isOpen={openSections.installations}
@@ -273,10 +275,15 @@ export default function ClientDetailPage() {
           onInstallationClick={(installationId) =>
             router.push(`/installations/${installationId}`)
           }
+          onCreateInstallation={() =>
+            router.push(`/installations/new?client_id=${client.client_id}`)
+          }
         />
 
         <CollapsibleCard
           title="Historial del cliente"
+          description="Actividad y eventos relacionados con este cliente."
+          icon={<History className="h-5 w-5" />}
           rightContent={
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <label className="sr-only" htmlFor="history-installation-filter">
@@ -290,7 +297,7 @@ export default function ClientDetailPage() {
                   setSelectedHistoryInstallationId(event.target.value)
                 }
                 disabled={activityLogsLoading || installations.length === 0}
-                className="min-w-[260px] rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-w-[260px] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 outline-none transition hover:bg-slate-50 focus:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="all">Historial completo del cliente</option>
 
@@ -308,7 +315,7 @@ export default function ClientDetailPage() {
                 type="button"
                 onClick={() => void reloadActivityLogs()}
                 disabled={activityLogsLoading}
-                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Refrescar
               </button>

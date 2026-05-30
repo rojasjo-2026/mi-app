@@ -6,19 +6,55 @@ import {
 import { normalizeClientStatusFilter } from "@/lib/clients/clientStatus";
 import { getFriendlyPrismaDuplicateError } from "@/lib/utils/prismaError.utils";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 100;
+
+function getNumberParam(value: string | null, fallback: number) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return Math.floor(parsed);
+}
+
+function getPageSize(value: string | null) {
+  return Math.min(getNumberParam(value, DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
     const search = searchParams.get("search")?.trim() || undefined;
     const status = normalizeClientStatusFilter(searchParams.get("status"));
+    const whatsapp = searchParams.get("whatsapp") || "all";
 
-    const clients = await getClientsService({ search, status });
+    const page = getNumberParam(searchParams.get("page"), DEFAULT_PAGE);
+    const pageSize = getPageSize(searchParams.get("pageSize"));
+
+    const sortKey = searchParams.get("sortKey") || "client";
+    const sortDirection =
+      searchParams.get("sortDirection") === "desc" ? "desc" : "asc";
+
+    const result = await getClientsService({
+      search,
+      status,
+      whatsapp,
+      page,
+      pageSize,
+      sortKey,
+      sortDirection,
+    });
 
     return NextResponse.json(
       {
         success: true,
-        data: clients,
+        data: result.data,
+        pagination: result.pagination,
+        metrics: result.metrics,
       },
       { status: 200 },
     );

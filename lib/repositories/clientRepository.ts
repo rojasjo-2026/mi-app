@@ -8,10 +8,91 @@ import {
 
 type ClientStatusInput = ClientStatus | string | null | undefined;
 
+export type FindClientsSortKey =
+  | "client"
+  | "contact"
+  | "location"
+  | "operation"
+  | "activity"
+  | "status";
+
+export type FindClientsSortDirection = "asc" | "desc";
+
+export type FindClientsWhatsAppFilter = "all" | "with" | "without";
+
 type FindClientsParams = {
   search?: string;
   status?: ClientStatusInput;
+  whatsapp?: FindClientsWhatsAppFilter | string | null;
+  page?: number;
+  pageSize?: number;
+  sortKey?: FindClientsSortKey | string | null;
+  sortDirection?: FindClientsSortDirection | string | null;
 };
+
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 100;
+
+function getSafePage(value?: number) {
+  if (!Number.isFinite(value) || !value || value <= 0) {
+    return DEFAULT_PAGE;
+  }
+
+  return Math.floor(value);
+}
+
+function getSafePageSize(value?: number) {
+  if (!Number.isFinite(value) || !value || value <= 0) {
+    return DEFAULT_PAGE_SIZE;
+  }
+
+  return Math.min(Math.floor(value), MAX_PAGE_SIZE);
+}
+
+function getSortDirection(
+  value?: FindClientsSortDirection | string | null,
+): FindClientsSortDirection {
+  return value === "desc" ? "desc" : "asc";
+}
+
+function getClientOrderBy(
+  sortKey?: FindClientsSortKey | string | null,
+  sortDirection?: FindClientsSortDirection | string | null,
+): Prisma.ClientOrderByWithRelationInput[] {
+  const direction = getSortDirection(sortDirection);
+
+  switch (sortKey) {
+    case "client":
+      return [
+        { display_name: direction },
+        { first_name: direction },
+        { last_name_1: direction },
+      ];
+
+    case "contact":
+      return [{ phone_primary: direction }, { email: direction }];
+
+    case "location":
+      return [
+        { admin_level_1: direction },
+        { admin_level_2: direction },
+        { admin_level_3: direction },
+      ];
+
+    case "status":
+      return [{ client_status: direction }, { display_name: "asc" }];
+
+    case "activity":
+      return [{ updated_at: direction }, { created_at: direction }];
+
+    case "operation":
+      return [{ updated_at: direction }, { created_at: direction }];
+
+    default:
+      return [{ created_at: "desc" }];
+  }
+}
 
 type ClientType = "PERSON" | "COMPANY" | "OTHER";
 
@@ -143,45 +224,115 @@ function shouldReturnAllStatuses(status: ClientStatusInput) {
   return normalizeClientStatusFilter(status) === "all";
 }
 
-export async function findClients({ search, status }: FindClientsParams) {
+export async function findClients({
+  search,
+  status,
+  whatsapp = "all",
+  page,
+  pageSize,
+  sortKey = "client",
+  sortDirection = "asc",
+}: FindClientsParams) {
   const normalizedStatus = normalizeClientStatus(status);
+  const safePage = getSafePage(page);
+  const safePageSize = getSafePageSize(pageSize);
+  const skip = (safePage - 1) * safePageSize;
 
-  return prisma.client.findMany({
-    where: {
-      ...(shouldReturnAllStatuses(status)
-        ? {}
-        : {
-            client_status: normalizedStatus ?? PrismaClientStatus.ACTIVE,
-          }),
+  const where: Prisma.ClientWhereInput = {
+    ...(shouldReturnAllStatuses(status)
+      ? {}
+      : {
+          client_status: normalizedStatus ?? PrismaClientStatus.ACTIVE,
+        }),
 
-      ...(search
-        ? {
-            OR: [
-              { display_name: { contains: search, mode: "insensitive" } },
-              { legal_name: { contains: search, mode: "insensitive" } },
-              { company_name: { contains: search, mode: "insensitive" } },
-              { commercial_name: { contains: search, mode: "insensitive" } },
-              { main_contact_name: { contains: search, mode: "insensitive" } },
-
-              { first_name: { contains: search, mode: "insensitive" } },
-              { last_name_1: { contains: search, mode: "insensitive" } },
-              { last_name_2: { contains: search, mode: "insensitive" } },
-
-              { phone_primary: { contains: search } },
-              { phone_secondary: { contains: search } },
-
-              { billing_name: { contains: search, mode: "insensitive" } },
-              { billing_email: { contains: search, mode: "insensitive" } },
-              { billing_phone: { contains: search } },
-
-              { tax_id: { contains: search } },
-              { identification_number: { contains: search } },
-            ],
-          }
+    ...(whatsapp === "with"
+      ? { whatsapp_opt_in: true }
+      : whatsapp === "without"
+        ? { whatsapp_opt_in: false }
         : {}),
+
+    ...(search
+      ? {
+          OR: [
+            { display_name: { contains: search, mode: "insensitive" } },
+            { legal_name: { contains: search, mode: "insensitive" } },
+            { company_name: { contains: search, mode: "insensitive" } },
+            { commercial_name: { contains: search, mode: "insensitive" } },
+            { main_contact_name: { contains: search, mode: "insensitive" } },
+
+            { first_name: { contains: search, mode: "insensitive" } },
+            { last_name_1: { contains: search, mode: "insensitive" } },
+            { last_name_2: { contains: search, mode: "insensitive" } },
+
+            { phone_primary: { contains: search } },
+            { phone_secondary: { contains: search } },
+            { email: { contains: search, mode: "insensitive" } },
+
+            { admin_level_1: { contains: search, mode: "insensitive" } },
+            { admin_level_2: { contains: search, mode: "insensitive" } },
+            { admin_level_3: { contains: search, mode: "insensitive" } },
+            { address_line: { contains: search, mode: "insensitive" } },
+            { zone: { contains: search, mode: "insensitive" } },
+
+            { billing_name: { contains: search, mode: "insensitive" } },
+            { billing_email: { contains: search, mode: "insensitive" } },
+            { billing_phone: { contains: search } },
+
+            { tax_id: { contains: search } },
+            { identification_number: { contains: search } },
+          ],
+        }
+      : {}),
+  };
+
+  const [totalItems, activeCount, withWhatsAppCount, attentionCount, clients] =
+    await prisma.$transaction([
+      prisma.client.count({ where }),
+      prisma.client.count({
+        where: {
+          AND: [where, { client_status: PrismaClientStatus.ACTIVE }],
+        },
+      }),
+      prisma.client.count({
+        where: {
+          AND: [where, { whatsapp_opt_in: true }],
+        },
+      }),
+      prisma.client.count({
+        where: {
+          AND: [
+            where,
+            {
+              client_status: {
+                in: [PrismaClientStatus.ON_HOLD, PrismaClientStatus.INACTIVE],
+              },
+            },
+          ],
+        },
+      }),
+      prisma.client.findMany({
+        where,
+        skip,
+        take: safePageSize,
+        orderBy: getClientOrderBy(sortKey, sortDirection),
+      }),
+    ]);
+
+  return {
+    data: clients,
+    pagination: {
+      page: safePage,
+      pageSize: safePageSize,
+      totalItems,
+      totalPages: Math.max(1, Math.ceil(totalItems / safePageSize)),
     },
-    orderBy: { created_at: "desc" },
-  });
+    metrics: {
+      total: totalItems,
+      active: activeCount,
+      withWhatsApp: withWhatsAppCount,
+      attention: attentionCount,
+    },
+  };
 }
 
 export async function findClientById(id: string) {

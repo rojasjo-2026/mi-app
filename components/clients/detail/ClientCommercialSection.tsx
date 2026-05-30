@@ -1,5 +1,6 @@
 "use client";
 
+import { BriefcaseBusiness } from "lucide-react";
 import type { CommercialSummary } from "@/lib/clients/clientDetail.types";
 import {
   formatCurrency,
@@ -8,8 +9,6 @@ import {
   getBillingStatusLabel,
 } from "@/lib/clients/clientDetail.utils";
 import { CollapsibleCard } from "@/components/clients/detail/CollapsibleCard";
-import { CommercialSummaryCard } from "@/components/clients/detail/CommercialSummaryCard";
-import { MiniInfoCard } from "@/components/clients/detail/MiniInfoCard";
 
 type ClientCommercialSectionProps = {
   commercialSummary: CommercialSummary;
@@ -18,6 +17,26 @@ type ClientCommercialSectionProps = {
   currency?: string | null;
   locale?: string;
 };
+
+type CommercialMetricProps = {
+  label: string;
+  value: string;
+  helper: string;
+};
+
+function CommercialMetric({ label, value, helper }: CommercialMetricProps) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-2 text-xl font-black text-slate-950">{value}</p>
+
+      <p className="mt-1 text-xs font-medium text-slate-500">{helper}</p>
+    </div>
+  );
+}
 
 export function ClientCommercialSection({
   commercialSummary,
@@ -29,76 +48,62 @@ export function ClientCommercialSection({
   const formatMoney = (value?: number | string | null) =>
     formatCurrency(value, currency, locale);
 
+  const hasRecentItems = commercialSummary.recentItems.length > 0;
+
   return (
     <CollapsibleCard
       title="Resumen comercial operativo"
+      description="Valor comercial de instalaciones y mantenimientos registrados."
+      icon={<BriefcaseBusiness className="h-5 w-5" />}
       rightContent={
-        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+        <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">
           {commercialSummary.items.length} trabajo
-          {commercialSummary.items.length === 1 ? "" : "s"} operativo
           {commercialSummary.items.length === 1 ? "" : "s"}
         </div>
       }
       isOpen={isOpen}
       onToggle={onToggle}
     >
-      <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-3">
-        <p className="text-sm font-medium text-blue-900">
-          Esta sección resume el valor comercial de los trabajos registrados,
-          como instalaciones y mantenimientos. Las facturas y pagos reales se
-          muestran en la sección de Facturas y pagos.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
-        <CommercialSummaryCard
-          label="Valor de trabajos"
-          value={formatMoney(commercialSummary.totalEstimated)}
-          helper="Estimado desde trabajos"
-        />
-
-        <CommercialSummaryCard
-          label="Por facturar"
-          value={formatMoney(commercialSummary.pendingAmount)}
-          helper="Trabajos pendientes"
-        />
-
-        <CommercialSummaryCard
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <CommercialMetric
           label="Trabajos facturados"
           value={formatMoney(commercialSummary.invoicedAmount)}
           helper="Marcados como facturados"
         />
 
-        <CommercialSummaryCard
+        <CommercialMetric
           label="Trabajos pagados"
           value={formatMoney(commercialSummary.paidAmount)}
           helper="Marcados como pagados"
         />
 
-        <CommercialSummaryCard
+        <CommercialMetric
           label="Costo operativo"
           value={formatMoney(commercialSummary.totalCost)}
           helper="Costos registrados"
         />
 
-        <CommercialSummaryCard
+        <CommercialMetric
           label="Utilidad estimada"
           value={formatMoney(commercialSummary.profitAmount)}
-          helper="Valor menos costo"
+          helper="Valor neto estimado"
         />
       </div>
 
       <div className="mt-5">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">
-            Trabajos operativos recientes
-          </h3>
-        </div>
+        <h3 className="mb-3 text-sm font-black uppercase tracking-[0.16em] text-slate-400">
+          Trabajos operativos recientes
+        </h3>
 
-        {commercialSummary.recentItems.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-6 text-center">
-            <p className="text-sm font-medium text-slate-500">
-              Aún no hay montos comerciales registrados para este cliente.
+        {!hasRecentItems ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-5 py-6 text-center">
+            <p className="text-sm font-semibold text-slate-600">
+              Sin trabajos comerciales registrados.
+            </p>
+
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              Cuando existan instalaciones o mantenimientos con montos,
+              aparecerán aquí.
             </p>
           </div>
         ) : (
@@ -106,19 +111,19 @@ export function ClientCommercialSection({
             {commercialSummary.recentItems.map((item) => (
               <div
                 key={`${item.type}-${item.id}`}
-                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3"
               >
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
                         {item.type === "INSTALLATION"
                           ? "Instalación"
                           : "Mantenimiento"}
                       </span>
 
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getBillingStatusClass(
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${getBillingStatusClass(
                           item.billingStatus,
                         )}`}
                       >
@@ -126,25 +131,35 @@ export function ClientCommercialSection({
                       </span>
                     </div>
 
-                    <p className="truncate text-sm font-bold text-slate-900">
-                      {item.description}
+                    <p className="truncate text-sm font-black text-slate-900">
+                      {item.description || "Trabajo operativo"}
                     </p>
 
-                    <p className="mt-1 text-xs text-slate-500">
-                      Fecha: {formatDateLabel(item.date, locale)}
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      {formatDateLabel(item.date, locale)}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 sm:min-w-[260px]">
-                    <MiniInfoCard
-                      label="Monto estimado"
-                      value={formatMoney(item.estimatedAmount)}
-                    />
+                    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
+                        Monto
+                      </p>
 
-                    <MiniInfoCard
-                      label="Costo"
-                      value={formatMoney(item.costAmount)}
-                    />
+                      <p className="mt-1 text-sm font-bold text-slate-900">
+                        {formatMoney(item.estimatedAmount)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
+                        Costo
+                      </p>
+
+                      <p className="mt-1 text-sm font-bold text-slate-900">
+                        {formatMoney(item.costAmount)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

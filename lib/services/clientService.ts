@@ -9,6 +9,9 @@ import {
   createClient,
   updateClient,
   type CreateClientData,
+  type FindClientsSortDirection,
+  type FindClientsSortKey,
+  type FindClientsWhatsAppFilter,
   type UpdateClientData,
 } from "@/lib/repositories/clientRepository";
 import { validateCreateClient } from "@/lib/validators/clientValidator";
@@ -93,11 +96,29 @@ type UpdateClientInput = CreateClientInput;
 export async function getClientsService({
   search,
   status,
+  whatsapp = "all",
+  page = 1,
+  pageSize = 25,
+  sortKey = "client",
+  sortDirection = "asc",
 }: {
   search?: string;
   status?: ClientStatusInput;
+  whatsapp?: FindClientsWhatsAppFilter | string | null;
+  page?: number;
+  pageSize?: number;
+  sortKey?: FindClientsSortKey | string | null;
+  sortDirection?: FindClientsSortDirection | string | null;
 }) {
-  return findClients({ search, status });
+  return findClients({
+    search,
+    status,
+    whatsapp,
+    page,
+    pageSize,
+    sortKey,
+    sortDirection,
+  });
 }
 
 export async function getClientByIdService(id: string) {
