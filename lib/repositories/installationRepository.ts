@@ -95,6 +95,18 @@ export type CreateInstallationData = {
   billing_block_reason: string | null;
 };
 
+export type InstallationSortKey =
+  | "installation"
+  | "client"
+  | "service"
+  | "date"
+  | "technician"
+  | "location"
+  | "amount"
+  | "status";
+
+export type SortDirection = "asc" | "desc";
+
 export type FindInstallationsParams = {
   search?: string;
   client_id?: string;
@@ -104,6 +116,10 @@ export type FindInstallationsParams = {
   admin_level_1?: string;
   admin_level_2?: string;
   admin_level_3?: string;
+  page?: number;
+  pageSize?: number;
+  sortKey?: InstallationSortKey;
+  sortDirection?: SortDirection;
 };
 
 function isInstallationStatus(
@@ -118,32 +134,55 @@ function isInstallationStatus(
   );
 }
 
-export async function findInstallationById(id: string) {
-  return prisma.installation.findUnique({
-    where: { installation_id: id },
-    include: installationDetailInclude,
-  });
+function normalizePaginationValue(value: number | undefined, fallback: number) {
+  if (!value || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.floor(value));
 }
 
-export async function updateInstallation(
-  id: string,
-  data: UpdateInstallationData,
-) {
-  return prisma.installation.update({
-    where: { installation_id: id },
-    data,
-    include: installationBaseInclude,
-  });
+function getInstallationOrderBy(
+  sortKey: InstallationSortKey | undefined,
+  sortDirection: SortDirection | undefined,
+): Prisma.InstallationOrderByWithRelationInput {
+  const direction = sortDirection === "asc" ? "asc" : "desc";
+
+  if (sortKey === "installation") {
+    return { description: direction };
+  }
+
+  if (sortKey === "client") {
+    return { client: { first_name: direction } };
+  }
+
+  if (sortKey === "service") {
+    return { service_type: { name: direction } };
+  }
+
+  if (sortKey === "technician") {
+    return { technician_name: direction };
+  }
+
+  if (sortKey === "location") {
+    return { city: direction };
+  }
+
+  if (sortKey === "amount") {
+    return { estimated_amount: direction };
+  }
+
+  if (sortKey === "status") {
+    return { installation_status: direction };
+  }
+
+  return { installation_date: direction };
 }
 
-export async function createInstallation(data: CreateInstallationData) {
-  return prisma.installation.create({
-    data,
-    include: installationBaseInclude,
-  });
-}
-
-export async function findInstallations(params: FindInstallationsParams) {
+function buildInstallationWhere(
+  params: FindInstallationsParams,
+  options?: { includeStatus?: boolean },
+): Prisma.InstallationWhereInput {
   const {
     search,
     client_id,
@@ -155,11 +194,15 @@ export async function findInstallations(params: FindInstallationsParams) {
     admin_level_3,
   } = params;
 
+  const includeStatus = options?.includeStatus ?? true;
+
   const where: Prisma.InstallationWhereInput = {
     is_active: true,
 
     ...(client_id ? { client_id } : {}),
-    ...(isInstallationStatus(status) ? { installation_status: status } : {}),
+    ...(includeStatus && isInstallationStatus(status)
+      ? { installation_status: status }
+      : {}),
     ...(zone ? { zone: { contains: zone, mode: "insensitive" } } : {}),
     ...(operational_zone_id ? { operational_zone_id } : {}),
     ...(admin_level_1
@@ -239,6 +282,16 @@ export async function findInstallations(params: FindInstallationsParams) {
         },
       },
       {
+        service_type: {
+          is: {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+      },
+      {
         client: {
           is: {
             OR: [
@@ -278,13 +331,95 @@ export async function findInstallations(params: FindInstallationsParams) {
     ];
   }
 
-  return prisma.installation.findMany({
-    where,
-    include: installationBaseInclude,
-    orderBy: {
-      installation_date: "desc",
-    },
+  return where;
+}
+
+export async function findInstallationById(id: string) {
+  return prisma.installation.findUnique({
+    where: { installation_id: id },
+    include: installationDetailInclude,
   });
+}
+
+export async function updateInstallation(
+  id: string,
+  data: UpdateInstallationData,
+) {
+  return prisma.installation.update({
+    where: { installation_id: id },
+    data,
+    include: installationBaseInclude,
+  });
+}
+
+export async function createInstallation(data: CreateInstallationData) {
+  return prisma.installation.create({
+    data,
+    include: installationBaseInclude,
+  });
+}
+
+export async function findInstallations(params: FindInstallationsParams) {
+  const page = normalizePaginationValue(params.page, 1);
+  const pageSize = Math.min(normalizePaginationValue(params.pageSize, 25), 100);
+  const skip = (page - 1) * pageSize;
+  const where = buildInstallationWhere(params);
+  const metricsWhere = buildInstallationWhere(params, { includeStatus: false });
+  const orderBy = getInstallationOrderBy(params.sortKey, params.sortDirection);
+
+  const [data, totalItems, total, open, inProgress, closed, cancelled] =
+    await Promise.all([
+      prisma.installation.findMany({
+        where,
+        include: installationBaseInclude,
+        orderBy,
+        skip,
+        take: pageSize,
+      }),
+      prisma.installation.count({ where }),
+      prisma.installation.count({ where: metricsWhere }),
+      prisma.installation.count({
+        where: {
+          ...metricsWhere,
+          installation_status: InstallationStatus.OPEN,
+        },
+      }),
+      prisma.installation.count({
+        where: {
+          ...metricsWhere,
+          installation_status: InstallationStatus.IN_PROGRESS,
+        },
+      }),
+      prisma.installation.count({
+        where: {
+          ...metricsWhere,
+          installation_status: InstallationStatus.CLOSED,
+        },
+      }),
+      prisma.installation.count({
+        where: {
+          ...metricsWhere,
+          installation_status: InstallationStatus.CANCELLED,
+        },
+      }),
+    ]);
+
+  return {
+    data,
+    pagination: {
+      page,
+      pageSize,
+      totalItems,
+      totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    },
+    metrics: {
+      total,
+      open,
+      inProgress,
+      closed,
+      cancelled,
+    },
+  };
 }
 
 export async function findClientById(client_id: string) {

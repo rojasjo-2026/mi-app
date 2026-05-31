@@ -4,6 +4,39 @@ import {
   getInstallationsService,
 } from "@/lib/services/installationService";
 
+function parsePositiveInteger(value: string | null, fallback: number) {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+    return fallback;
+  }
+
+  return Math.floor(parsedValue);
+}
+
+function normalizeSortKey(value: string | null) {
+  const allowedSortKeys = [
+    "installation",
+    "client",
+    "service",
+    "date",
+    "technician",
+    "location",
+    "amount",
+    "status",
+  ] as const;
+
+  if (allowedSortKeys.includes(value as (typeof allowedSortKeys)[number])) {
+    return value as (typeof allowedSortKeys)[number];
+  }
+
+  return "date";
+}
+
+function normalizeSortDirection(value: string | null) {
+  return value === "asc" ? "asc" : "desc";
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -65,7 +98,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const params = {
+    const result = await getInstallationsService({
       search: searchParams.get("search")?.trim() || undefined,
       client_id: searchParams.get("client_id") || undefined,
       status: searchParams.get("status") || undefined,
@@ -74,14 +107,21 @@ export async function GET(req: Request) {
       admin_level_1: searchParams.get("admin_level_1") || undefined,
       admin_level_2: searchParams.get("admin_level_2") || undefined,
       admin_level_3: searchParams.get("admin_level_3") || undefined,
-    };
-
-    const installations = await getInstallationsService(params);
+      page: parsePositiveInteger(searchParams.get("page"), 1),
+      pageSize: Math.min(
+        parsePositiveInteger(searchParams.get("pageSize"), 25),
+        100,
+      ),
+      sortKey: normalizeSortKey(searchParams.get("sortKey")),
+      sortDirection: normalizeSortDirection(searchParams.get("sortDirection")),
+    });
 
     return NextResponse.json(
       {
         success: true,
-        data: installations,
+        data: result.data,
+        pagination: result.pagination,
+        metrics: result.metrics,
       },
       { status: 200 },
     );
