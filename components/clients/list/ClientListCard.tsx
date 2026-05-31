@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { Mail, MapPin, MoreVertical, Phone, Wrench } from "lucide-react";
+import type { ReactNode } from "react";
+import { Mail, MapPin, Phone, Wrench } from "lucide-react";
 import {
   normalizeClientStatus,
   getClientStatusBadgeClass,
@@ -43,14 +41,10 @@ type VisibleClientColumns = {
 
 type ClientListCardProps = {
   client: Client;
-  onToggleStatus: (client: Client) => void | Promise<void>;
+  isSelected: boolean;
+  onSelect: () => void;
   gridTemplateColumns: string;
   visibleColumns: VisibleClientColumns;
-};
-
-type MenuPosition = {
-  top: number;
-  left: number;
 };
 
 function getInitials(name: string) {
@@ -123,7 +117,7 @@ function TableCell({
 }: {
   children: ReactNode;
   align?: "left" | "center" | "right";
-  sticky?: "left" | "right";
+  sticky?: "left";
 }) {
   const alignClass =
     align === "right"
@@ -134,15 +128,13 @@ function TableCell({
 
   const stickyClass =
     sticky === "left"
-      ? "sticky left-0 z-20 border-r border-slate-200 bg-white shadow-[10px_0_18px_-18px_rgba(15,23,42,0.45)] group-hover:bg-slate-50"
-      : sticky === "right"
-        ? "sticky right-0 z-20 border-l border-slate-200 bg-white shadow-[-10px_0_18px_-18px_rgba(15,23,42,0.45)] group-hover:bg-slate-50"
-        : "";
+      ? "sticky left-0 z-20 border-r border-slate-200 bg-white shadow-[10px_0_18px_-18px_rgba(15,23,42,0.45)] group-hover:bg-blue-50"
+      : "";
 
   return (
     <div
       className={[
-        "flex min-w-0 items-center border-l border-slate-100 px-4 py-3 first:border-l-0",
+        "flex min-w-0 items-center border-l border-slate-100 px-4 py-2.5 first:border-l-0",
         alignClass,
         stickyClass,
       ].join(" ")}
@@ -154,15 +146,11 @@ function TableCell({
 
 export function ClientListCard({
   client,
-  onToggleStatus,
+  isSelected,
+  onSelect,
   gridTemplateColumns,
   visibleColumns,
 }: ClientListCardProps) {
-  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
   const fullName = getClientFullName(client);
   const initials = getInitials(fullName);
   const locationLabel = getLocationLabel(client);
@@ -178,150 +166,46 @@ export function ClientListCard({
       : 0;
 
   const lastActivity = getLastActivityLabel(client);
-  const isMenuOpen = Boolean(menuPosition);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  function closeMenu() {
-    setMenuPosition(null);
-  }
-
-  function openMenuFromButton() {
-    const button = menuButtonRef.current;
-
-    if (!button) return;
-
-    const rect = button.getBoundingClientRect();
-    const menuWidth = 176;
-    const menuHeight = 96;
-    const gap = 8;
-    const margin = 12;
-
-    const left = Math.min(
-      Math.max(margin, rect.right - menuWidth),
-      window.innerWidth - menuWidth - margin,
-    );
-
-    const shouldOpenUp = rect.bottom + gap + menuHeight > window.innerHeight;
-    const top = shouldOpenUp
-      ? Math.max(margin, rect.top - menuHeight - gap)
-      : rect.bottom + gap;
-
-    setMenuPosition({ top, left });
-  }
-
-  function toggleMenu(event: React.MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (isMenuOpen) {
-      closeMenu();
-      return;
-    }
-
-    openMenuFromButton();
-  }
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-
-    function handleMouseDown(event: MouseEvent) {
-      const target = event.target as Node;
-
-      if (
-        menuRef.current?.contains(target) ||
-        menuButtonRef.current?.contains(target)
-      ) {
-        return;
-      }
-
-      closeMenu();
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        closeMenu();
-      }
-    }
-
-    document.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("scroll", closeMenu, true);
-    window.addEventListener("resize", closeMenu);
-
-    return () => {
-      document.removeEventListener("mousedown", handleMouseDown);
-      document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("scroll", closeMenu, true);
-      window.removeEventListener("resize", closeMenu);
-    };
-  }, [isMenuOpen]);
-
-  const actionsMenu =
-    isMounted && menuPosition
-      ? createPortal(
-          <div
-            ref={menuRef}
-            role="menu"
-            style={{
-              top: menuPosition.top,
-              left: menuPosition.left,
-            }}
-            className="fixed z-[2147483647] w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-left shadow-2xl"
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Link
-              href={`/clients/${client.client_id}/edit`}
-              role="menuitem"
-              onClick={closeMenu}
-              className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-            >
-              Editar
-            </Link>
-
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                closeMenu();
-                void onToggleStatus(client);
-              }}
-              className="block w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-            >
-              {status === "INACTIVE" ? "Activar" : "Desactivar"}
-            </button>
-          </div>,
-          document.body,
-        )
-      : null;
 
   return (
     <li
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
       style={{ gridTemplateColumns }}
-      className="group grid min-h-[72px] border-b border-slate-100 transition last:border-b-0 hover:bg-slate-50"
+      className={[
+        "group grid min-h-[66px] cursor-pointer border-b border-l-4 border-slate-100 transition last:border-b-0 hover:bg-blue-50/70",
+        isSelected
+          ? "border-l-blue-600 bg-blue-50 ring-1 ring-inset ring-blue-200"
+          : "border-l-transparent bg-white",
+      ].join(" ")}
     >
       <TableCell sticky="left">
         <div className="flex min-w-0 items-center gap-4">
-          <Link
-            href={`/clients/${client.client_id}`}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 transition hover:bg-blue-600 hover:text-white"
-            aria-label={`Ver detalle de ${fullName}`}
+          <div
+            className={[
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black transition",
+              isSelected
+                ? "bg-blue-600 text-white"
+                : "bg-blue-50 text-blue-700 group-hover:bg-blue-100",
+            ].join(" ")}
           >
             {initials}
-          </Link>
+          </div>
 
           <div className="min-w-0">
-            <Link href={`/clients/${client.client_id}`} className="block">
-              <h2
-                title={fullName}
-                className="truncate text-base font-black tracking-tight text-slate-950 transition hover:text-blue-700"
-              >
-                {fullName}
-              </h2>
-            </Link>
+            <h2
+              title={fullName}
+              className="truncate text-base font-black tracking-tight text-slate-950"
+            >
+              {fullName}
+            </h2>
 
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-slate-500">
@@ -417,31 +301,6 @@ export function ClientListCard({
           </span>
         </TableCell>
       )}
-
-      <TableCell align="right" sticky="right">
-        <div className="flex items-center justify-end gap-3">
-          <Link
-            href={`/clients/${client.client_id}`}
-            className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-          >
-            Ver detalle
-          </Link>
-
-          <button
-            ref={menuButtonRef}
-            type="button"
-            onClick={toggleMenu}
-            aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
-            aria-label={`Abrir acciones de ${fullName}`}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
-          >
-            <MoreVertical className="h-4 w-4" />
-          </button>
-
-          {actionsMenu}
-        </div>
-      </TableCell>
     </li>
   );
 }

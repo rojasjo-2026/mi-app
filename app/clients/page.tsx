@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   normalizeClientStatus,
   getClientStatusLabel,
@@ -10,6 +10,7 @@ import {
 import {
   getClientFullName,
   getLocationLabel,
+  formatDateLabel,
 } from "@/lib/clients/clientList.utils";
 import { ClientListToast } from "@/components/clients/list/ClientListToast";
 import { ClientListLoadingState } from "@/components/clients/list/ClientListLoadingState";
@@ -76,27 +77,25 @@ type ClientMetricCardProps = {
 };
 
 const DEFAULT_COLUMN_WIDTHS = {
-  client: 360,
-  contact: 330,
-  location: 280,
-  operation: 220,
-  activity: 220,
-  status: 140,
-  actions: 250,
+  client: 330,
+  contact: 280,
+  location: 250,
+  operation: 185,
+  activity: 185,
+  status: 125,
 };
 
 const MIN_COLUMN_WIDTHS: Record<keyof typeof DEFAULT_COLUMN_WIDTHS, number> = {
-  client: 360,
-  contact: 240,
+  client: 300,
+  contact: 230,
   location: 210,
-  operation: 175,
-  activity: 175,
-  status: 120,
-  actions: 250,
+  operation: 165,
+  activity: 165,
+  status: 115,
 };
 
 type ClientTableColumnKey = keyof typeof DEFAULT_COLUMN_WIDTHS;
-type ToggleableColumnKey = Exclude<ClientTableColumnKey, "client" | "actions">;
+type ToggleableColumnKey = Exclude<ClientTableColumnKey, "client">;
 
 const OPTIONAL_COLUMNS: { key: ToggleableColumnKey; label: string }[] = [
   { key: "contact", label: "Contacto" },
@@ -147,6 +146,180 @@ function ClientMetricCard({
   );
 }
 
+function getWhatsAppWebUrl(phone?: string | null) {
+  const digits = String(phone || "").replace(/\D/g, "");
+
+  if (!digits) {
+    return null;
+  }
+
+  return `https://wa.me/${digits}`;
+}
+
+function DetailField({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: ReactNode;
+  children?: ReactNode;
+}) {
+  const displayValue = children ?? value ?? "-";
+  const valueTitle =
+    typeof displayValue === "string" || typeof displayValue === "number"
+      ? String(displayValue)
+      : undefined;
+
+  return (
+    <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <p
+        title={label}
+        className="truncate text-[11px] font-black uppercase tracking-[0.16em] text-slate-400"
+      >
+        {label}
+      </p>
+
+      <div
+        title={valueTitle}
+        className="mt-1 min-w-0 truncate text-sm font-bold text-slate-800"
+      >
+        {displayValue}
+      </div>
+    </div>
+  );
+}
+
+function ClientPreviewPanel({
+  client,
+  onToggleStatus,
+}: {
+  client: Client | null;
+  onToggleStatus: (client: Client) => void | Promise<void>;
+}) {
+  if (!client) {
+    return (
+      <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-6">
+        <p className="text-sm font-bold text-slate-800">Resumen del cliente</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Selecciona un cliente de la tabla para ver su información y acciones
+          rápidas.
+        </p>
+      </aside>
+    );
+  }
+
+  const fullName = getClientFullName(client);
+  const location = getLocationLabel(client) || "Sin ubicación";
+  const status = normalizeClientStatus(client.client_status) ?? "ACTIVE";
+  const maintenanceCount =
+    typeof client.maintenance_count === "number" ? client.maintenance_count : 0;
+  const installationCount =
+    typeof client.installation_count === "number"
+      ? client.installation_count
+      : 0;
+  const lastActivity =
+    formatDateLabel(client.last_contact) ||
+    formatDateLabel(client.last_maintenance) ||
+    "Sin registro";
+  const whatsappUrl = getWhatsAppWebUrl(client.phone_primary);
+
+  return (
+    <aside className="sticky top-6 z-10 rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 p-5">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">
+          Resumen del cliente
+        </p>
+
+        <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950">
+          {fullName}
+        </h2>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+            {getClientStatusLabel(status)}
+          </span>
+
+          <span
+            className={[
+              "rounded-full px-3 py-1 text-xs font-bold",
+              client.whatsapp_opt_in
+                ? "bg-green-50 text-green-700"
+                : "bg-slate-100 text-slate-500",
+            ].join(" ")}
+          >
+            {client.whatsapp_opt_in ? "WhatsApp habilitado" : "Sin WhatsApp"}
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-3 p-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <DetailField label="Teléfono" value={client.phone_primary || "-"} />
+          <DetailField label="WhatsApp">
+            {whatsappUrl && client.whatsapp_opt_in ? (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                title="Abrir chat en WhatsApp Web con este cliente"
+                className="inline-flex max-w-full items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-xs font-black text-green-700 transition hover:bg-green-100 hover:text-green-800"
+              >
+                Abrir WhatsApp
+              </a>
+            ) : (
+              <span className="text-slate-500">No habilitado</span>
+            )}
+          </DetailField>
+          <DetailField label="Ubicación" value={location} />
+          <DetailField label="Última actividad" value={lastActivity} />
+          <DetailField label="Instalaciones" value={installationCount} />
+          <DetailField label="Mantenimientos" value={maintenanceCount} />
+        </div>
+
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <p className="text-sm font-black text-blue-950">Acciones rápidas</p>
+          <p className="mt-1 text-xs font-medium leading-5 text-blue-700">
+            Usa el panel para trabajar con el cliente seleccionado sin perder la
+            lista.
+          </p>
+        </div>
+
+        <div className="grid gap-2">
+          <Link
+            href={`/clients/${client.client_id}`}
+            className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+          >
+            Ver detalle completo
+          </Link>
+
+          <Link
+            href={`/clients/${client.client_id}/edit`}
+            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            Editar cliente
+          </Link>
+
+          <Link
+            href={`/installations/new?client_id=${client.client_id}`}
+            className="inline-flex items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+          >
+            Crear instalación
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => void onToggleStatus(client)}
+            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            {status === "INACTIVE" ? "Activar cliente" : "Desactivar cliente"}
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 type ResizableHeaderCellProps = {
   label: string;
   columnKey: ClientTableColumnKey;
@@ -160,7 +333,7 @@ type ResizableHeaderCellProps = {
   activeSortKey: SortKey;
   sortDirection: SortDirection;
   onSort?: (sortKey: SortKey) => void;
-  sticky?: "left" | "right";
+  sticky?: "left";
 };
 
 function ResizableHeaderCell({
@@ -185,9 +358,7 @@ function ResizableHeaderCell({
   const stickyClass =
     sticky === "left"
       ? "sticky left-0 z-30 border-r border-slate-200 bg-slate-50 shadow-[10px_0_18px_-18px_rgba(15,23,42,0.45)]"
-      : sticky === "right"
-        ? "sticky right-0 z-30 border-l border-slate-200 bg-slate-50 shadow-[-10px_0_18px_-18px_rgba(15,23,42,0.45)]"
-        : "";
+      : "";
 
   const isSortable = Boolean(sortKey && onSort);
   const isActiveSort = sortKey === activeSortKey;
@@ -278,7 +449,7 @@ function ColumnPicker({
           Columnas visibles
         </p>
         <p className="mt-1 text-xs font-medium text-slate-500">
-          Cliente y Acciones siempre permanecen visibles.
+          Cliente siempre permanece visible.
         </p>
       </div>
 
@@ -302,28 +473,9 @@ function ColumnPicker({
   );
 }
 
-function getRecentTimestamp(client: Client) {
-  const dates = [client.last_contact, client.last_maintenance]
-    .filter(Boolean)
-    .map((value) => new Date(String(value)).getTime())
-    .filter((value) => !Number.isNaN(value));
-
-  if (dates.length === 0) return 0;
-  return Math.max(...dates);
-}
-
-function compareText(a: string, b: string, direction: SortDirection) {
-  const result = a.localeCompare(b, "es", { sensitivity: "base" });
-  return direction === "asc" ? result : -result;
-}
-
-function compareNumber(a: number, b: number, direction: SortDirection) {
-  const result = a - b;
-  return direction === "asc" ? result : -result;
-}
-
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [whatsFilter, setWhatsFilter] = useState<WhatsAppFilter>("all");
@@ -354,8 +506,8 @@ export default function ClientsPage() {
   >({
     contact: true,
     location: true,
-    operation: true,
-    activity: true,
+    operation: false,
+    activity: false,
     status: true,
   });
 
@@ -418,14 +570,18 @@ export default function ClientsPage() {
           throw new Error("Error loading clients");
         }
 
+        const nextClients: Client[] = Array.isArray(result.data)
+          ? result.data
+          : [];
+
         const nextPagination: PaginationState = result.pagination ?? {
           page: currentPage,
           pageSize,
-          totalItems: Array.isArray(result.data) ? result.data.length : 0,
+          totalItems: nextClients.length,
           totalPages: 1,
         };
 
-        setClients(Array.isArray(result.data) ? result.data : []);
+        setClients(nextClients);
         setPagination(nextPagination);
         setMetrics({
           total: Number(
@@ -434,6 +590,17 @@ export default function ClientsPage() {
           active: Number(result.metrics?.active ?? 0),
           withWhatsApp: Number(result.metrics?.withWhatsApp ?? 0),
           attention: Number(result.metrics?.attention ?? 0),
+        });
+
+        setSelectedClientId((currentSelectedId) => {
+          if (
+            currentSelectedId &&
+            nextClients.some((client) => client.client_id === currentSelectedId)
+          ) {
+            return currentSelectedId;
+          }
+
+          return nextClients[0]?.client_id ?? null;
         });
 
         if (
@@ -496,7 +663,6 @@ export default function ClientsPage() {
       ...OPTIONAL_COLUMNS.filter((column) => visibleColumns[column.key]).map(
         (column) => column.key,
       ),
-      "actions",
     ],
     [visibleColumns],
   );
@@ -507,7 +673,7 @@ export default function ClientsPage() {
         .map((columnKey) => {
           const width = columnWidths[columnKey];
 
-          if (columnKey === "client" || columnKey === "actions") {
+          if (columnKey === "client") {
             return `${width}px`;
           }
 
@@ -526,6 +692,12 @@ export default function ClientsPage() {
     [activeColumnKeys, columnWidths],
   );
 
+  const selectedClient = useMemo(
+    () =>
+      clients.find((client) => client.client_id === selectedClientId) ?? null,
+    [clients, selectedClientId],
+  );
+
   function startColumnResize(
     event: React.MouseEvent<HTMLSpanElement>,
     columnKey: ClientTableColumnKey,
@@ -533,7 +705,7 @@ export default function ClientsPage() {
     event.preventDefault();
     event.stopPropagation();
 
-    if (columnKey === "client" || columnKey === "actions") return;
+    if (columnKey === "client") return;
 
     const startX = event.clientX;
     const startWidth = columnWidths[columnKey];
@@ -655,7 +827,7 @@ export default function ClientsPage() {
     <main className="min-h-screen bg-slate-50 p-6 text-slate-900 md:p-8">
       <ClientListToast toast={toast} />
 
-      <section className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
+      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">
@@ -786,7 +958,8 @@ export default function ClientsPage() {
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
-              Datos cargados desde el endpoint con paginación real.
+              Selecciona una fila para ver el resumen y acciones en el panel
+              derecho.
             </p>
           </div>
 
@@ -818,151 +991,148 @@ export default function ClientsPage() {
           </div>
         </div>
 
-        {clients.length === 0 ? (
-          <ClientListEmptyState />
-        ) : (
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <div
-                style={{
-                  minWidth: tableWidth,
-                  width: "100%",
-                }}
-              >
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+          {clients.length === 0 ? (
+            <ClientListEmptyState />
+          ) : (
+            <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
                 <div
-                  style={{ gridTemplateColumns }}
-                  className="grid border-b border-slate-200 bg-slate-50 text-xs font-black uppercase tracking-[0.14em] text-slate-400"
+                  style={{
+                    minWidth: tableWidth,
+                    width: "100%",
+                  }}
                 >
-                  <ResizableHeaderCell
-                    label="Cliente"
-                    columnKey="client"
-                    activeSortKey={sortKey}
-                    sortDirection={sortDirection}
-                    sortKey="client"
-                    resizable={false}
-                    sticky="left"
-                    onSort={handleHeaderSort}
-                    onResizeStart={startColumnResize}
-                  />
-
-                  {visibleColumns.contact && (
+                  <div
+                    style={{ gridTemplateColumns }}
+                    className="grid border-b border-slate-200 bg-slate-50 text-xs font-black uppercase tracking-[0.14em] text-slate-400"
+                  >
                     <ResizableHeaderCell
-                      label="Contacto"
-                      columnKey="contact"
+                      label="Cliente"
+                      columnKey="client"
                       activeSortKey={sortKey}
                       sortDirection={sortDirection}
-                      sortKey="contact"
+                      sortKey="client"
+                      resizable={false}
+                      sticky="left"
                       onSort={handleHeaderSort}
                       onResizeStart={startColumnResize}
                     />
-                  )}
 
-                  {visibleColumns.location && (
-                    <ResizableHeaderCell
-                      label="Ubicación"
-                      columnKey="location"
-                      activeSortKey={sortKey}
-                      sortDirection={sortDirection}
-                      sortKey="location"
-                      onSort={handleHeaderSort}
-                      onResizeStart={startColumnResize}
-                    />
-                  )}
+                    {visibleColumns.contact && (
+                      <ResizableHeaderCell
+                        label="Contacto"
+                        columnKey="contact"
+                        activeSortKey={sortKey}
+                        sortDirection={sortDirection}
+                        sortKey="contact"
+                        onSort={handleHeaderSort}
+                        onResizeStart={startColumnResize}
+                      />
+                    )}
 
-                  {visibleColumns.operation && (
-                    <ResizableHeaderCell
-                      label="Operación"
-                      columnKey="operation"
-                      activeSortKey={sortKey}
-                      sortDirection={sortDirection}
-                      sortKey="operation"
-                      onSort={handleHeaderSort}
-                      onResizeStart={startColumnResize}
-                    />
-                  )}
+                    {visibleColumns.location && (
+                      <ResizableHeaderCell
+                        label="Ubicación"
+                        columnKey="location"
+                        activeSortKey={sortKey}
+                        sortDirection={sortDirection}
+                        sortKey="location"
+                        onSort={handleHeaderSort}
+                        onResizeStart={startColumnResize}
+                      />
+                    )}
 
-                  {visibleColumns.activity && (
-                    <ResizableHeaderCell
-                      label="Última act."
-                      columnKey="activity"
-                      activeSortKey={sortKey}
-                      sortDirection={sortDirection}
-                      sortKey="activity"
-                      onSort={handleHeaderSort}
-                      onResizeStart={startColumnResize}
-                    />
-                  )}
+                    {visibleColumns.operation && (
+                      <ResizableHeaderCell
+                        label="Operación"
+                        columnKey="operation"
+                        activeSortKey={sortKey}
+                        sortDirection={sortDirection}
+                        sortKey="operation"
+                        onSort={handleHeaderSort}
+                        onResizeStart={startColumnResize}
+                      />
+                    )}
 
-                  {visibleColumns.status && (
-                    <ResizableHeaderCell
-                      label="Estado"
-                      columnKey="status"
-                      align="center"
-                      activeSortKey={sortKey}
-                      sortDirection={sortDirection}
-                      sortKey="status"
-                      onSort={handleHeaderSort}
-                      onResizeStart={startColumnResize}
-                    />
-                  )}
+                    {visibleColumns.activity && (
+                      <ResizableHeaderCell
+                        label="Última act."
+                        columnKey="activity"
+                        activeSortKey={sortKey}
+                        sortDirection={sortDirection}
+                        sortKey="activity"
+                        onSort={handleHeaderSort}
+                        onResizeStart={startColumnResize}
+                      />
+                    )}
 
-                  <ResizableHeaderCell
-                    label="Acciones"
-                    columnKey="actions"
-                    align="right"
-                    activeSortKey={sortKey}
-                    sortDirection={sortDirection}
-                    resizable={false}
-                    sticky="right"
-                    onResizeStart={startColumnResize}
-                  />
+                    {visibleColumns.status && (
+                      <ResizableHeaderCell
+                        label="Estado"
+                        columnKey="status"
+                        align="center"
+                        activeSortKey={sortKey}
+                        sortDirection={sortDirection}
+                        sortKey="status"
+                        onSort={handleHeaderSort}
+                        onResizeStart={startColumnResize}
+                      />
+                    )}
+                  </div>
+
+                  <ul>
+                    {clients.map((client) => (
+                      <ClientListCard
+                        key={client.client_id}
+                        client={client}
+                        isSelected={client.client_id === selectedClientId}
+                        onSelect={() => setSelectedClientId(client.client_id)}
+                        gridTemplateColumns={gridTemplateColumns}
+                        visibleColumns={visibleColumns}
+                      />
+                    ))}
+                  </ul>
                 </div>
+              </div>
 
-                <ul>
-                  {clients.map((client) => (
-                    <ClientListCard
-                      key={client.client_id}
-                      client={client}
-                      onToggleStatus={toggleStatus}
-                      gridTemplateColumns={gridTemplateColumns}
-                      visibleColumns={visibleColumns}
-                    />
-                  ))}
-                </ul>
+              <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-semibold text-slate-500">
+                  Página {safeCurrentPage} de {totalPages}
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage((page) => Math.max(1, page - 1))
+                    }
+                    disabled={safeCurrentPage <= 1 || loading}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Anterior
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage((page) => Math.min(totalPages, page + 1))
+                    }
+                    disabled={safeCurrentPage >= totalPages || loading}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Siguiente
+                  </button>
+                </div>
               </div>
             </div>
+          )}
 
-            <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-semibold text-slate-500">
-                Página {safeCurrentPage} de {totalPages}
-              </p>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCurrentPage((page) => Math.max(1, page - 1))
-                  }
-                  disabled={safeCurrentPage <= 1 || loading}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Anterior
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCurrentPage((page) => Math.min(totalPages, page + 1))
-                  }
-                  disabled={safeCurrentPage >= totalPages || loading}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+          <ClientPreviewPanel
+            client={selectedClient}
+            onToggleStatus={toggleStatus}
+          />
+        </div>
       </section>
     </main>
   );
