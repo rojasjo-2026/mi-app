@@ -273,6 +273,13 @@ export async function getFollowUpsService(params: {
   operational_zone_id?: string;
   status?: string;
   priority?: string | number | null;
+  search?: string;
+  timing?: string;
+  billingStatus?: string;
+  page?: string | number | null;
+  pageSize?: string | number | null;
+  sortKey?: FindFollowUpsParams["sortKey"];
+  sortDirection?: "asc" | "desc" | null;
 }) {
   const parsedPriority =
     params.priority !== undefined &&
@@ -281,11 +288,24 @@ export async function getFollowUpsService(params: {
       ? toNumberOrFallback(params.priority, null)
       : undefined;
 
+  const page = Math.max(1, Math.floor(toNumberOrFallback(params.page, 1) ?? 1));
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Math.floor(toNumberOrFallback(params.pageSize, 25) ?? 25)),
+  );
+
   const filters: FindFollowUpsParams = {
     client_id: params.client_id,
     installation_id: params.installation_id,
     operational_zone_id: params.operational_zone_id,
     status: params.status,
+    search: toTrimmedStringOrFallback(params.search, null) ?? undefined,
+    timing: params.timing,
+    billingStatus: params.billingStatus,
+    page,
+    pageSize,
+    sortKey: params.sortKey,
+    sortDirection: params.sortDirection === "desc" ? "desc" : "asc",
     ...(parsedPriority !== undefined && parsedPriority !== null
       ? { priority: parsedPriority }
       : {}),

@@ -1,4 +1,4 @@
-import type { WorkBillingStatus } from "@prisma/client";
+import type { Prisma, WorkBillingStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const followUpInclude = {
@@ -58,13 +58,235 @@ export type UpdateFollowUpData = Partial<{
   technician_id: string | null;
 }>;
 
+export type FindFollowUpsSortKey =
+  | "maintenance"
+  | "client"
+  | "installation"
+  | "targetDate"
+  | "scheduledDate"
+  | "technician"
+  | "priority"
+  | "amount"
+  | "billing"
+  | "status";
+
 export type FindFollowUpsParams = {
   client_id?: string;
   installation_id?: string;
   operational_zone_id?: string;
   status?: string;
   priority?: number;
+  search?: string;
+  timing?: string;
+  billingStatus?: string;
+  page?: number;
+  pageSize?: number;
+  sortKey?: FindFollowUpsSortKey;
+  sortDirection?: "asc" | "desc";
 };
+
+const BILLING_STATUSES: readonly WorkBillingStatus[] = [
+  "PENDING",
+  "INVOICED",
+  "PARTIALLY_PAID",
+  "PAID",
+  "NOT_BILLABLE",
+  "BILLING_ERROR",
+  "CANCELLED",
+];
+
+function isWorkBillingStatus(
+  value: string | undefined,
+): value is WorkBillingStatus {
+  if (!value) return false;
+  return BILLING_STATUSES.includes(value as WorkBillingStatus);
+}
+
+function getTodayRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 1);
+
+  return { start, end };
+}
+
+function buildFollowUpWhere(params: FindFollowUpsParams) {
+  const {
+    client_id,
+    installation_id,
+    operational_zone_id,
+    status,
+    priority,
+    search,
+    timing,
+    billingStatus,
+  } = params;
+
+  const where: Prisma.FollowUpWhereInput = {
+    ...(client_id ? { client_id } : {}),
+    ...(installation_id ? { installation_id } : {}),
+    ...(operational_zone_id ? { operational_zone_id } : {}),
+    ...(priority !== undefined ? { priority } : {}),
+    ...(status
+      ? {
+          follow_up_status: {
+            code: status,
+          },
+        }
+      : {}),
+    ...(isWorkBillingStatus(billingStatus)
+      ? { billing_status: billingStatus }
+      : {}),
+  };
+
+  if (search) {
+    where.OR = [
+      {
+        reason: {
+          contains: search,
+          mode: "insensitive",
+        },
+      },
+      {
+        maintenance_type: {
+          contains: search,
+          mode: "insensitive",
+        },
+      },
+      {
+        billing_notes: {
+          contains: search,
+          mode: "insensitive",
+        },
+      },
+      {
+        client: {
+          is: {
+            OR: [
+              {
+                first_name: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                last_name_1: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                last_name_2: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                phone_primary: {
+                  contains: search,
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
+        installation: {
+          is: {
+            description: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+      },
+      {
+        follow_up_status: {
+          is: {
+            OR: [
+              {
+                code: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
+        },
+      },
+    ];
+  }
+
+  if (timing && timing !== "all") {
+    const { start, end } = getTodayRange();
+
+    if (timing === "overdue") {
+      where.target_date = { lt: start };
+      where.NOT = { follow_up_status: { code: "completed" } };
+    }
+
+    if (timing === "today") {
+      where.target_date = { gte: start, lt: end };
+      where.NOT = { follow_up_status: { code: "completed" } };
+    }
+
+    if (timing === "upcoming") {
+      where.target_date = { gte: end };
+      where.NOT = { follow_up_status: { code: "completed" } };
+    }
+  }
+
+  return where;
+}
+
+function buildOrderBy(
+  sortKey: FindFollowUpsSortKey = "targetDate",
+  sortDirection: "asc" | "desc" = "asc",
+): Prisma.FollowUpOrderByWithRelationInput[] {
+  const direction = sortDirection === "desc" ? "desc" : "asc";
+
+  if (sortKey === "maintenance") {
+    return [{ maintenance_type: direction }, { target_date: "asc" }];
+  }
+
+  if (sortKey === "client") {
+    return [{ client: { first_name: direction } }, { target_date: "asc" }];
+  }
+
+  if (sortKey === "installation") {
+    return [
+      { installation: { description: direction } },
+      { target_date: "asc" },
+    ];
+  }
+
+  if (sortKey === "scheduledDate") {
+    return [{ scheduled_date: direction }, { target_date: "asc" }];
+  }
+
+  if (sortKey === "technician") {
+    return [{ target_date: direction }, { created_at: "desc" }];
+  }
+
+  if (sortKey === "priority") {
+    return [{ priority: direction }, { target_date: "asc" }];
+  }
+
+  if (sortKey === "amount") {
+    return [{ final_amount: direction }, { estimated_amount: direction }];
+  }
+
+  if (sortKey === "billing") {
+    return [{ billing_status: direction }, { target_date: "asc" }];
+  }
+
+  if (sortKey === "status") {
+    return [{ follow_up_status: { code: direction } }, { target_date: "asc" }];
+  }
+
+  return [{ target_date: direction }, { created_at: "desc" }];
+}
 
 export async function findClientById(id: string) {
   return prisma.client.findUnique({
@@ -234,26 +456,100 @@ export async function updateFollowUp(id: string, data: UpdateFollowUpData) {
 }
 
 export async function findFollowUps(params: FindFollowUpsParams) {
-  const { client_id, installation_id, operational_zone_id, status, priority } =
-    params;
+  const page = Math.max(1, Math.floor(Number(params.page) || 1));
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Math.floor(Number(params.pageSize) || 25)),
+  );
+  const skip = (page - 1) * pageSize;
+  const where = buildFollowUpWhere(params);
+  const orderBy = buildOrderBy(params.sortKey, params.sortDirection);
 
-  return prisma.followUp.findMany({
-    where: {
-      ...(client_id ? { client_id } : {}),
-      ...(installation_id ? { installation_id } : {}),
-      ...(operational_zone_id ? { operational_zone_id } : {}),
-      ...(priority !== undefined ? { priority } : {}),
-      ...(status
-        ? {
-            follow_up_status: {
-              code: status,
-            },
-          }
-        : {}),
-    },
-    include: followUpInclude,
-    orderBy: [{ target_date: "asc" }, { created_at: "desc" }],
+  const [data, totalItems, total, pending, completed, pendingBilling] =
+    await prisma.$transaction([
+      prisma.followUp.findMany({
+        where,
+        include: followUpInclude,
+        orderBy,
+        skip,
+        take: pageSize,
+      }),
+      prisma.followUp.count({ where }),
+      prisma.followUp.count({
+        where: buildFollowUpWhere({
+          ...params,
+          status: undefined,
+          timing: undefined,
+        }),
+      }),
+      prisma.followUp.count({
+        where: buildFollowUpWhere({
+          ...params,
+          status: "pending",
+          timing: undefined,
+        }),
+      }),
+      prisma.followUp.count({
+        where: buildFollowUpWhere({
+          ...params,
+          status: "completed",
+          timing: undefined,
+        }),
+      }),
+      prisma.followUp.count({
+        where: {
+          ...buildFollowUpWhere({
+            ...params,
+            status: undefined,
+            timing: undefined,
+          }),
+          billing_status: "PENDING",
+          NOT: { follow_up_status: { code: "completed" } },
+        },
+      }),
+    ]);
+
+  const { start, end } = getTodayRange();
+  const baseMetricsWhere = buildFollowUpWhere({
+    ...params,
+    status: undefined,
+    timing: undefined,
   });
+
+  const [overdue, today] = await prisma.$transaction([
+    prisma.followUp.count({
+      where: {
+        ...baseMetricsWhere,
+        target_date: { lt: start },
+        NOT: { follow_up_status: { code: "completed" } },
+      },
+    }),
+    prisma.followUp.count({
+      where: {
+        ...baseMetricsWhere,
+        target_date: { gte: start, lt: end },
+        NOT: { follow_up_status: { code: "completed" } },
+      },
+    }),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      page,
+      pageSize,
+      totalItems,
+      totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    },
+    metrics: {
+      total,
+      pending,
+      completed,
+      overdue,
+      today,
+      pendingBilling,
+    },
+  };
 }
 
 export async function createMaintenanceContactFlowForFollowUp(data: {

@@ -95,18 +95,30 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const followUps = await getFollowUpsService({
+    const result = await getFollowUpsService({
       client_id: searchParams.get("client_id") || undefined,
       installation_id: searchParams.get("installation_id") || undefined,
       operational_zone_id: searchParams.get("operational_zone_id") || undefined,
       status: searchParams.get("status") || undefined,
       priority: searchParams.get("priority") || undefined,
+      search: searchParams.get("search")?.trim() || undefined,
+      timing: searchParams.get("timing") || undefined,
+      billingStatus: searchParams.get("billingStatus") || undefined,
+      page: searchParams.get("page"),
+      pageSize: searchParams.get("pageSize"),
+      sortKey: (searchParams.get("sortKey") || undefined) as Parameters<
+        typeof getFollowUpsService
+      >[0]["sortKey"],
+      sortDirection:
+        searchParams.get("sortDirection") === "desc" ? "desc" : "asc",
     });
 
     return NextResponse.json(
       {
         success: true,
-        data: followUps,
+        data: result.data,
+        pagination: result.pagination,
+        metrics: result.metrics,
       },
       { status: 200 },
     );
