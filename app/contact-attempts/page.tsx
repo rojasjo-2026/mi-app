@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import ContactFlowChat from "./components/ContactFlowChat";
 import type {
@@ -21,6 +21,48 @@ import {
   hasUnreadMessages,
 } from "./utils";
 
+type PaginationState = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+type ContactFlowMetrics = {
+  all: number;
+  unread: number;
+  waiting: number;
+  confirmed: number;
+  manual: number;
+};
+
+type ContactFlowSortKey =
+  | "client"
+  | "installation"
+  | "status"
+  | "risk"
+  | "targetDate"
+  | "selectedDate"
+  | "lastInteraction";
+
+type SortDirection = "asc" | "desc";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
+
+const SORTABLE_HEADERS: {
+  key: ContactFlowSortKey | null;
+  label: string;
+}[] = [
+  { key: "client", label: "Cliente" },
+  { key: "installation", label: "Instalación" },
+  { key: "status", label: "Estado" },
+  { key: "risk", label: "Riesgo" },
+  { key: "targetDate", label: "Objetivo" },
+  { key: "selectedDate", label: "Agendada" },
+  { key: "lastInteraction", label: "Última interacción" },
+  { key: null, label: "Acciones" },
+];
+
 export default function ContactAttemptsPage() {
   const [flows, setFlows] = useState<ContactFlowItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +74,24 @@ export default function ContactAttemptsPage() {
     null,
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    pageSize: 25,
+    totalItems: 0,
+    totalPages: 1,
+  });
+  const [metrics, setMetrics] = useState<ContactFlowMetrics>({
+    all: 0,
+    unread: 0,
+    waiting: 0,
+    confirmed: 0,
+    manual: 0,
+  });
+  const [sortKey, setSortKey] = useState<ContactFlowSortKey>("lastInteraction");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   async function loadFlows(showLoader = true) {
     try {
@@ -43,7 +103,15 @@ export default function ContactAttemptsPage() {
 
       setError(null);
 
-      const response = await fetch("/api/contact-flows", {
+      const params = new URLSearchParams();
+
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(pageSize));
+      params.set("filter", filter);
+      params.set("sortKey", sortKey);
+      params.set("sortDirection", sortDirection);
+
+      const response = await fetch(`/api/contact-flows?${params.toString()}`, {
         cache: "no-store",
       });
 
@@ -51,13 +119,33 @@ export default function ContactAttemptsPage() {
         throw new Error("No se pudo cargar la gestión de contactos.");
       }
 
-      const result: ApiResponse = await response.json();
+      const result = (await response.json()) as ApiResponse & {
+        pagination?: PaginationState;
+        metrics?: Partial<ContactFlowMetrics>;
+      };
 
       if (!result.success) {
         throw new Error("La respuesta del servidor no fue exitosa.");
       }
 
-      setFlows(result.data ?? []);
+      const nextFlows = result.data ?? [];
+
+      setFlows(nextFlows);
+      setPagination(
+        result.pagination ?? {
+          page: currentPage,
+          pageSize,
+          totalItems: nextFlows.length,
+          totalPages: 1,
+        },
+      );
+      setMetrics({
+        all: Number(result.metrics?.all ?? nextFlows.length),
+        unread: Number(result.metrics?.unread ?? 0),
+        waiting: Number(result.metrics?.waiting ?? 0),
+        confirmed: Number(result.metrics?.confirmed ?? 0),
+        manual: Number(result.metrics?.manual ?? 0),
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -67,12 +155,13 @@ export default function ContactAttemptsPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setHasLoadedOnce(true);
     }
   }
 
   useEffect(() => {
-    void loadFlows();
-  }, []);
+    void loadFlows(!hasLoadedOnce);
+  }, [filter, currentPage, pageSize, sortDirection, sortKey]);
 
   useEffect(() => {
     setMounted(true);
@@ -102,40 +191,49 @@ export default function ContactAttemptsPage() {
     });
   }
 
-  const counters = useMemo(
-    () => ({
-      all: flows.length,
-      unread: flows.filter((flow) => hasUnreadMessages(flow)).length,
-      waiting: flows.filter(
-        (flow) =>
-          flow.status === "WAITING_RESPONSE" || flow.status === "OPTIONS_SENT",
-      ).length,
-      confirmed: flows.filter((flow) => flow.status === "CONFIRMED").length,
-      manual: flows.filter((flow) => flow.status === "MANUAL_REQUIRED").length,
-    }),
-    [flows],
+  const counters = metrics;
+  const filteredFlows = flows;
+  const totalPages = Math.max(1, pagination.totalPages);
+  const safeCurrentPage = Math.min(pagination.page || currentPage, totalPages);
+  const pageStartIndex =
+    pagination.totalItems === 0
+      ? 0
+      : (safeCurrentPage - 1) * pagination.pageSize + 1;
+  const pageEndIndex = Math.min(
+    safeCurrentPage * pagination.pageSize,
+    pagination.totalItems,
   );
 
-  const filteredFlows = useMemo(() => {
-    if (filter === "all") return flows;
+  function handleFilterChange(nextFilter: FilterType) {
+    setCurrentPage(1);
+    setFilter(nextFilter);
+  }
 
-    if (filter === "unread") {
-      return flows.filter((flow) => hasUnreadMessages(flow));
+  function handleSort(nextSortKey: ContactFlowSortKey) {
+    setCurrentPage(1);
+    setSortKey((currentSortKey) => {
+      if (currentSortKey === nextSortKey) {
+        setSortDirection((currentDirection) =>
+          currentDirection === "asc" ? "desc" : "asc",
+        );
+
+        return currentSortKey;
+      }
+
+      setSortDirection(nextSortKey === "lastInteraction" ? "desc" : "asc");
+      return nextSortKey;
+    });
+  }
+
+  function getSortIndicator(headerKey: ContactFlowSortKey | null) {
+    if (!headerKey) return null;
+
+    if (headerKey !== sortKey) {
+      return "↕";
     }
 
-    if (filter === "waiting") {
-      return flows.filter(
-        (flow) =>
-          flow.status === "WAITING_RESPONSE" || flow.status === "OPTIONS_SENT",
-      );
-    }
-
-    if (filter === "confirmed") {
-      return flows.filter((flow) => flow.status === "CONFIRMED");
-    }
-
-    return flows.filter((flow) => flow.status === "MANUAL_REQUIRED");
-  }, [filter, flows]);
+    return sortDirection === "asc" ? "↑" : "↓";
+  }
 
   return (
     <div className="space-y-8">
@@ -163,6 +261,24 @@ export default function ContactAttemptsPage() {
             >
               {refreshing ? "Refrescando..." : "Refrescar lista"}
             </button>
+
+            <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
+              Ver
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-sm font-medium outline-none"
+              >
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             {mounted && (
               <div className="flex items-center rounded-2xl border border-slate-200 bg-white p-1">
@@ -219,7 +335,7 @@ export default function ContactAttemptsPage() {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => setFilter(item.key)}
+                  onClick={() => handleFilterChange(item.key)}
                   className={`rounded-2xl border px-4 py-2 text-sm font-medium transition ${
                     filter === item.key
                       ? "border-slate-900 bg-slate-900 text-white"
@@ -245,7 +361,7 @@ export default function ContactAttemptsPage() {
         </div>
       </section>
 
-      {loading ? (
+      {loading && !hasLoadedOnce ? (
         <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
           Cargando contactos...
         </div>
@@ -260,14 +376,33 @@ export default function ContactAttemptsPage() {
       ) : viewMode === "list" ? (
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="hidden grid-cols-[1.3fr_1.4fr_1fr_1fr_120px_120px_145px_130px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 xl:grid">
-            <span>Cliente</span>
-            <span>Instalación</span>
-            <span>Estado</span>
-            <span>Riesgo</span>
-            <span>Objetivo</span>
-            <span>Agendada</span>
-            <span>Última interacción</span>
-            <span>Acciones</span>
+            {SORTABLE_HEADERS.map((header) => (
+              <button
+                key={header.label}
+                type="button"
+                disabled={!header.key}
+                title={header.key ? `Ordenar por ${header.label}` : undefined}
+                onClick={() => {
+                  if (header.key) {
+                    handleSort(header.key);
+                  }
+                }}
+                className={[
+                  "flex min-w-0 items-center gap-2 text-left uppercase tracking-[0.16em]",
+                  header.key
+                    ? "cursor-pointer transition hover:text-slate-800"
+                    : "cursor-default",
+                  header.key === sortKey ? "text-slate-800" : "text-slate-500",
+                ].join(" ")}
+              >
+                <span className="truncate">{header.label}</span>
+                {header.key && (
+                  <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] text-slate-500">
+                    {getSortIndicator(header.key)}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
 
           <div className="divide-y divide-slate-100">
@@ -285,7 +420,10 @@ export default function ContactAttemptsPage() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-bold text-slate-900">
+                      <p
+                        title={getClientFullName(flow.client)}
+                        className="truncate text-sm font-bold text-slate-900"
+                      >
                         {getClientFullName(flow.client)}
                       </p>
 
@@ -296,17 +434,29 @@ export default function ContactAttemptsPage() {
                       )}
                     </div>
 
-                    <p className="mt-1 text-xs font-medium text-slate-500">
+                    <p
+                      title={flow.client.phone_primary || "Sin teléfono"}
+                      className="mt-1 text-xs font-medium text-slate-500"
+                    >
                       {flow.client.phone_primary}
                     </p>
                   </div>
 
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-800">
+                    <p
+                      title={
+                        flow.installation?.description ||
+                        "Instalación sin descripción"
+                      }
+                      className="truncate text-sm font-medium text-slate-800"
+                    >
                       {flow.installation?.description ||
                         "Instalación sin descripción"}
                     </p>
-                    <p className="mt-1 line-clamp-1 text-xs text-slate-500">
+                    <p
+                      title={flow.follow_up.reason || "Sin motivo registrado"}
+                      className="mt-1 line-clamp-1 text-xs text-slate-500"
+                    >
                       {flow.follow_up.reason || "Sin motivo registrado"}
                     </p>
                   </div>
@@ -361,7 +511,10 @@ export default function ContactAttemptsPage() {
                     </p>
 
                     {flow.last_message && (
-                      <p className="mt-1 line-clamp-1 text-xs text-slate-500">
+                      <p
+                        title={getLastMessagePreview(flow.last_message)}
+                        className="mt-1 line-clamp-1 text-xs text-slate-500"
+                      >
                         {getLastMessagePreview(flow.last_message)}
                       </p>
                     )}
@@ -563,6 +716,48 @@ export default function ContactAttemptsPage() {
             );
           })}
         </div>
+      )}
+
+      {!loading && !error && filteredFlows.length > 0 && (
+        <section className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-600 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-medium">
+            Mostrando{" "}
+            <span className="font-semibold">
+              {pageStartIndex}-{pageEndIndex}
+            </span>{" "}
+            de <span className="font-semibold">{pagination.totalItems}</span>{" "}
+            contactos · Página{" "}
+            <span className="font-semibold">{safeCurrentPage}</span> de{" "}
+            <span className="font-semibold">{totalPages}</span>
+            {refreshing && (
+              <span className="ml-2 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
+                Actualizando...
+              </span>
+            )}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={safeCurrentPage <= 1 || refreshing}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Anterior
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setCurrentPage((page) => Math.min(totalPages, page + 1))
+              }
+              disabled={safeCurrentPage >= totalPages || refreshing}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente
+            </button>
+          </div>
+        </section>
       )}
 
       {selectedFlow && (

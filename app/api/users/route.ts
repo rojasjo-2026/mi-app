@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { StaffRole } from "@prisma/client";
+import { Prisma, StaffRole } from "@prisma/client";
 
 type CreateUserInput = {
   first_name?: string;
@@ -10,6 +10,7 @@ type CreateUserInput = {
   phone?: string | null;
   role?: string;
   is_active?: boolean;
+  permissions?: unknown;
 };
 
 function normalizeString(value: unknown) {
@@ -20,6 +21,25 @@ function normalizeString(value: unknown) {
 
 function isValidStaffRole(role: string | null): role is StaffRole {
   return !!role && Object.values(StaffRole).includes(role as StaffRole);
+}
+
+function normalizePermissions(
+  value: unknown,
+): Prisma.InputJsonObject | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return {};
+
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return value as Prisma.InputJsonObject;
+  }
+
+  return undefined;
+}
+
+function isInvalidPermissions(value: unknown) {
+  if (value === undefined) return false;
+  if (value === null) return false;
+  return typeof value !== "object" || Array.isArray(value);
 }
 
 export async function GET(req: Request) {
@@ -90,6 +110,7 @@ export async function GET(req: Request) {
         phone: true,
         role: true,
         is_active: true,
+        permissions: true,
         created_at: true,
         updated_at: true,
       },
@@ -127,6 +148,7 @@ export async function POST(req: Request) {
     const phone = normalizeString(body.phone);
     const role = normalizeString(body.role);
     const is_active = body.is_active ?? true;
+    const permissions = normalizePermissions(body.permissions);
 
     const errors: Array<{ field: string; error: string }> = [];
 
@@ -144,6 +166,10 @@ export async function POST(req: Request) {
       errors.push({ field: "role", error: "invalid" });
     }
 
+    if (isInvalidPermissions(body.permissions)) {
+      errors.push({ field: "permissions", error: "invalid" });
+    }
+
     if (errors.length > 0) {
       return NextResponse.json(
         {
@@ -155,7 +181,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔥 AQUÍ ESTÁ EL FIX
     const safeFirstName = first_name!;
     const safeLastName1 = last_name_1!;
     const safeRole = role as StaffRole;
@@ -186,6 +211,7 @@ export async function POST(req: Request) {
         phone,
         role: safeRole,
         is_active,
+        ...(permissions !== undefined ? { permissions } : {}),
       },
       select: {
         user_id: true,
@@ -196,6 +222,7 @@ export async function POST(req: Request) {
         phone: true,
         role: true,
         is_active: true,
+        permissions: true,
         created_at: true,
         updated_at: true,
       },

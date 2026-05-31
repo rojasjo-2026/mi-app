@@ -78,20 +78,178 @@ function mapContactFlow(flow: ContactFlowWithRelations) {
   };
 }
 
+type ContactFlowFilter = "all" | "unread" | "waiting" | "confirmed" | "manual";
+type ContactFlowSortKey =
+  | "client"
+  | "installation"
+  | "status"
+  | "risk"
+  | "targetDate"
+  | "selectedDate"
+  | "lastInteraction";
+type SortDirection = "asc" | "desc";
+
+function normalizePositiveInteger(value: string | null, fallback: number) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.floor(parsed));
+}
+
+function normalizeFilter(value: string | null): ContactFlowFilter {
+  if (
+    value === "unread" ||
+    value === "waiting" ||
+    value === "confirmed" ||
+    value === "manual"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
+function normalizeSortKey(value: string | null): ContactFlowSortKey {
+  if (
+    value === "client" ||
+    value === "installation" ||
+    value === "status" ||
+    value === "risk" ||
+    value === "targetDate" ||
+    value === "selectedDate" ||
+    value === "lastInteraction"
+  ) {
+    return value;
+  }
+
+  return "lastInteraction";
+}
+
+function normalizeSortDirection(value: string | null): SortDirection {
+  return value === "asc" ? "asc" : "desc";
+}
+
+function buildContactFlowWhere(params: {
+  followUpId?: string | null;
+  filter?: ContactFlowFilter;
+}) {
+  const where: Prisma.MaintenanceContactFlowWhereInput = {
+    ...(params.followUpId ? { follow_up_id: params.followUpId } : {}),
+  };
+
+  if (params.filter === "unread") {
+    where.messages = {
+      some: {
+        direction: "INBOUND",
+      },
+    };
+  }
+
+  if (params.filter === "waiting") {
+    where.status = {
+      in: ["WAITING_RESPONSE", "OPTIONS_SENT"],
+    };
+  }
+
+  if (params.filter === "confirmed") {
+    where.status = "CONFIRMED";
+  }
+
+  if (params.filter === "manual") {
+    where.status = "MANUAL_REQUIRED";
+  }
+
+  return where;
+}
+
+function buildContactFlowOrderBy(
+  sortKey: ContactFlowSortKey,
+  sortDirection: SortDirection,
+): Prisma.MaintenanceContactFlowOrderByWithRelationInput[] {
+  const direction = sortDirection === "asc" ? "asc" : "desc";
+
+  if (sortKey === "client") {
+    return [
+      { client: { first_name: direction } },
+      { client: { last_name_1: direction } },
+      { updated_at: "desc" },
+    ];
+  }
+
+  if (sortKey === "installation") {
+    return [
+      { installation: { description: direction } },
+      { updated_at: "desc" },
+    ];
+  }
+
+  if (sortKey === "status") {
+    return [{ status: direction }, { updated_at: "desc" }];
+  }
+
+  if (sortKey === "risk") {
+    return [{ requires_manual_action: direction }, { status: direction }];
+  }
+
+  if (sortKey === "targetDate") {
+    return [{ follow_up: { target_date: direction } }, { updated_at: "desc" }];
+  }
+
+  if (sortKey === "selectedDate") {
+    return [{ selected_date: direction }, { updated_at: "desc" }];
+  }
+
+  return [{ last_message_at: direction }, { updated_at: "desc" }];
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const followUpId = searchParams.get("follow_up_id");
-
-    const flows = await prisma.maintenanceContactFlow.findMany({
-      where: followUpId
-        ? {
-            follow_up_id: followUpId,
-          }
-        : undefined,
-      include: contactFlowInclude,
-      orderBy: [{ created_at: "desc" }],
+    const followUpId = searchParams.get("follow_up_id")?.trim() || null;
+    const page = normalizePositiveInteger(searchParams.get("page"), 1);
+    const pageSize = Math.min(
+      100,
+      normalizePositiveInteger(searchParams.get("pageSize"), 25),
+    );
+    const filter = normalizeFilter(searchParams.get("filter"));
+    const sortKey = normalizeSortKey(searchParams.get("sortKey"));
+    const sortDirection = normalizeSortDirection(
+      searchParams.get("sortDirection"),
+    );
+    const skip = (page - 1) * pageSize;
+    const where = buildContactFlowWhere({ followUpId, filter });
+    const baseMetricsWhere = buildContactFlowWhere({
+      followUpId,
+      filter: "all",
     });
+
+    const [flows, totalItems, all, unread, waiting, confirmed, manual] =
+      await prisma.$transaction([
+        prisma.maintenanceContactFlow.findMany({
+          where,
+          include: contactFlowInclude,
+          orderBy: buildContactFlowOrderBy(sortKey, sortDirection),
+          skip,
+          take: pageSize,
+        }),
+        prisma.maintenanceContactFlow.count({ where }),
+        prisma.maintenanceContactFlow.count({ where: baseMetricsWhere }),
+        prisma.maintenanceContactFlow.count({
+          where: buildContactFlowWhere({ followUpId, filter: "unread" }),
+        }),
+        prisma.maintenanceContactFlow.count({
+          where: buildContactFlowWhere({ followUpId, filter: "waiting" }),
+        }),
+        prisma.maintenanceContactFlow.count({
+          where: buildContactFlowWhere({ followUpId, filter: "confirmed" }),
+        }),
+        prisma.maintenanceContactFlow.count({
+          where: buildContactFlowWhere({ followUpId, filter: "manual" }),
+        }),
+      ]);
 
     const data = flows.map(mapContactFlow);
 
@@ -99,6 +257,19 @@ export async function GET(req: Request) {
       {
         success: true,
         data,
+        pagination: {
+          page,
+          pageSize,
+          totalItems,
+          totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+        },
+        metrics: {
+          all,
+          unread,
+          waiting,
+          confirmed,
+          manual,
+        },
       },
       { status: 200 },
     );

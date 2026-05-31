@@ -224,8 +224,13 @@ model User {
   phone       String?
   role        StaffRole
   is_active   Boolean   @default(true)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
+
+  // Stores custom access rules by module/section.
+  // This allows role-based defaults and user-specific overrides.
+  permissions Json @default("{}")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   installations_as_technician Installation[] @relation("InstallationTechnician")
   follow_ups_as_technician    FollowUp[]     @relation("FollowUpTechnician")

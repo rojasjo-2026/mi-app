@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma, StaffRole } from "@prisma/client";
 
 type RouteContext = {
   params: Promise<{
@@ -15,14 +16,8 @@ type UpdateUserInput = {
   phone?: string | null;
   role?: string;
   is_active?: boolean;
+  permissions?: unknown;
 };
-
-const allowedRoles = [
-  "TECHNICIAN",
-  "SUPERVISOR",
-  "ADMINISTRATION",
-  "ADMIN",
-] as const;
 
 function normalizeString(value: unknown) {
   if (typeof value !== "string") return null;
@@ -30,8 +25,27 @@ function normalizeString(value: unknown) {
   return trimmed === "" ? null : trimmed;
 }
 
-function validateRole(role: string | null) {
-  return role && allowedRoles.includes(role as (typeof allowedRoles)[number]);
+function isValidStaffRole(role: string | null): role is StaffRole {
+  return !!role && Object.values(StaffRole).includes(role as StaffRole);
+}
+
+function normalizePermissions(
+  value: unknown,
+): Prisma.InputJsonObject | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return {};
+
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return value as Prisma.InputJsonObject;
+  }
+
+  return undefined;
+}
+
+function isInvalidPermissions(value: unknown) {
+  if (value === undefined) return false;
+  if (value === null) return false;
+  return typeof value !== "object" || Array.isArray(value);
 }
 
 export async function GET(_req: Request, context: RouteContext) {
@@ -49,6 +63,7 @@ export async function GET(_req: Request, context: RouteContext) {
         phone: true,
         role: true,
         is_active: true,
+        permissions: true,
         created_at: true,
         updated_at: true,
       },
@@ -100,6 +115,7 @@ export async function PUT(req: Request, context: RouteContext) {
         phone: true,
         role: true,
         is_active: true,
+        permissions: true,
       },
     });
 
@@ -116,20 +132,27 @@ export async function PUT(req: Request, context: RouteContext) {
     const first_name = normalizeString(body.first_name) ?? existing.first_name;
     const last_name_1 =
       normalizeString(body.last_name_1) ?? existing.last_name_1;
+
     const last_name_2 =
       body.last_name_2 !== undefined
         ? normalizeString(body.last_name_2)
         : existing.last_name_2;
+
     const email =
       body.email !== undefined
-        ? normalizeString(body.email)?.toLowerCase() ?? null
+        ? (normalizeString(body.email)?.toLowerCase() ?? null)
         : existing.email;
+
     const phone =
       body.phone !== undefined ? normalizeString(body.phone) : existing.phone;
+
     const role =
       body.role !== undefined ? normalizeString(body.role) : existing.role;
+
     const is_active =
       body.is_active !== undefined ? body.is_active : existing.is_active;
+
+    const permissions = normalizePermissions(body.permissions);
 
     const errors: Array<{ field: string; error: string }> = [];
 
@@ -143,8 +166,12 @@ export async function PUT(req: Request, context: RouteContext) {
 
     if (!role) {
       errors.push({ field: "role", error: "required" });
-    } else if (!validateRole(role)) {
+    } else if (!isValidStaffRole(role)) {
       errors.push({ field: "role", error: "invalid" });
+    }
+
+    if (isInvalidPermissions(body.permissions)) {
+      errors.push({ field: "permissions", error: "invalid" });
     }
 
     if (errors.length > 0) {
@@ -183,8 +210,9 @@ export async function PUT(req: Request, context: RouteContext) {
         last_name_2,
         email,
         phone,
-        role: role as never,
+        role: role as StaffRole,
         is_active,
+        ...(permissions !== undefined ? { permissions } : {}),
       },
       select: {
         user_id: true,
@@ -195,6 +223,7 @@ export async function PUT(req: Request, context: RouteContext) {
         phone: true,
         role: true,
         is_active: true,
+        permissions: true,
         created_at: true,
         updated_at: true,
       },
