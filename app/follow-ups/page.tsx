@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -19,504 +19,52 @@ import {
   Wrench,
 } from "lucide-react";
 import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
-
-type Technician = {
-  user_id?: string;
-  full_name?: string | null;
-  name?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-  email?: string | null;
-};
-
-type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
-
-type FollowUp = {
-  follow_up_id: string;
-  client_id: string;
-  installation_id: string | null;
-  target_date: string;
-  scheduled_date?: string | null;
-  due_date?: string | null;
-  completed_at?: string | null;
-  reason: string | null;
-  priority: number | null;
-  maintenance_type?: string | null;
-  estimated_amount?: unknown;
-  final_amount?: unknown;
-  cost_amount?: unknown;
-  billing_status?: string | null;
-  billing_notes?: string | null;
-  technician_id?: string | null;
-  technician?: Technician | null;
-  follow_up_status?: {
-    code: string;
-    name: string;
-  };
-  client?: {
-    client_id?: string;
-    first_name?: string | null;
-    last_name_1?: string | null;
-    last_name_2?: string | null;
-    phone_primary?: string | null;
-  } | null;
-  installation?: {
-    installation_id?: string;
-    description?: string | null;
-    installation_date?: string | null;
-  } | null;
-};
-
-type FollowUpFilter = "all" | "pending" | "completed" | "postponed";
-type TimingFilter = "all" | "overdue" | "today" | "upcoming";
-type PriorityFilter = "all" | "1" | "2" | "3";
-type BillingFilter =
-  | "all"
-  | "PENDING"
-  | "INVOICED"
-  | "PARTIALLY_PAID"
-  | "PAID"
-  | "NOT_BILLABLE"
-  | "BILLING_ERROR"
-  | "CANCELLED";
-
-type PaginationState = {
-  page: number;
-  pageSize: number;
-  totalItems: number;
-  totalPages: number;
-};
-
-type FollowUpMetrics = {
-  total: number;
-  pending: number;
-  completed: number;
-  overdue: number;
-  today: number;
-  pendingBilling: number;
-};
-
-type SortKey =
-  | "maintenance"
-  | "client"
-  | "installation"
-  | "targetDate"
-  | "scheduledDate"
-  | "technician"
-  | "priority"
-  | "amount"
-  | "billing"
-  | "status";
-
-type SortDirection = "asc" | "desc";
-
-type ColumnKey =
-  | "maintenance"
-  | "client"
-  | "installation"
-  | "targetDate"
-  | "scheduledDate"
-  | "technician"
-  | "priority"
-  | "amount"
-  | "billing"
-  | "status"
-  | "actions";
-
-type OptionalColumnKey = Exclude<ColumnKey, "maintenance" | "actions">;
-
-type ColumnWidths = Record<ColumnKey, number>;
-type VisibleColumns = Record<OptionalColumnKey, boolean>;
-
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
-const PAGE_SIZE_OPTIONS = [25, 50, 100];
-
-const INITIAL_COLUMN_WIDTHS: ColumnWidths = {
-  maintenance: 320,
-  client: 220,
-  installation: 260,
-  targetDate: 150,
-  scheduledDate: 160,
-  technician: 220,
-  priority: 140,
-  amount: 150,
-  billing: 190,
-  status: 150,
-  actions: 160,
-};
-
-const MIN_COLUMN_WIDTHS: ColumnWidths = {
-  maintenance: 280,
-  client: 180,
-  installation: 210,
-  targetDate: 130,
-  scheduledDate: 140,
-  technician: 170,
-  priority: 120,
-  amount: 130,
-  billing: 150,
-  status: 130,
-  actions: 160,
-};
-
-const INITIAL_VISIBLE_COLUMNS: VisibleColumns = {
-  client: true,
-  installation: true,
-  targetDate: true,
-  scheduledDate: false,
-  technician: false,
-  priority: true,
-  amount: false,
-  billing: true,
-  status: true,
-};
-
-const OPTIONAL_COLUMNS: { key: OptionalColumnKey; label: string }[] = [
-  { key: "client", label: "Cliente" },
-  { key: "installation", label: "Instalación" },
-  { key: "targetDate", label: "Fecha objetivo" },
-  { key: "scheduledDate", label: "Fecha agendada" },
-  { key: "technician", label: "Técnico" },
-  { key: "priority", label: "Prioridad" },
-  { key: "amount", label: "Monto" },
-  { key: "billing", label: "Facturación" },
-  { key: "status", label: "Estado" },
-];
-
-const COLUMN_LABELS: Record<ColumnKey, string> = {
-  maintenance: "Mantenimiento",
-  client: "Cliente",
-  installation: "Instalación",
-  targetDate: "Fecha objetivo",
-  scheduledDate: "Fecha agendada",
-  technician: "Técnico",
-  priority: "Prioridad",
-  amount: "Monto",
-  billing: "Facturación",
-  status: "Estado",
-  actions: "Acciones",
-};
-
-function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
-  const countryPreset =
-    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
-
-  return {
-    currency: settings?.default_currency || countryPreset.primaryCurrency,
-    locale: countryPreset.locale,
-  };
-}
-
-function getFilterButtonClass(isActive: boolean) {
-  return isActive
-    ? "rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm transition"
-    : "rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50";
-}
-
-function getStatusClasses(status?: string) {
-  if (status === "completed") {
-    return "border border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-
-  if (status === "postponed") {
-    return "border border-orange-200 bg-orange-50 text-orange-700";
-  }
-
-  if (status === "confirmed") {
-    return "border border-sky-200 bg-sky-50 text-sky-700";
-  }
-
-  return "border border-blue-200 bg-blue-50 text-blue-700";
-}
-
-function getPriorityClasses(priority?: number | null) {
-  if (priority === 1) {
-    return "border border-red-200 bg-red-50 text-red-700";
-  }
-
-  if (priority === 2) {
-    return "border border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  if (priority === 3) {
-    return "border border-violet-200 bg-violet-50 text-violet-700";
-  }
-
-  return "border border-slate-200 bg-slate-50 text-slate-600";
-}
-
-function getPriorityLabel(priority?: number | null) {
-  if (priority === 1) return "Alta";
-  if (priority === 2) return "Media";
-  if (priority === 3) return "Baja";
-
-  return "Sin prioridad";
-}
-
-function getBillingStatusLabel(status?: string | null) {
-  switch (status) {
-    case "PENDING":
-      return "Pendiente de facturar";
-    case "INVOICED":
-      return "Facturado";
-    case "PARTIALLY_PAID":
-      return "Pago parcial";
-    case "PAID":
-      return "Pagado";
-    case "NOT_BILLABLE":
-      return "No facturable";
-    case "BILLING_ERROR":
-      return "Error de facturación";
-    case "CANCELLED":
-      return "Cancelado";
-    default:
-      return "Sin estado financiero";
-  }
-}
-
-function getBillingStatusClasses(status?: string | null) {
-  switch (status) {
-    case "PAID":
-      return "border border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "INVOICED":
-      return "border border-blue-200 bg-blue-50 text-blue-700";
-    case "PARTIALLY_PAID":
-      return "border border-amber-200 bg-amber-50 text-amber-700";
-    case "NOT_BILLABLE":
-      return "border border-slate-200 bg-slate-50 text-slate-600";
-    case "BILLING_ERROR":
-      return "border border-red-200 bg-red-50 text-red-700";
-    case "CANCELLED":
-      return "border border-slate-300 bg-slate-100 text-slate-700";
-    default:
-      return "border border-violet-200 bg-violet-50 text-violet-700";
-  }
-}
-
-function formatDateLabel(value?: string | null, locale = "es-CR") {
-  if (!value) return null;
-
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return parsed.toLocaleDateString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function getDateOnly(value?: string | null) {
-  if (!value) return null;
-
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-}
-
-function getTimingMeta(targetDate?: string | null, status?: string) {
-  if (status === "completed") {
-    return {
-      key: "closed",
-      label: "Cerrado",
-      classes: "border border-slate-200 bg-slate-50 text-slate-600",
-    };
-  }
-
-  const target = getDateOnly(targetDate);
-
-  if (!target) {
-    return {
-      key: "unknown",
-      label: "Sin fecha",
-      classes: "border border-slate-200 bg-slate-50 text-slate-600",
-    };
-  }
-
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  if (target.getTime() < today.getTime()) {
-    return {
-      key: "overdue",
-      label: "Atrasado",
-      classes: "border border-red-200 bg-red-50 text-red-700",
-    };
-  }
-
-  if (target.getTime() === today.getTime()) {
-    return {
-      key: "today",
-      label: "Hoy",
-      classes: "border border-amber-200 bg-amber-50 text-amber-700",
-    };
-  }
-
-  return {
-    key: "upcoming",
-    label: "Próximo",
-    classes: "border border-emerald-200 bg-emerald-50 text-emerald-700",
-  };
-}
-
-function getClientName(client?: FollowUp["client"]) {
-  const composedName = [
-    client?.first_name,
-    client?.last_name_1,
-    client?.last_name_2,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  return composedName || "Cliente sin nombre";
-}
-
-function getTechnicianName(technician?: Technician | null) {
-  if (!technician) return "Sin técnico asignado";
-
-  const composedName =
-    technician.full_name ||
-    technician.name ||
-    [technician.first_name, technician.last_name].filter(Boolean).join(" ");
-
-  return composedName?.trim() || technician.email || "Sin técnico asignado";
-}
-
-function formatMaintenanceType(value?: string | null) {
-  if (!value) return "Mantenimiento general";
-
-  return value
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/^\w/, (letter) => letter.toUpperCase());
-}
-
-function toNumber(value: unknown) {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  return null;
-}
-
-function getMainAmount(item: FollowUp) {
-  return toNumber(item.final_amount) ?? toNumber(item.estimated_amount);
-}
-
-function formatMoney(value: unknown, currency: string, locale: string) {
-  const amount = toNumber(value);
-
-  if (amount === null) return "No definido";
-
-  try {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${currency} ${amount.toLocaleString(locale, {
-      maximumFractionDigits: 0,
-    })}`;
-  }
-}
-
-function getSearchText(item: FollowUp) {
-  return [
-    getClientName(item.client),
-    item.client?.phone_primary,
-    item.reason,
-    item.installation?.description,
-    item.follow_up_status?.name,
-    item.billing_status,
-    getTechnicianName(item.technician),
-    formatMaintenanceType(item.maintenance_type),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
-
-function getDateTimeForSort(value?: string | null) {
-  const parsed = new Date(value || "");
-
-  if (Number.isNaN(parsed.getTime())) {
-    return Number.MAX_SAFE_INTEGER;
-  }
-
-  return parsed.getTime();
-}
-
-function compareText(a: string, b: string, direction: SortDirection) {
-  const result = a.localeCompare(b, "es", {
-    sensitivity: "base",
-    numeric: true,
-  });
-
-  return direction === "asc" ? result : -result;
-}
-
-function compareNumber(a: number, b: number, direction: SortDirection) {
-  const result = a - b;
-
-  return direction === "asc" ? result : -result;
-}
-
-function getStickyHeaderClass(columnKey: ColumnKey) {
-  if (columnKey === "maintenance") {
-    return "sticky left-0 z-30 bg-slate-50 shadow-[8px_0_16px_-16px_rgba(15,23,42,0.45)]";
-  }
-
-  if (columnKey === "actions") {
-    return "sticky right-0 z-30 bg-slate-50 shadow-[-8px_0_16px_-16px_rgba(15,23,42,0.45)]";
-  }
-
-  return "";
-}
-
-function getStickyBodyClass(columnKey: ColumnKey, isSelected: boolean) {
-  if (columnKey === "maintenance") {
-    return [
-      "sticky left-0 z-20 shadow-[8px_0_16px_-16px_rgba(15,23,42,0.45)]",
-      isSelected ? "bg-blue-50" : "bg-white group-hover:bg-blue-50/70",
-    ].join(" ");
-  }
-
-  if (columnKey === "actions") {
-    return [
-      "sticky right-0 z-20 shadow-[-8px_0_16px_-16px_rgba(15,23,42,0.45)]",
-      isSelected ? "bg-blue-50" : "bg-white group-hover:bg-blue-50/70",
-    ].join(" ");
-  }
-
-  return "";
-}
+  COLUMN_LABELS,
+  INITIAL_COLUMN_WIDTHS,
+  INITIAL_VISIBLE_COLUMNS,
+  MIN_COLUMN_WIDTHS,
+  OPTIONAL_COLUMNS,
+  PAGE_SIZE_OPTIONS,
+} from "./constants/followUpsPageConstants";
+import type {
+  AppSettingsResponse,
+  BillingFilter,
+  ColumnKey,
+  ColumnWidths,
+  FollowUp,
+  FollowUpFilter,
+  FollowUpMetrics,
+  OptionalColumnKey,
+  PaginationState,
+  PriorityFilter,
+  SortDirection,
+  SortKey,
+  Technician,
+  TimingFilter,
+  VisibleColumns,
+} from "./types/followUpsPageTypes";
+import {
+  compareNumber,
+  compareText,
+  formatDateLabel,
+  formatMaintenanceType,
+  formatMoney,
+  getBillingStatusClasses,
+  getBillingStatusLabel,
+  getBusinessCountryMeta,
+  getClientName,
+  getDateTimeForSort,
+  getFilterButtonClass,
+  getMainAmount,
+  getPriorityClasses,
+  getPriorityLabel,
+  getSearchText,
+  getStatusClasses,
+  getStickyBodyClass,
+  getStickyHeaderClass,
+  getTechnicianName,
+  getTimingMeta,
+} from "./utils/followUpsPageUtils";
 
 function TableHeaderCell({
   columnKey,
@@ -1926,3 +1474,4 @@ export default function FollowUpsPage() {
     </main>
   );
 }
+
