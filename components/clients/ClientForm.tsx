@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,8 +19,6 @@ import {
 import {
   COUNTRY_PRESET_OPTIONS,
   COUNTRY_PRESETS,
-  getCountryPreset,
-  type CountryPreset,
 } from "@/lib/settings/countryPresets";
 import AlertMessage from "@/components/clients/form/AlertMessage";
 import ClientBasicInfoSection from "@/components/clients/form/ClientBasicInfoSection";
@@ -33,135 +31,25 @@ import ClientFormSummaryPanel, {
   type CompletionItem,
 } from "@/components/clients/form/ClientFormSummaryPanel";
 import ClientFormStickyActions from "@/components/clients/form/ClientFormStickyActions";
-
-type ClientType = "PERSON" | "COMPANY" | "OTHER";
-type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
-
-type ClientFormData = {
-  id?: string;
-  client_id?: string;
-
-  client_type?: ClientType | null;
-  compliance_profile?: ClientComplianceProfile | null;
-  display_name?: string | null;
-  legal_name?: string | null;
-  company_name?: string | null;
-  commercial_name?: string | null;
-  main_contact_name?: string | null;
-  country_code?: string | null;
-  identification_country?: string | null;
-  identification_type?: string | null;
-  identification_number?: string | null;
-
-  first_name?: string | null;
-  last_name_1?: string | null;
-  last_name_2?: string | null;
-  phone_primary?: string | null;
-  phone_secondary?: string | null;
-  email?: string | null;
-  address_line?: string | null;
-  admin_level_1?: string | null;
-  admin_level_2?: string | null;
-  admin_level_3?: string | null;
-  client_status?: ClientStatus | string | null;
-  whatsapp_opt_in?: boolean | null;
-  default_payment_term?: "CASH" | "CREDIT" | null;
-  default_credit_days?: number | string | null;
-  default_discount_rate?: number | string | null;
-  credit_limit?: number | string | null;
-  billing_same_as_client?: boolean | null;
-  billing_name?: string | null;
-  billing_email?: string | null;
-  billing_phone?: string | null;
-  billing_address?: string | null;
-  tax_id?: string | null;
-  tax_exempt?: boolean | null;
-  preferred_currency?: string | null;
-};
-
-type ClientFormProps = {
-  mode: "create" | "edit";
-  initialData?: ClientFormData | null;
-};
-
-type AppSettingsResponse = {
-  success: boolean;
-  data: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-  message?: string;
-};
-
-type SectionKey = "personal" | "contact" | "location" | "finance" | "billing";
-
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
-const currencyNames: Record<string, string> = {
-  ARS: "Peso argentino",
-  BOB: "Boliviano",
-  BRL: "Real brasileño",
-  CAD: "Dólar canadiense",
-  CLP: "Peso chileno",
-  COP: "Peso colombiano",
-  CRC: "Colón costarricense",
-  DOP: "Peso dominicano",
-  EUR: "Euro",
-  GTQ: "Quetzal guatemalteco",
-  HNL: "Lempira hondureño",
-  MXN: "Peso mexicano",
-  NIO: "Córdoba nicaragüense",
-  PEN: "Sol peruano",
-  PYG: "Guaraní paraguayo",
-  USD: "Dólar estadounidense",
-  UYU: "Peso uruguayo",
-  VES: "Bolívar venezolano",
-  XAF: "Franco CFA de África Central",
-};
-
-const COSTA_RICA_IDENTIFICATION_OPTIONS = [
-  { value: "CEDULA_FISICA", label: "Cédula física" },
-  { value: "CEDULA_JURIDICA", label: "Cédula jurídica" },
-  { value: "DIMEX", label: "DIMEX" },
-  { value: "NITE", label: "NITE" },
-  { value: "EXTRANJERO_NO_DOMICILIADO", label: "Extranjero no domiciliado" },
-  { value: "NO_CONTRIBUYENTE", label: "No contribuyente" },
-  { value: "OTHER", label: "Otro" },
-];
-
-const GLOBAL_IDENTIFICATION_OPTIONS = [
-  { value: "NATIONAL_ID", label: "Documento nacional" },
-  { value: "TAX_ID", label: "Documento fiscal" },
-  { value: "PASSPORT", label: "Pasaporte" },
-  { value: "BUSINESS_REGISTRATION", label: "Registro empresarial" },
-  { value: "OTHER", label: "Otro" },
-];
-
-function getCountryByCode(countryCode?: string | null): CountryPreset {
-  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
-}
-
-function getClientTypeLabel(clientType: ClientType) {
-  if (clientType === "COMPANY") return "Empresa";
-  if (clientType === "OTHER") return "Otro";
-  return "Persona física";
-}
-
-function getComplianceProfileLabel(profile: ClientComplianceProfile) {
-  return profile === "COSTA_RICA" ? "Costa Rica" : "Global";
-}
-
-function getPaymentTermLabel(paymentTerm: "CASH" | "CREDIT") {
-  return paymentTerm === "CREDIT" ? "Crédito" : "Contado";
-}
-
-function getCountryDisplayName(countryCode: string) {
-  if (countryCode === "CR") return "Costa Rica";
-  return countryCode || "Sin país definido";
-}
+import {
+  COSTA_RICA_IDENTIFICATION_OPTIONS,
+  DEFAULT_COUNTRY_CODE,
+  GLOBAL_IDENTIFICATION_OPTIONS,
+  currencyNames,
+  type AppSettingsResponse,
+  type ClientComplianceProfile,
+  type ClientFormData,
+  type ClientFormProps,
+  type ClientType,
+  type SectionKey,
+} from "./client-form/clientFormConfig";
+import {
+  getClientTypeLabel,
+  getComplianceProfileLabel,
+  getCountryByCode,
+  getCountryDisplayName,
+  getPaymentTermLabel,
+} from "./client-form/clientFormUtils";
 
 export default function ClientForm({
   mode,
@@ -853,3 +741,4 @@ export default function ClientForm({
     </main>
   );
 }
+
