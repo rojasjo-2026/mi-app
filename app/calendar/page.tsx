@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -25,72 +25,16 @@ import {
   getWeekDates,
   monthNames,
 } from "@/lib/calendar/calendar-utils";
-
-type CalendarAvailabilityDay = {
-  date: string;
-  can_offer_day: boolean;
-  reason: string | null;
-  workload: {
-    total_jobs: number;
-    total_installations: number;
-    total_maintenances: number;
-    has_installation: boolean;
-  };
-  capacity: {
-    max_jobs_per_day: number | null;
-    max_installations_per_day: number | null;
-    max_maintenances_per_day: number | null;
-    remaining_jobs_capacity: number | null;
-    remaining_installations_capacity: number | null;
-    remaining_maintenances_capacity: number | null;
-  };
-};
-
-type AvailabilityRangeResponse = {
-  success: boolean;
-  data?:
-    | CalendarAvailabilityDay
-    | {
-        results?: CalendarAvailabilityDay[];
-      };
-  message?: string;
-};
-
-function getInclusiveDayCount(startDate: Date, endDate: Date) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-
-  const millisecondsPerDay = 24 * 60 * 60 * 1000;
-
-  return Math.max(
-    Math.round((end.getTime() - start.getTime()) / millisecondsPerDay) + 1,
-    1,
-  );
-}
-
-function mapAvailabilityByDate(items: CalendarAvailabilityDay[]) {
-  return items.reduce<Record<string, CalendarAvailabilityDay>>((acc, item) => {
-    acc[item.date] = item;
-    return acc;
-  }, {});
-}
-
-function isAvailabilityRangeData(
-  data: AvailabilityRangeResponse["data"],
-): data is { results?: CalendarAvailabilityDay[] } {
-  return Boolean(data && "results" in data);
-}
-
-function isAvailabilityDayData(
-  data: AvailabilityRangeResponse["data"],
-): data is CalendarAvailabilityDay {
-  return Boolean(
-    data && "date" in data && "workload" in data && "capacity" in data,
-  );
-}
+import type {
+  AvailabilityRangeResponse,
+  CalendarAvailabilityDay,
+} from "./types/calendarAvailabilityTypes";
+import {
+  getInclusiveDayCount,
+  isAvailabilityDayData,
+  isAvailabilityRangeData,
+  mapAvailabilityByDate,
+} from "./utils/calendarAvailabilityUtils";
 
 export default function CalendarPage() {
   const today = new Date();
@@ -861,3 +805,4 @@ export default function CalendarPage() {
     </main>
   );
 }
+
