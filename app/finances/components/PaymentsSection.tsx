@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FinanceInvoice } from "../types";
 import {
   formatCurrency,
@@ -14,265 +14,30 @@ import {
 } from "../utils";
 import FinanceSummaryCard from "./FinanceSummaryCard";
 import SectionHeader from "./SectionHeader";
-
-type PaymentMethod = "CASH" | "SINPE" | "BANK_TRANSFER" | "CARD" | "OTHER";
-type PaymentStatusFilter = "ALL" | "PENDING" | "PARTIALLY_PAID" | "OVERDUE";
-type PaymentSortKey =
-  | "invoice"
-  | "client"
-  | "date"
-  | "dueDate"
-  | "total"
-  | "paid"
-  | "balance"
-  | "status";
-type SortDirection = "asc" | "desc";
-type ColumnKey =
-  | "invoice"
-  | "client"
-  | "date"
-  | "dueDate"
-  | "total"
-  | "paid"
-  | "balance"
-  | "status"
-  | "action";
-type OptionalColumnKey = Exclude<ColumnKey, "invoice" | "action">;
-type VisibleColumns = Record<OptionalColumnKey, boolean>;
-
-type PaginationState = {
-  page: number;
-  pageSize: number;
-  totalItems: number;
-  totalPages: number;
-};
-
-type InvoiceMetrics = {
-  totalInvoiced: number;
-  pendingAmount: number;
-  paidAmount: number;
-  overdueAmount: number;
-  cancelledAmount: number;
-  overdueCount: number;
-};
-
-type InvoicesApiResponse = {
-  success: boolean;
-  message?: string;
-  data?: FinanceInvoice[];
-  pagination?: PaginationState;
-  metrics?: InvoiceMetrics;
-};
-
-const PAGE_SIZE_OPTIONS = [25, 50, 100];
-
-const STATUS_OPTIONS: { label: string; value: PaymentStatusFilter }[] = [
-  { label: "Todos", value: "ALL" },
-  { label: "Pendiente", value: "PENDING" },
-  { label: "Parcialmente pagado", value: "PARTIALLY_PAID" },
-  { label: "Vencido", value: "OVERDUE" },
-];
-
-const OPTIONAL_COLUMNS: { key: OptionalColumnKey; label: string }[] = [
-  { key: "client", label: "Cliente" },
-  { key: "date", label: "Fecha" },
-  { key: "dueDate", label: "Vencimiento" },
-  { key: "total", label: "Total" },
-  { key: "paid", label: "Pagado" },
-  { key: "balance", label: "Saldo" },
-  { key: "status", label: "Estado" },
-];
-
-const DEFAULT_VISIBLE_COLUMNS: VisibleColumns = {
-  client: true,
-  date: true,
-  dueDate: true,
-  total: true,
-  paid: true,
-  balance: true,
-  status: true,
-};
-
-const COLUMN_LABELS: Record<ColumnKey, string> = {
-  invoice: "Factura",
-  client: "Cliente",
-  date: "Fecha",
-  dueDate: "Vencimiento",
-  total: "Total",
-  paid: "Pagado",
-  balance: "Saldo",
-  status: "Estado",
-  action: "Acción",
-};
-
-const COLUMN_CLASSES: Record<ColumnKey, string> = {
-  invoice: "minmax(160px,0.9fr)",
-  client: "minmax(230px,1.2fr)",
-  date: "minmax(125px,0.7fr)",
-  dueDate: "minmax(140px,0.8fr)",
-  total: "minmax(130px,0.75fr)",
-  paid: "minmax(130px,0.75fr)",
-  balance: "minmax(130px,0.75fr)",
-  status: "minmax(165px,0.9fr)",
-  action: "160px",
-};
-
-function getGridTemplate(columns: ColumnKey[]) {
-  return columns.map((column) => COLUMN_CLASSES[column]).join(" ");
-}
-
-function getPaginationStartEnd(pagination: PaginationState) {
-  const totalItems = pagination.totalItems;
-  const pageSize = pagination.pageSize || 25;
-  const currentPage = pagination.page || 1;
-
-  return {
-    start: totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1,
-    end: Math.min(currentPage * pageSize, totalItems),
-  };
-}
-
-function getDueLabel(invoice: FinanceInvoice) {
-  if (!invoice.due_date) return "-";
-
-  const dueDate = new Date(invoice.due_date);
-  const today = new Date();
-  dueDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-
-  const diffDays = Math.round((dueDate.getTime() - today.getTime()) / 86400000);
-
-  if (diffDays < 0) return `Vencido (${Math.abs(diffDays)} días)`;
-  if (diffDays === 0) return "Vence hoy";
-  return formatDateLabel(invoice.due_date);
-}
-
-function SortableHeader({
-  columnKey,
-  label,
-  activeSortKey,
-  sortDirection,
-  onSortChange,
-  align = "left",
-}: {
-  columnKey: ColumnKey;
-  label: string;
-  activeSortKey: PaymentSortKey;
-  sortDirection: SortDirection;
-  onSortChange: (key: PaymentSortKey) => void;
-  align?: "left" | "right" | "center";
-}) {
-  const isSortable = columnKey !== "action";
-  const isActive = isSortable && columnKey === activeSortKey;
-  const indicator = isActive ? (sortDirection === "asc" ? "↑" : "↓") : "↕";
-  const alignmentClass =
-    align === "right"
-      ? "justify-end text-right"
-      : align === "center"
-        ? "justify-center text-center"
-        : "justify-start text-left";
-
-  return (
-    <button
-      type="button"
-      disabled={!isSortable}
-      title={isSortable ? `Ordenar por ${label}` : undefined}
-      onClick={() => {
-        if (isSortable) onSortChange(columnKey as PaymentSortKey);
-      }}
-      className={`flex min-w-0 items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition ${alignmentClass} ${
-        isActive ? "text-slate-700" : "text-slate-400"
-      } ${isSortable ? "hover:text-slate-700" : "cursor-default"}`}
-    >
-      <span className="truncate">{label}</span>
-      {isSortable && (
-        <span
-          className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${
-            isActive
-              ? "bg-blue-50 text-blue-700"
-              : "bg-slate-100 text-slate-400"
-          }`}
-        >
-          {indicator}
-        </span>
-      )}
-    </button>
-  );
-}
-
-function ColumnPicker({
-  isOpen,
-  visibleColumns,
-  onToggleColumn,
-}: {
-  isOpen: boolean;
-  visibleColumns: VisibleColumns;
-  onToggleColumn: (columnKey: OptionalColumnKey) => void;
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="absolute right-0 z-40 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-      <div className="px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-        Mostrar columnas
-      </div>
-
-      <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
-        Factura y Acción siempre permanecen visibles.
-      </div>
-
-      <div className="mt-2">
-        {OPTIONAL_COLUMNS.map((column) => (
-          <label
-            key={column.key}
-            className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            <input
-              type="checkbox"
-              checked={visibleColumns[column.key]}
-              onChange={() => onToggleColumn(column.key)}
-              className="h-4 w-4 rounded border-slate-300"
-            />
-            {column.label}
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PaymentField({
-  label,
-  value,
-  children,
-}: {
-  label: string;
-  value?: ReactNode;
-  children?: ReactNode;
-}) {
-  const displayValue = children ?? value ?? "-";
-  const valueTitle =
-    typeof displayValue === "string" || typeof displayValue === "number"
-      ? String(displayValue)
-      : undefined;
-
-  return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-      <p
-        title={label}
-        className="truncate text-[11px] font-black uppercase tracking-[0.16em] text-slate-400"
-      >
-        {label}
-      </p>
-      <div
-        title={valueTitle}
-        className="mt-1 min-w-0 truncate text-sm font-bold text-slate-800"
-      >
-        {displayValue}
-      </div>
-    </div>
-  );
-}
+import {
+  COLUMN_LABELS,
+  DEFAULT_VISIBLE_COLUMNS,
+  OPTIONAL_COLUMNS,
+  PAGE_SIZE_OPTIONS,
+  STATUS_OPTIONS,
+  type ColumnKey,
+  type InvoicesApiResponse,
+  type InvoiceMetrics,
+  type OptionalColumnKey,
+  type PaginationState,
+  type PaymentMethod,
+  type PaymentSortKey,
+  type PaymentStatusFilter,
+  type SortDirection,
+  type VisibleColumns,
+} from "./payments/paymentsSectionConfig";
+import {
+  getDueLabel,
+  getGridTemplate,
+  getPaginationStartEnd,
+} from "./payments/paymentsSectionUtils";
+import { SortableHeader } from "./payments/SortableHeader";
+import { ColumnPicker } from "./payments/ColumnPicker";
 
 export default function PaymentsSection() {
   const [invoices, setInvoices] = useState<FinanceInvoice[]>([]);
@@ -1022,3 +787,4 @@ export default function PaymentsSection() {
     </div>
   );
 }
+
