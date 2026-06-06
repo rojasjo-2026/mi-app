@@ -1,320 +1,35 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { provincias } from "@/lib/data/costa-rica-locations";
-import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-  type CountryPreset,
-} from "@/lib/settings/countryPresets";
 import NotesSection from "@/components/installations/NotesSection";
 import ClientSearchSection from "@/components/installations/ClientSearchSection";
 import InstallationLocationSection from "@/components/installations/InstallationLocationSection";
 import InstallationCoordinatesSection from "@/components/installations/InstallationCoordinatesSection";
 import InstallationCommercialSection from "@/components/installations/InstallationCommercialSection";
 import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
-
-type GooglePlaceAutocompleteResult = {
-  formatted_address?: string;
-  geometry?: {
-    location: {
-      lat: () => number;
-      lng: () => number;
-    };
-  };
-};
-
-type GooglePlaceAutocomplete = {
-  addListener: (eventName: "place_changed", callback: () => void) => void;
-  getPlace: () => GooglePlaceAutocompleteResult;
-};
-
-type GoogleMapsBrowserApi = {
-  maps?: {
-    places?: {
-      Autocomplete: new (
-        input: HTMLInputElement,
-        options: {
-          componentRestrictions?: { country: string };
-          fields: string[];
-        },
-      ) => GooglePlaceAutocomplete;
-    };
-  };
-};
-
-type SpeechRecognitionAlternativeLike = {
-  transcript?: string;
-};
-
-type SpeechRecognitionResultLike = {
-  [index: number]: SpeechRecognitionAlternativeLike | undefined;
-};
-
-type SpeechRecognitionResultListLike = {
-  [index: number]: SpeechRecognitionResultLike | undefined;
-};
-
-type SpeechRecognitionResultEventLike = {
-  results: SpeechRecognitionResultListLike;
-};
-
-type SpeechRecognitionErrorEventLike = {
-  error?: string;
-};
-
-type SpeechRecognitionLike = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onstart: (() => void) | null;
-  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
-
-type BrowserWindowWithGoogle = Window & {
-  google?: GoogleMapsBrowserApi;
-};
-
-type BrowserWindowWithSpeech = Window & {
-  webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  SpeechRecognition?: SpeechRecognitionConstructor;
-};
-
-type Client = {
-  client_id: string;
-  first_name: string;
-  last_name_1: string;
-  last_name_2?: string | null;
-  phone_primary?: string | null;
-  phone_secondary?: string | null;
-  address_line?: string | null;
-  admin_level_1?: string | null;
-  admin_level_2?: string | null;
-  admin_level_3?: string | null;
-  zone?: string | null;
-  operational_zone_id?: string | null;
-  reference_point?: string | null;
-  location_notes?: string | null;
-  latitude?: number | string | null;
-  longitude?: number | string | null;
-};
-
-type NominatimResponse = {
-  display_name?: string;
-  address?: {
-    city?: string;
-    town?: string;
-    village?: string;
-    county?: string;
-    state_district?: string;
-    state?: string;
-    municipality?: string;
-    suburb?: string;
-    neighbourhood?: string;
-    city_district?: string;
-    hamlet?: string;
-  };
-};
-
-type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
-
-const MAX_NOTES_LENGTH = 300;
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
-function getBusinessCountryPreset(countryCode?: string | null): CountryPreset {
-  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
-}
-
-function getSpeechRecognitionLocale(countryPreset: CountryPreset) {
-  if (countryPreset.countryCode === "BR") return "pt-BR";
-  if (countryPreset.countryCode === "US") return "en-US";
-  if (countryPreset.countryCode === "CA") return "en-CA";
-
-  return countryPreset.locale || "es-CR";
-}
-
-function getMapsCountryRestriction(countryPreset: CountryPreset) {
-  return countryPreset.countryCode.toLowerCase();
-}
-
-function isCostaRicaPreset(countryPreset: CountryPreset) {
-  return countryPreset.countryCode === "CR";
-}
-
-function getClientDisplayName(client: Client) {
-  return [client.first_name, client.last_name_1, client.last_name_2]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function normalizeText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function findBestLocationMatch(address: NominatimResponse["address"]) {
-  if (!address) {
-    return {
-      province: "",
-      canton: "",
-      district: "",
-    };
-  }
-
-  const possibleProvinceValues = [
-    address.state,
-    address.county,
-    address.state_district,
-  ]
-    .filter(Boolean)
-    .map((value) => normalizeText(String(value)));
-
-  const possibleCantonValues = [
-    address.city,
-    address.town,
-    address.municipality,
-    address.county,
-    address.city_district,
-  ]
-    .filter(Boolean)
-    .map((value) => normalizeText(String(value)));
-
-  const possibleDistrictValues = [
-    address.village,
-    address.suburb,
-    address.neighbourhood,
-    address.hamlet,
-    address.city_district,
-  ]
-    .filter(Boolean)
-    .map((value) => normalizeText(String(value)));
-
-  let matchedProvince = "";
-  let matchedCanton = "";
-  let matchedDistrict = "";
-
-  for (const provincia of provincias) {
-    const provinciaNombre = normalizeText(provincia.nombre);
-
-    const provinceMatched = possibleProvinceValues.some(
-      (value) =>
-        value === provinciaNombre ||
-        value.includes(provinciaNombre) ||
-        provinciaNombre.includes(value),
-    );
-
-    if (!provinceMatched) {
-      continue;
-    }
-
-    matchedProvince = provincia.nombre;
-
-    for (const canton of provincia.cantones) {
-      const cantonNombre = normalizeText(canton.nombre);
-
-      const cantonMatched = possibleCantonValues.some(
-        (value) =>
-          value === cantonNombre ||
-          value.includes(cantonNombre) ||
-          cantonNombre.includes(value),
-      );
-
-      if (!cantonMatched) {
-        continue;
-      }
-
-      matchedCanton = canton.nombre;
-
-      for (const distrito of canton.distritos) {
-        const distritoNombre = normalizeText(distrito.nombre);
-
-        const districtMatched = possibleDistrictValues.some(
-          (value) =>
-            value === distritoNombre ||
-            value.includes(distritoNombre) ||
-            distritoNombre.includes(value),
-        );
-
-        if (districtMatched) {
-          matchedDistrict = distrito.nombre;
-          break;
-        }
-      }
-
-      break;
-    }
-
-    break;
-  }
-
-  if (!matchedProvince) {
-    for (const provincia of provincias) {
-      for (const canton of provincia.cantones) {
-        const cantonNombre = normalizeText(canton.nombre);
-
-        const cantonMatched = possibleCantonValues.some(
-          (value) =>
-            value === cantonNombre ||
-            value.includes(cantonNombre) ||
-            cantonNombre.includes(value),
-        );
-
-        if (!cantonMatched) {
-          continue;
-        }
-
-        matchedProvince = provincia.nombre;
-        matchedCanton = canton.nombre;
-
-        for (const distrito of canton.distritos) {
-          const distritoNombre = normalizeText(distrito.nombre);
-
-          const districtMatched = possibleDistrictValues.some(
-            (value) =>
-              value === distritoNombre ||
-              value.includes(distritoNombre) ||
-              distritoNombre.includes(value),
-          );
-
-          if (districtMatched) {
-            matchedDistrict = distrito.nombre;
-            break;
-          }
-        }
-
-        return {
-          province: matchedProvince,
-          canton: matchedCanton,
-          district: matchedDistrict,
-        };
-      }
-    }
-  }
-
-  return {
-    province: matchedProvince,
-    canton: matchedCanton,
-    district: matchedDistrict,
-  };
-}
+import {
+  fallbackCountryPreset,
+  MAX_NOTES_LENGTH,
+  type AppSettingsResponse,
+  type BrowserWindowWithGoogle,
+  type BrowserWindowWithSpeech,
+  type Client,
+  type CountryPreset,
+  type NominatimResponse,
+  type SpeechRecognitionErrorEventLike,
+  type SpeechRecognitionLike,
+  type SpeechRecognitionResultEventLike,
+} from "./config/newInstallationPageConfig";
+import {
+  findBestLocationMatch,
+  getBusinessCountryPreset,
+  getClientDisplayName,
+  getMapsCountryRestriction,
+  getSpeechRecognitionLocale,
+  isCostaRicaPreset,
+} from "./utils/newInstallationPageUtils";
+import { CollapsibleSection } from "./components/CollapsibleSection";
 
 export default function NewInstallationPage() {
   const addressRef = useRef<HTMLInputElement | null>(null);
@@ -1134,38 +849,4 @@ export default function NewInstallationPage() {
   );
 }
 
-function CollapsibleSection({
-  title,
-  isOpen,
-  onToggle,
-  children,
-}: {
-  title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left md:px-6"
-      >
-        <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-          {title}
-        </h2>
 
-        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
-          {isOpen ? "Ocultar" : "Mostrar"}
-        </span>
-      </button>
-
-      {isOpen && (
-        <div className="border-t border-slate-100 px-5 pb-5 pt-2 md:px-6 md:pb-6">
-          {children}
-        </div>
-      )}
-    </section>
-  );
-}
