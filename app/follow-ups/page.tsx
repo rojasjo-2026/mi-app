@@ -66,30 +66,7 @@ import {
   getTimingMeta,
 } from "./utils/followUpsPageUtils";
 import { TableHeaderCell } from "./components/TableHeaderCell";
-
-function TableBodyCell({
-  children,
-  columnKey,
-  isSelected,
-  className = "",
-}: {
-  children: ReactNode;
-  columnKey: ColumnKey;
-  isSelected: boolean;
-  className?: string;
-}) {
-  return (
-    <div
-      className={[
-        "flex min-w-0 items-center border-r border-slate-100 px-4 py-3 last:border-r-0",
-        getStickyBodyClass(columnKey, isSelected),
-        className,
-      ].join(" ")}
-    >
-      {children}
-    </div>
-  );
-}
+import { TableBodyCell } from "./components/TableBodyCell";
 
 function DetailField({
   label,
@@ -1394,6 +1371,7 @@ export default function FollowUpsPage() {
     </main>
   );
 }
+
 
 
 
