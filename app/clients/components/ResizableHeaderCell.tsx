@@ -42,61 +42,54 @@ export function ResizableHeaderCell({
 
   const stickyClass =
     sticky === "left"
-      ? "sticky left-0 z-30 border-r border-slate-200 bg-slate-50 shadow-[10px_0_18px_-18px_rgba(15,23,42,0.45)]"
+      ? "sticky left-0 z-30 border-r border-slate-200 bg-slate-50 shadow-[10px_0_18px_-18px_rgba(15,23,42,0.35)]"
       : "";
 
   const isSortable = Boolean(sortKey && onSort);
   const isActiveSort = sortKey === activeSortKey;
+
   const sortIndicator = isActiveSort
     ? sortDirection === "asc"
       ? "↑"
       : "↓"
     : "↕";
 
+  const containerClassName = [
+    "relative flex min-w-0 items-center border-l border-slate-200 px-4 py-2.5 first:border-l-0",
+    alignmentClass,
+    stickyClass,
+  ].join(" ");
+
+  const buttonClassName = [
+    "flex min-w-0 items-center gap-2 truncate text-[11px] font-semibold uppercase tracking-[0.12em]",
+    isActiveSort ? "text-slate-700" : "text-slate-400",
+    isSortable
+      ? "cursor-pointer transition hover:text-slate-700"
+      : "cursor-default",
+  ].join(" ");
+
+  const indicatorClassName = [
+    "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] leading-none",
+    isActiveSort ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-400",
+  ].join(" ");
+
   return (
-    <div
-      className={[
-        "relative flex min-w-0 items-center border-l border-slate-200 px-4 py-3 first:border-l-0",
-        alignmentClass,
-        stickyClass,
-      ].join(" ")}
-    >
+    <div className={containerClassName}>
       <button
         type="button"
         disabled={!isSortable}
-        aria-sort={
-          isActiveSort
-            ? sortDirection === "asc"
-              ? "ascending"
-              : "descending"
-            : "none"
-        }
         title={isSortable ? `Ordenar por ${label}` : undefined}
         onClick={() => {
           if (sortKey && onSort) {
             onSort(sortKey);
           }
         }}
-        className={[
-          "flex min-w-0 items-center gap-2 truncate text-xs font-black uppercase tracking-[0.14em]",
-          isActiveSort ? "text-slate-700" : "text-slate-400",
-          isSortable
-            ? "cursor-pointer transition hover:text-slate-700"
-            : "cursor-default",
-        ].join(" ")}
+        className={buttonClassName}
       >
         <span className="truncate">{label}</span>
+
         {isSortable && (
-          <span
-            className={[
-              "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] leading-none",
-              isActiveSort
-                ? "bg-blue-50 text-blue-700"
-                : "bg-slate-100 text-slate-400",
-            ].join(" ")}
-          >
-            {sortIndicator}
-          </span>
+          <span className={indicatorClassName}>{sortIndicator}</span>
         )}
       </button>
 
@@ -113,5 +106,3 @@ export function ResizableHeaderCell({
     </div>
   );
 }
-
-

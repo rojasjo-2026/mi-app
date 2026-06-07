@@ -1,4 +1,8 @@
-import { ClientStatus as PrismaClientStatus, Prisma } from "@prisma/client";
+import {
+  ClientStatus as PrismaClientStatus,
+  InvoiceStatus as PrismaInvoiceStatus,
+  Prisma,
+} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   normalizeClientStatus,
@@ -224,6 +228,90 @@ function shouldReturnAllStatuses(status: ClientStatusInput) {
   return normalizeClientStatusFilter(status) === "all";
 }
 
+async function getClientOperationalSummary(clientId: string) {
+  const [
+    installationCount,
+    maintenanceCount,
+    pendingMaintenanceCount,
+    pendingInvoiceCount,
+    lastMaintenance,
+    lastContact,
+  ] = await prisma.$transaction([
+    prisma.installation.count({
+      where: {
+        client_id: clientId,
+        is_active: true,
+      },
+    }),
+
+    prisma.followUp.count({
+      where: {
+        client_id: clientId,
+      },
+    }),
+
+    prisma.followUp.count({
+      where: {
+        client_id: clientId,
+        completed_at: null,
+      },
+    }),
+
+    prisma.invoice.count({
+      where: {
+        client_id: clientId,
+        status: {
+          in: [
+            PrismaInvoiceStatus.PENDING,
+            PrismaInvoiceStatus.PARTIALLY_PAID,
+            PrismaInvoiceStatus.OVERDUE,
+          ],
+        },
+      },
+    }),
+
+    prisma.followUp.findFirst({
+      where: {
+        client_id: clientId,
+        completed_at: {
+          not: null,
+        },
+      },
+      orderBy: {
+        completed_at: "desc",
+      },
+      select: {
+        completed_at: true,
+      },
+    }),
+
+    prisma.contactAttempt.findFirst({
+      where: {
+        client_id: clientId,
+      },
+      orderBy: {
+        attempt_datetime: "desc",
+      },
+      select: {
+        attempt_datetime: true,
+      },
+    }),
+  ]);
+
+  return {
+    installation_count: installationCount,
+    maintenance_count: maintenanceCount,
+    pending_maintenance_count: pendingMaintenanceCount,
+    pending_invoice_count: pendingInvoiceCount,
+    last_maintenance: lastMaintenance?.completed_at
+      ? lastMaintenance.completed_at.toISOString()
+      : null,
+    last_contact: lastContact?.attempt_datetime
+      ? lastContact.attempt_datetime.toISOString()
+      : null,
+  };
+}
+
 export async function findClients({
   search,
   status,
@@ -318,8 +406,21 @@ export async function findClients({
       }),
     ]);
 
+  const enrichedClients = await Promise.all(
+    clients.map(async (client) => {
+      const operationalSummary = await getClientOperationalSummary(
+        client.client_id,
+      );
+
+      return {
+        ...client,
+        ...operationalSummary,
+      };
+    }),
+  );
+
   return {
-    data: clients,
+    data: enrichedClients,
     pagination: {
       page: safePage,
       pageSize: safePageSize,

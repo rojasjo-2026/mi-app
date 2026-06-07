@@ -1,17 +1,18 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import {
   normalizeClientStatus,
   getClientStatusLabel,
   type ClientStatus,
 } from "@/lib/clients/clientStatus";
-import {
-  getClientFullName,
-  getLocationLabel,
-  formatDateLabel,
-} from "@/lib/clients/clientList.utils";
 import { ClientListToast } from "@/components/clients/list/ClientListToast";
 import { ClientListLoadingState } from "@/components/clients/list/ClientListLoadingState";
 import { ClientListErrorState } from "@/components/clients/list/ClientListErrorState";
@@ -20,8 +21,9 @@ import { ClientListCard } from "@/components/clients/list/ClientListCard";
 import { ClientListEmptyState } from "@/components/clients/list/ClientListEmptyState";
 import {
   DEFAULT_COLUMN_WIDTHS,
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_VISIBLE_COLUMNS,
   MIN_COLUMN_WIDTHS,
-  OPTIONAL_COLUMNS,
   PAGE_SIZE_OPTIONS,
   type Client,
   type ClientMetrics,
@@ -35,7 +37,6 @@ import {
   type ToggleableColumnKey,
   type WhatsAppFilter,
 } from "./config/clientsPageConfig";
-import { getWhatsAppWebUrl } from "./utils/clientsPageUtils";
 import { ClientMetricCard } from "./components/ClientMetricCard";
 import { ClientPreviewPanel } from "./components/ClientPreviewPanel";
 import { ResizableHeaderCell } from "./components/ResizableHeaderCell";
@@ -50,11 +51,11 @@ export default function ClientsPage() {
   const [sort, setSort] = useState<SortType>("name");
   const [sortKey, setSortKey] = useState<SortKey>("client");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
-    pageSize: 25,
+    pageSize: DEFAULT_PAGE_SIZE,
     totalItems: 0,
     totalPages: 1,
   });
@@ -71,13 +72,7 @@ export default function ClientsPage() {
   const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<
     Record<ToggleableColumnKey, boolean>
-  >({
-    contact: true,
-    location: true,
-    operation: false,
-    activity: false,
-    status: true,
-  });
+  >(DEFAULT_VISIBLE_COLUMNS);
 
   const columnPickerRef = useRef<HTMLDivElement | null>(null);
 
@@ -225,15 +220,17 @@ export default function ClientsPage() {
     pageSize,
   ]);
 
-  const activeColumnKeys = useMemo<ClientTableColumnKey[]>(
-    () => [
-      "client",
-      ...OPTIONAL_COLUMNS.filter((column) => visibleColumns[column.key]).map(
-        (column) => column.key,
-      ),
-    ],
-    [visibleColumns],
-  );
+  const activeColumnKeys = useMemo<ClientTableColumnKey[]>(() => {
+    const columns: ClientTableColumnKey[] = ["client"];
+
+    if (visibleColumns.contact) columns.push("contact");
+    if (visibleColumns.location) columns.push("location");
+    if (visibleColumns.operation) columns.push("operation");
+    if (visibleColumns.activity) columns.push("activity");
+    if (visibleColumns.status) columns.push("status");
+
+    return columns;
+  }, [visibleColumns]);
 
   const gridTemplateColumns = useMemo(
     () =>
@@ -267,7 +264,7 @@ export default function ClientsPage() {
   );
 
   function startColumnResize(
-    event: React.MouseEvent<HTMLSpanElement>,
+    event: ReactMouseEvent<HTMLSpanElement>,
     columnKey: ClientTableColumnKey,
   ) {
     event.preventDefault();
@@ -392,37 +389,33 @@ export default function ClientsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 text-slate-900 md:p-8">
+    <main className="min-h-screen bg-slate-50 p-5 text-slate-900 md:p-6">
       <ClientListToast toast={toast} />
 
-      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
               Clientes
-            </p>
-
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-              Gestión de clientes
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Administra clientes, contactos, ubicaciones, WhatsApp y actividad
-              operativa desde una sola pantalla.
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+              Administra tus clientes, contactos, ubicaciones y actividad
+              operativa.
             </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
             <Link
               href="/clients/new"
-              className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
             >
               + Nuevo cliente
             </Link>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <ClientMetricCard
             title="Clientes visibles"
             value={metrics.total}
@@ -471,22 +464,50 @@ export default function ClientsPage() {
           onSortChange={handleSortSelectChange}
         />
 
-        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-bold text-slate-800">
-              Controles de tabla
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-800">
+              Mostrando {pageStartIndex}-{pageEndIndex} de {visibleTotal}{" "}
+              resultado{visibleTotal === 1 ? "" : "s"}
             </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Ajusta columnas visibles y cantidad de registros por página.
+
+            <p className="mt-0.5 text-xs text-slate-500">
+              Selecciona una fila para ver el resumen y acciones en el panel
+              derecho.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {loading && (
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                Actualizando...
+              </span>
+            )}
+
+            {statusFilter !== "all" && (
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                Estado: {getClientStatusLabel(statusFilter)}
+              </span>
+            )}
+
+            {whatsFilter !== "all" && (
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                WhatsApp:{" "}
+                {whatsFilter === "with" ? "Con WhatsApp" : "Sin WhatsApp"}
+              </span>
+            )}
+
+            {search.trim() && (
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                Búsqueda activa
+              </span>
+            )}
+
             <div ref={columnPickerRef} className="relative">
               <button
                 type="button"
                 onClick={() => setIsColumnPickerOpen((current) => !current)}
-                className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
                 Columnas
               </button>
@@ -498,7 +519,7 @@ export default function ClientsPage() {
               />
             </div>
 
-            <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm">
+            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
               Ver
               <select
                 value={pageSize}
@@ -506,7 +527,7 @@ export default function ClientsPage() {
                   setPageSize(Number(event.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-transparent text-sm font-bold outline-none"
+                className="bg-transparent text-sm font-semibold outline-none"
               >
                 {PAGE_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -518,52 +539,11 @@ export default function ClientsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-bold text-slate-800">
-              Mostrando {pageStartIndex}-{pageEndIndex} de {visibleTotal}{" "}
-              resultado{visibleTotal === 1 ? "" : "s"}
-            </p>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Selecciona una fila para ver el resumen y acciones en el panel
-              derecho.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {loading && (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                Actualizando...
-              </span>
-            )}
-
-            {statusFilter !== "all" && (
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                Estado: {getClientStatusLabel(statusFilter)}
-              </span>
-            )}
-
-            {whatsFilter !== "all" && (
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                WhatsApp:{" "}
-                {whatsFilter === "with" ? "Con WhatsApp" : "Sin WhatsApp"}
-              </span>
-            )}
-
-            {search.trim() && (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                Búsqueda activa
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
           {clients.length === 0 ? (
             <ClientListEmptyState />
           ) : (
-            <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="overflow-x-auto">
                 <div
                   style={{
@@ -573,7 +553,7 @@ export default function ClientsPage() {
                 >
                   <div
                     style={{ gridTemplateColumns }}
-                    className="grid border-b border-slate-200 bg-slate-50 text-xs font-black uppercase tracking-[0.14em] text-slate-400"
+                    className="grid border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400"
                   >
                     <ResizableHeaderCell
                       label="Cliente"
@@ -664,8 +644,8 @@ export default function ClientsPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-semibold text-slate-500">
+              <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-medium text-slate-500">
                   Página {safeCurrentPage} de {totalPages}
                 </p>
 
@@ -676,7 +656,7 @@ export default function ClientsPage() {
                       setCurrentPage((page) => Math.max(1, page - 1))
                     }
                     disabled={safeCurrentPage <= 1 || loading}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Anterior
                   </button>
@@ -687,7 +667,7 @@ export default function ClientsPage() {
                       setCurrentPage((page) => Math.min(totalPages, page + 1))
                     }
                     disabled={safeCurrentPage >= totalPages || loading}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Siguiente
                   </button>
@@ -705,4 +685,3 @@ export default function ClientsPage() {
     </main>
   );
 }
-

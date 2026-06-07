@@ -11,8 +11,12 @@ export type Client = {
   whatsapp_opt_in?: boolean | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
+
   maintenance_count?: number;
   installation_count?: number;
+  pending_maintenance_count?: number;
+  pending_invoice_count?: number;
+
   last_maintenance?: string | null;
   last_contact?: string | null;
 };
@@ -34,6 +38,7 @@ export type ClientMetrics = {
 export type StatusFilter = "all" | ClientStatus;
 export type WhatsAppFilter = "all" | "with" | "without";
 export type SortType = "name" | "recent";
+
 export type SortKey =
   | "client"
   | "contact"
@@ -41,6 +46,7 @@ export type SortKey =
   | "operation"
   | "activity"
   | "status";
+
 export type SortDirection = "asc" | "desc";
 
 export type ToastState = {
@@ -57,16 +63,23 @@ export type ClientMetricCardProps = {
   bgClass: string;
 };
 
+export const DEFAULT_PAGE_SIZE = 15;
+
+export const PAGE_SIZE_OPTIONS = [15, 25, 50, 100];
+
 export const DEFAULT_COLUMN_WIDTHS = {
   client: 330,
-  contact: 280,
-  location: 250,
-  operation: 185,
-  activity: 185,
+  contact: 260,
+  location: 240,
+  operation: 180,
+  activity: 180,
   status: 125,
 };
 
-export const MIN_COLUMN_WIDTHS: Record<keyof typeof DEFAULT_COLUMN_WIDTHS, number> = {
+export const MIN_COLUMN_WIDTHS: Record<
+  keyof typeof DEFAULT_COLUMN_WIDTHS,
+  number
+> = {
   client: 300,
   contact: 230,
   location: 210,
@@ -78,13 +91,18 @@ export const MIN_COLUMN_WIDTHS: Record<keyof typeof DEFAULT_COLUMN_WIDTHS, numbe
 export type ClientTableColumnKey = keyof typeof DEFAULT_COLUMN_WIDTHS;
 export type ToggleableColumnKey = Exclude<ClientTableColumnKey, "client">;
 
+export const DEFAULT_VISIBLE_COLUMNS: Record<ToggleableColumnKey, boolean> = {
+  contact: true,
+  location: true,
+  operation: false,
+  activity: false,
+  status: true,
+};
+
 export const OPTIONAL_COLUMNS: { key: ToggleableColumnKey; label: string }[] = [
   { key: "contact", label: "Contacto" },
   { key: "location", label: "Ubicación" },
+  { key: "status", label: "Estado" },
   { key: "operation", label: "Operación" },
   { key: "activity", label: "Actividad" },
-  { key: "status", label: "Estado" },
 ];
-
-export const PAGE_SIZE_OPTIONS = [25, 50, 100];
-

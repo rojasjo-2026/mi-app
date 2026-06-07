@@ -100,7 +100,7 @@ function ClientMetaItem({
       <span
         title={value}
         className={[
-          "truncate text-sm font-semibold",
+          "truncate text-sm font-medium",
           muted ? "text-slate-400" : "text-slate-700",
         ].join(" ")}
       >
@@ -114,10 +114,12 @@ function TableCell({
   children,
   align = "left",
   sticky,
+  selected = false,
 }: {
   children: ReactNode;
   align?: "left" | "center" | "right";
   sticky?: "left";
+  selected?: boolean;
 }) {
   const alignClass =
     align === "right"
@@ -128,7 +130,10 @@ function TableCell({
 
   const stickyClass =
     sticky === "left"
-      ? "sticky left-0 z-20 border-r border-slate-200 bg-white shadow-[10px_0_18px_-18px_rgba(15,23,42,0.45)] group-hover:bg-blue-50"
+      ? [
+          "sticky left-0 z-20 border-r border-slate-100 shadow-[10px_0_18px_-18px_rgba(15,23,42,0.35)]",
+          selected ? "bg-blue-50" : "bg-white group-hover:bg-slate-50",
+        ].join(" ")
       : "";
 
   return (
@@ -137,7 +142,9 @@ function TableCell({
         "flex min-w-0 items-center border-l border-slate-100 px-4 py-2.5 first:border-l-0",
         alignClass,
         stickyClass,
-      ].join(" ")}
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       {children}
     </div>
@@ -171,6 +178,7 @@ export function ClientListCard({
     <li
       role="button"
       tabIndex={0}
+      aria-pressed={isSelected}
       onClick={onSelect}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -180,17 +188,17 @@ export function ClientListCard({
       }}
       style={{ gridTemplateColumns }}
       className={[
-        "group grid min-h-[66px] cursor-pointer border-b border-l-4 border-slate-100 transition last:border-b-0 hover:bg-blue-50/70",
+        "group grid min-h-[60px] cursor-pointer border-b border-l-2 border-slate-100 transition last:border-b-0 hover:bg-slate-50",
         isSelected
-          ? "border-l-blue-600 bg-blue-50 ring-1 ring-inset ring-blue-200"
+          ? "border-l-blue-600 bg-blue-50"
           : "border-l-transparent bg-white",
       ].join(" ")}
     >
-      <TableCell sticky="left">
-        <div className="flex min-w-0 items-center gap-4">
+      <TableCell sticky="left" selected={isSelected}>
+        <div className="flex min-w-0 items-center gap-3">
           <div
             className={[
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black transition",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold transition",
               isSelected
                 ? "bg-blue-600 text-white"
                 : "bg-blue-50 text-blue-700 group-hover:bg-blue-100",
@@ -202,18 +210,18 @@ export function ClientListCard({
           <div className="min-w-0">
             <h2
               title={fullName}
-              className="truncate text-base font-black tracking-tight text-slate-950"
+              className="truncate text-sm font-semibold tracking-tight text-slate-950"
             >
               {fullName}
             </h2>
 
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500">
+              <span className="text-xs font-medium text-slate-500">
                 Cliente
               </span>
 
               {client.whatsapp_opt_in && (
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                   WhatsApp
                 </span>
               )}
@@ -224,15 +232,15 @@ export function ClientListCard({
 
       {visibleColumns.contact && (
         <TableCell>
-          <div className="min-w-0 space-y-1.5">
+          <div className="min-w-0 space-y-1">
             <ClientMetaItem
-              icon={<Phone className="h-4 w-4" />}
+              icon={<Phone className="h-3.5 w-3.5" />}
               value={client.phone_primary || "Sin teléfono"}
               muted={!client.phone_primary}
             />
 
             <ClientMetaItem
-              icon={<Mail className="h-4 w-4" />}
+              icon={<Mail className="h-3.5 w-3.5" />}
               value={client.email || "Sin email"}
               muted={!client.email}
             />
@@ -243,7 +251,7 @@ export function ClientListCard({
       {visibleColumns.location && (
         <TableCell>
           <ClientMetaItem
-            icon={<MapPin className="h-4 w-4" />}
+            icon={<MapPin className="h-3.5 w-3.5" />}
             value={locationLabel || "Sin ubicación"}
             muted={!locationLabel}
           />
@@ -254,9 +262,9 @@ export function ClientListCard({
         <TableCell>
           <div className="min-w-0 space-y-1">
             <div className="flex min-w-0 items-center gap-2">
-              <Wrench className="h-4 w-4 shrink-0 text-slate-400" />
+              <Wrench className="h-3.5 w-3.5 shrink-0 text-slate-400" />
 
-              <p className="truncate text-sm font-bold text-slate-800">
+              <p className="truncate text-sm font-medium text-slate-800">
                 {maintenanceCount} mantenimiento
                 {maintenanceCount === 1 ? "" : "s"}
               </p>
@@ -275,7 +283,7 @@ export function ClientListCard({
           <div className="min-w-0">
             <p
               title={lastActivity.main}
-              className="truncate text-sm font-bold text-slate-800"
+              className="truncate text-sm font-medium text-slate-800"
             >
               {lastActivity.main}
             </p>
@@ -293,7 +301,7 @@ export function ClientListCard({
       {visibleColumns.status && (
         <TableCell align="center">
           <span
-            className={`inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-bold ${getClientStatusBadgeClass(
+            className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${getClientStatusBadgeClass(
               status,
             )}`}
           >
