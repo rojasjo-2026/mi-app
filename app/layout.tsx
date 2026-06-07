@@ -12,7 +12,8 @@ export default function RootLayout({
       <body suppressHydrationWarning className="bg-slate-100 text-slate-900">
         <div className="flex min-h-screen">
           <Sidebar />
-          <main className="flex-1 p-8">{children}</main>
+
+          <main className="flex-1 p-4 lg:p-6">{children}</main>
         </div>
 
         {/* 🔥 GOOGLE MAPS */}

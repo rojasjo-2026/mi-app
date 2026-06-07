@@ -10,7 +10,6 @@ import {
 } from "react";
 import {
   normalizeClientStatus,
-  getClientStatusLabel,
   type ClientStatus,
 } from "@/lib/clients/clientStatus";
 import { ClientListToast } from "@/components/clients/list/ClientListToast";
@@ -337,9 +336,6 @@ export default function ClientsPage() {
   const visibleTotal = pagination.totalItems;
   const totalPages = Math.max(1, pagination.totalPages);
   const safeCurrentPage = Math.min(pagination.page || currentPage, totalPages);
-  const pageStartIndex =
-    visibleTotal === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
-  const pageEndIndex = Math.min(safeCurrentPage * pageSize, visibleTotal);
 
   async function toggleStatus(client: Client) {
     const currentStatus = normalizeClientStatus(client.client_status);
@@ -408,7 +404,7 @@ export default function ClientsPage() {
           <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
             <Link
               href="/clients/new"
-              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
             >
               + Nuevo cliente
             </Link>
@@ -417,38 +413,38 @@ export default function ClientsPage() {
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <ClientMetricCard
-            title="Clientes visibles"
+            title="Clientes totales"
             value={metrics.total}
-            detail="Total con filtros actuales desde el servidor"
+            detail="Todos los registros"
             icon="👥"
             accentClass="text-slate-950"
-            bgClass="bg-slate-100"
+            bgClass="bg-blue-50"
           />
 
           <ClientMetricCard
             title="Clientes activos"
             value={metrics.active}
-            detail="Activos dentro de los filtros actuales"
+            detail="Activos y trabajando"
             icon="✅"
-            accentClass="text-emerald-600"
+            accentClass="text-slate-950"
             bgClass="bg-emerald-50"
           />
 
           <ClientMetricCard
             title="Con WhatsApp"
             value={metrics.withWhatsApp}
-            detail="Habilitados dentro de los filtros actuales"
+            detail="Habilitados para contacto"
             icon="💬"
-            accentClass="text-blue-600"
-            bgClass="bg-blue-50"
+            accentClass="text-slate-950"
+            bgClass="bg-violet-50"
           />
 
           <ClientMetricCard
             title="Requieren atención"
             value={metrics.attention}
-            detail="En espera o inactivos dentro de los filtros"
+            detail="En espera o inactivos"
             icon="⚠️"
-            accentClass="text-orange-600"
+            accentClass="text-slate-950"
             bgClass="bg-orange-50"
           />
         </div>
@@ -458,92 +454,52 @@ export default function ClientsPage() {
           statusFilter={statusFilter}
           whatsFilter={whatsFilter}
           sort={sort}
+          resultText={`${visibleTotal} resultado${visibleTotal === 1 ? "" : "s"}`}
           onSearchChange={setSearch}
           onStatusFilterChange={setStatusFilter}
           onWhatsFilterChange={setWhatsFilter}
           onSortChange={handleSortSelectChange}
-        />
+          rightContent={
+            <>
+              <div ref={columnPickerRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsColumnPickerOpen((current) => !current)}
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  Columnas
+                </button>
 
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-800">
-              Mostrando {pageStartIndex}-{pageEndIndex} de {visibleTotal}{" "}
-              resultado{visibleTotal === 1 ? "" : "s"}
-            </p>
+                <ColumnPicker
+                  isOpen={isColumnPickerOpen}
+                  visibleColumns={visibleColumns}
+                  onToggleColumn={toggleColumn}
+                />
+              </div>
 
-            <p className="mt-0.5 text-xs text-slate-500">
-              Selecciona una fila para ver el resumen y acciones en el panel
-              derecho.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {loading && (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                Actualizando...
-              </span>
-            )}
-
-            {statusFilter !== "all" && (
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                Estado: {getClientStatusLabel(statusFilter)}
-              </span>
-            )}
-
-            {whatsFilter !== "all" && (
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                WhatsApp:{" "}
-                {whatsFilter === "with" ? "Con WhatsApp" : "Sin WhatsApp"}
-              </span>
-            )}
-
-            {search.trim() && (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                Búsqueda activa
-              </span>
-            )}
-
-            <div ref={columnPickerRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setIsColumnPickerOpen((current) => !current)}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-              >
-                Columnas
-              </button>
-
-              <ColumnPicker
-                isOpen={isColumnPickerOpen}
-                visibleColumns={visibleColumns}
-                onToggleColumn={toggleColumn}
-              />
-            </div>
-
-            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-              Ver
               <select
                 value={pageSize}
                 onChange={(event) => {
                   setPageSize(Number(event.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-transparent text-sm font-semibold outline-none"
+                className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
               >
                 {PAGE_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {option} por página
                   </option>
                 ))}
               </select>
-            </label>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
           {clients.length === 0 ? (
             <ClientListEmptyState />
           ) : (
-            <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="overflow-x-auto">
                 <div
                   style={{
@@ -656,7 +612,7 @@ export default function ClientsPage() {
                       setCurrentPage((page) => Math.max(1, page - 1))
                     }
                     disabled={safeCurrentPage <= 1 || loading}
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Anterior
                   </button>
@@ -667,7 +623,7 @@ export default function ClientsPage() {
                       setCurrentPage((page) => Math.min(totalPages, page + 1))
                     }
                     disabled={safeCurrentPage >= totalPages || loading}
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Siguiente
                   </button>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { SVGProps } from "react";
+import { useEffect, useState, type SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -33,29 +33,104 @@ function isActivePath(pathname: string, href: string) {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const storedValue = window.localStorage.getItem(
+      "clarius-sidebar-collapsed",
+    );
+
+    if (storedValue === "true") {
+      setCollapsed(true);
+    }
+  }, []);
+
+  function toggleSidebar() {
+    setCollapsed((currentValue) => {
+      const nextValue = !currentValue;
+
+      window.localStorage.setItem(
+        "clarius-sidebar-collapsed",
+        String(nextValue),
+      );
+
+      return nextValue;
+    });
+  }
 
   return (
-    <aside className="flex min-h-screen w-72 flex-col justify-between bg-slate-950 px-4 py-5 text-white">
+    <aside
+      className={[
+        "flex min-h-screen shrink-0 flex-col justify-between bg-slate-950 py-4 text-white transition-all duration-300",
+        collapsed ? "w-20 px-3" : "w-60 px-3",
+      ].join(" ")}
+    >
       <div>
-        <Link
-          href="/"
-          className="mb-8 flex items-center gap-3 rounded-3xl px-3 py-3 transition hover:bg-white/5"
+        <div
+          className={[
+            "mb-6 flex items-center gap-3",
+            collapsed ? "justify-center" : "justify-between",
+          ].join(" ")}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white shadow-lg shadow-blue-950/50">
-            C
-          </div>
+          <Link
+            href="/"
+            className={[
+              "group relative flex items-center rounded-lg transition hover:bg-white/5",
+              collapsed ? "justify-center px-2 py-2" : "gap-3 px-2.5 py-2.5",
+            ].join(" ")}
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-base font-bold text-white shadow-sm shadow-blue-950/40">
+              C
+            </div>
 
-          <div className="min-w-0">
-            <p className="text-xl font-black tracking-wide text-white">
-              CLARIUS
-            </p>
-            <p className="text-xs font-medium text-slate-400">Operations 360</p>
-          </div>
+            {!collapsed && (
+              <>
+                <div className="min-w-0">
+                  <p className="text-lg font-bold tracking-wide text-white">
+                    CLARIUS
+                  </p>
+                  <p className="text-xs font-medium text-slate-400">
+                    Operations 360
+                  </p>
+                </div>
 
-          <span className="ml-auto h-2.5 w-2.5 rounded-full bg-blue-500" />
-        </Link>
+                <span className="ml-auto h-2 w-2 rounded-full bg-blue-500" />
+              </>
+            )}
 
-        <nav className="space-y-1.5">
+            {collapsed && (
+              <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-xl transition group-hover:opacity-100">
+                CLARIUS
+              </span>
+            )}
+          </Link>
+
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              title="Contraer menú"
+              aria-label="Contraer menú"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/[0.03] text-slate-400 transition hover:bg-white/10 hover:text-white"
+            >
+              ‹
+            </button>
+          )}
+        </div>
+
+        {collapsed && (
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title="Expandir menú"
+            aria-label="Expandir menú"
+            className="mb-4 inline-flex h-8 w-full items-center justify-center rounded-md border border-white/10 bg-white/[0.03] text-slate-400 transition hover:bg-white/10 hover:text-white"
+          >
+            ›
+          </button>
+        )}
+
+        <nav className="space-y-1">
           {menuItems.map((item) => {
             const active = isActivePath(pathname, item.href);
             const Icon = item.icon;
@@ -65,44 +140,75 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition",
+                  "group relative flex items-center rounded-lg text-sm font-semibold transition",
+                  collapsed
+                    ? "justify-center px-2 py-2.5"
+                    : "gap-3 px-3 py-2.5",
                   active
-                    ? "bg-blue-600/20 text-white shadow-inner ring-1 ring-blue-400/20"
+                    ? "bg-blue-600/20 text-white ring-1 ring-blue-400/20"
                     : "text-slate-300 hover:bg-white/5 hover:text-white",
                 ].join(" ")}
               >
                 <span
                   className={[
-                    "flex h-9 w-9 items-center justify-center rounded-xl transition",
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition",
                     active
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-950/40"
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-950/40"
                       : "bg-white/5 text-slate-400 group-hover:bg-white/10 group-hover:text-white",
                   ].join(" ")}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4" />
                 </span>
 
-                <span className="truncate">{item.label}</span>
+                {!collapsed && <span className="truncate">{item.label}</span>}
+
+                {collapsed && (
+                  <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-xl transition group-hover:opacity-100">
+                    {item.label}
+                  </span>
+                )}
               </Link>
             );
           })}
         </nav>
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-white ring-1 ring-white/10">
+      <div
+        className={[
+          "border border-white/10 bg-white/[0.03]",
+          collapsed ? "rounded-lg p-2" : "rounded-lg p-2.5",
+        ].join(" ")}
+      >
+        <div
+          className={[
+            "group relative flex items-center",
+            collapsed ? "justify-center" : "gap-3",
+          ].join(" ")}
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-900 text-sm font-semibold text-white ring-1 ring-white/10">
             J
           </div>
 
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-white">José Admin</p>
-            <p className="truncate text-xs font-medium text-slate-400">
-              Administrador
-            </p>
-          </div>
+          {!collapsed && (
+            <>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">
+                  José Admin
+                </p>
+                <p className="truncate text-xs font-medium text-slate-400">
+                  Administrador
+                </p>
+              </div>
 
-          <span className="text-slate-500">›</span>
+              <span className="text-slate-500">›</span>
+            </>
+          )}
+
+          {collapsed && (
+            <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-xl transition group-hover:opacity-100">
+              José Admin
+            </span>
+          )}
         </div>
       </div>
     </aside>

@@ -228,88 +228,172 @@ function shouldReturnAllStatuses(status: ClientStatusInput) {
   return normalizeClientStatusFilter(status) === "all";
 }
 
-async function getClientOperationalSummary(clientId: string) {
-  const [
-    installationCount,
-    maintenanceCount,
-    pendingMaintenanceCount,
-    pendingInvoiceCount,
-    lastMaintenance,
-    lastContact,
-  ] = await prisma.$transaction([
-    prisma.installation.count({
-      where: {
-        client_id: clientId,
-        is_active: true,
-      },
-    }),
+type ClientOperationalSummary = {
+  installation_count: number;
+  maintenance_count: number;
+  pending_maintenance_count: number;
+  pending_invoice_count: number;
+  last_maintenance: string | null;
+  last_contact: string | null;
+};
 
-    prisma.followUp.count({
-      where: {
-        client_id: clientId,
-      },
-    }),
-
-    prisma.followUp.count({
-      where: {
-        client_id: clientId,
-        completed_at: null,
-      },
-    }),
-
-    prisma.invoice.count({
-      where: {
-        client_id: clientId,
-        status: {
-          in: [
-            PrismaInvoiceStatus.PENDING,
-            PrismaInvoiceStatus.PARTIALLY_PAID,
-            PrismaInvoiceStatus.OVERDUE,
-          ],
-        },
-      },
-    }),
-
-    prisma.followUp.findFirst({
-      where: {
-        client_id: clientId,
-        completed_at: {
-          not: null,
-        },
-      },
-      orderBy: {
-        completed_at: "desc",
-      },
-      select: {
-        completed_at: true,
-      },
-    }),
-
-    prisma.contactAttempt.findFirst({
-      where: {
-        client_id: clientId,
-      },
-      orderBy: {
-        attempt_datetime: "desc",
-      },
-      select: {
-        attempt_datetime: true,
-      },
-    }),
-  ]);
-
+function createEmptyOperationalSummary(): ClientOperationalSummary {
   return {
-    installation_count: installationCount,
-    maintenance_count: maintenanceCount,
-    pending_maintenance_count: pendingMaintenanceCount,
-    pending_invoice_count: pendingInvoiceCount,
-    last_maintenance: lastMaintenance?.completed_at
-      ? lastMaintenance.completed_at.toISOString()
-      : null,
-    last_contact: lastContact?.attempt_datetime
-      ? lastContact.attempt_datetime.toISOString()
-      : null,
+    installation_count: 0,
+    maintenance_count: 0,
+    pending_maintenance_count: 0,
+    pending_invoice_count: 0,
+    last_maintenance: null,
+    last_contact: null,
   };
+}
+
+function getOperationalSummary(
+  summaries: Map<string, ClientOperationalSummary>,
+  clientId: string,
+) {
+  const existingSummary = summaries.get(clientId);
+
+  if (existingSummary) {
+    return existingSummary;
+  }
+
+  const nextSummary = createEmptyOperationalSummary();
+  summaries.set(clientId, nextSummary);
+
+  return nextSummary;
+}
+
+async function getClientsOperationalSummaries(clientIds: string[]) {
+  const summaries = new Map<string, ClientOperationalSummary>();
+
+  clientIds.forEach((clientId) => {
+    summaries.set(clientId, createEmptyOperationalSummary());
+  });
+
+  if (clientIds.length === 0) {
+    return summaries;
+  }
+
+  const [installations, followUps, pendingInvoices, contactAttempts] =
+    await Promise.all([
+      prisma.installation.findMany({
+        where: {
+          client_id: {
+            in: clientIds,
+          },
+          is_active: true,
+        },
+        select: {
+          client_id: true,
+        },
+      }),
+
+      prisma.followUp.findMany({
+        where: {
+          client_id: {
+            in: clientIds,
+          },
+        },
+        select: {
+          client_id: true,
+          completed_at: true,
+        },
+      }),
+
+      prisma.invoice.findMany({
+        where: {
+          client_id: {
+            in: clientIds,
+          },
+          status: {
+            in: [
+              PrismaInvoiceStatus.PENDING,
+              PrismaInvoiceStatus.PARTIALLY_PAID,
+              PrismaInvoiceStatus.OVERDUE,
+            ],
+          },
+        },
+        select: {
+          client_id: true,
+        },
+      }),
+
+      prisma.contactAttempt.findMany({
+        where: {
+          client_id: {
+            in: clientIds,
+          },
+        },
+        select: {
+          client_id: true,
+          attempt_datetime: true,
+        },
+      }),
+    ]);
+
+  const lastMaintenanceByClient = new Map<string, Date>();
+  const lastContactByClient = new Map<string, Date>();
+
+  installations.forEach((installation) => {
+    const summary = getOperationalSummary(summaries, installation.client_id);
+    summary.installation_count += 1;
+  });
+
+  followUps.forEach((followUp) => {
+    const summary = getOperationalSummary(summaries, followUp.client_id);
+
+    summary.maintenance_count += 1;
+
+    if (!followUp.completed_at) {
+      summary.pending_maintenance_count += 1;
+      return;
+    }
+
+    const currentLastMaintenance = lastMaintenanceByClient.get(
+      followUp.client_id,
+    );
+
+    if (
+      !currentLastMaintenance ||
+      followUp.completed_at > currentLastMaintenance
+    ) {
+      lastMaintenanceByClient.set(followUp.client_id, followUp.completed_at);
+    }
+  });
+
+  pendingInvoices.forEach((invoice) => {
+    const summary = getOperationalSummary(summaries, invoice.client_id);
+    summary.pending_invoice_count += 1;
+  });
+
+  contactAttempts.forEach((contactAttempt) => {
+    const currentLastContact = lastContactByClient.get(
+      contactAttempt.client_id,
+    );
+
+    if (
+      !currentLastContact ||
+      contactAttempt.attempt_datetime > currentLastContact
+    ) {
+      lastContactByClient.set(
+        contactAttempt.client_id,
+        contactAttempt.attempt_datetime,
+      );
+    }
+  });
+
+  lastMaintenanceByClient.forEach((value, clientId) => {
+    const summary = getOperationalSummary(summaries, clientId);
+    summary.last_maintenance = value.toISOString();
+  });
+
+  lastContactByClient.forEach((value, clientId) => {
+    const summary = getOperationalSummary(summaries, clientId);
+    summary.last_contact = value.toISOString();
+  });
+
+  return summaries;
 }
 
 export async function findClients({
@@ -406,18 +490,14 @@ export async function findClients({
       }),
     ]);
 
-  const enrichedClients = await Promise.all(
-    clients.map(async (client) => {
-      const operationalSummary = await getClientOperationalSummary(
-        client.client_id,
-      );
+  const clientIds = clients.map((client) => client.client_id);
+  const operationalSummaries = await getClientsOperationalSummaries(clientIds);
 
-      return {
-        ...client,
-        ...operationalSummary,
-      };
-    }),
-  );
+  const enrichedClients = clients.map((client) => ({
+    ...client,
+    ...(operationalSummaries.get(client.client_id) ??
+      createEmptyOperationalSummary()),
+  }));
 
   return {
     data: enrichedClients,

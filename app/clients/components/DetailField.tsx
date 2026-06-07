@@ -15,7 +15,7 @@ export function DetailField({ label, value, children }: DetailFieldProps) {
       : undefined;
 
   return (
-    <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+    <div className="min-w-0 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
       <p
         title={label}
         className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400"

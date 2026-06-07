@@ -41,7 +41,7 @@ function OperationalStat({
   helper?: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+    <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
       <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
         {label}
       </p>
@@ -62,13 +62,67 @@ function OperationalStat({
   );
 }
 
+function QuickActions({
+  client,
+  isInactive,
+  onToggleStatus,
+}: {
+  client: Client;
+  isInactive: boolean;
+  onToggleStatus: (client: Client) => void | Promise<void>;
+}) {
+  return (
+    <section className="border-t border-slate-200 p-4">
+      <p className="mb-2 text-sm font-semibold text-slate-800">
+        Acciones rápidas
+      </p>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          href={`/clients/${client.client_id}`}
+          className="inline-flex items-center justify-center rounded-md bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+        >
+          Ver detalle
+        </Link>
+
+        <Link
+          href={`/clients/${client.client_id}/edit`}
+          className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          Editar
+        </Link>
+
+        <Link
+          href={`/installations/new?client_id=${client.client_id}`}
+          className="inline-flex items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+        >
+          Crear instalación
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => void onToggleStatus(client)}
+          className={[
+            "inline-flex items-center justify-center rounded-md border px-3 py-2.5 text-sm font-semibold transition",
+            isInactive
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              : "border-red-200 bg-white text-red-600 hover:bg-red-50",
+          ].join(" ")}
+        >
+          {isInactive ? "Activar" : "Desactivar"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function ClientPreviewPanel({
   client,
   onToggleStatus,
 }: ClientPreviewPanelProps) {
   if (!client) {
     return (
-      <aside className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-6">
+      <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-6">
         <p className="text-sm font-semibold text-slate-800">
           Resumen del cliente
         </p>
@@ -110,10 +164,10 @@ export function ClientPreviewPanel({
   const isInactive = status === "INACTIVE";
 
   return (
-    <aside className="sticky top-6 z-10 rounded-xl border border-slate-200 bg-white shadow-sm">
+    <aside className="sticky top-6 z-10 rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-sm font-semibold text-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-blue-600 text-sm font-semibold text-white">
             {initials}
           </div>
 
@@ -150,6 +204,12 @@ export function ClientPreviewPanel({
           </div>
         </div>
       </div>
+
+      <QuickActions
+        client={client}
+        isInactive={isInactive}
+        onToggleStatus={onToggleStatus}
+      />
 
       <div className="space-y-4 p-5">
         <section>
@@ -215,48 +275,6 @@ export function ClientPreviewPanel({
         </section>
 
         <ClientActivityPreview clientId={client.client_id} />
-
-        <section>
-          <p className="mb-2 text-sm font-semibold text-slate-800">
-            Acciones rápidas
-          </p>
-
-          <div className="grid gap-2">
-            <Link
-              href={`/clients/${client.client_id}`}
-              className="inline-flex items-center justify-center rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Ver detalle completo
-            </Link>
-
-            <Link
-              href={`/clients/${client.client_id}/edit`}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Editar cliente
-            </Link>
-
-            <Link
-              href={`/installations/new?client_id=${client.client_id}`}
-              className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-            >
-              Crear instalación
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => void onToggleStatus(client)}
-              className={[
-                "inline-flex items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition",
-                isInactive
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                  : "border-red-200 bg-white text-red-600 hover:bg-red-50",
-              ].join(" ")}
-            >
-              {isInactive ? "Activar cliente" : "Desactivar cliente"}
-            </button>
-          </div>
-        </section>
       </div>
     </aside>
   );
