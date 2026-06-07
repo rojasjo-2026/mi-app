@@ -1,70 +1,26 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { provincias } from "@/lib/data/costa-rica-locations";
-import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-  type CountryPreset,
-} from "@/lib/settings/countryPresets";
 import InstallationCommercialSection from "./InstallationCommercialSection";
 import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
-
-type TechnicianOption = {
-  user_id: string;
-  first_name: string;
-  last_name_1: string;
-  last_name_2?: string | null;
-  role?: "TECHNICIAN" | "SUPERVISOR" | "ADMINISTRATION" | "ADMIN" | string;
-  is_active?: boolean | null;
-};
-
-type InstallationFormData = {
-  installation_id?: string;
-  description?: string | null;
-  technician_name?: string | null;
-  technician_id?: string | null;
-  technician?: TechnicianOption | null;
-  warranty_months?: number | string | null;
-  estimated_amount?: number | string | null;
-  cost_amount?: number | string | null;
-  billing_status?: string | null;
-  billing_notes?: string | null;
-  installation_status?: string | null;
-  operational_zone_id?: string | null;
-  address_line?: string | null;
-  admin_level_1?: string | null;
-  admin_level_2?: string | null;
-  admin_level_3?: string | null;
-  location_notes?: string | null;
-  reference_point?: string | null;
-};
-
-type InstallationFormProps = {
-  mode: "create" | "edit";
-  initialData?: InstallationFormData | null;
-};
-
-type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-  } | null;
-};
-
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
-function getBusinessCountryPreset(countryCode?: string | null): CountryPreset {
-  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
-}
-
-function isCostaRicaPreset(countryPreset: CountryPreset) {
-  return countryPreset.countryCode === "CR";
-}
+import {
+  DEFAULT_COUNTRY_CODE,
+  fallbackCountryPreset,
+  type AppSettingsResponse,
+  type InstallationFormData,
+  type InstallationFormProps,
+  type TechnicianOption,
+  type CountryPreset,
+} from "./installation-form/installationFormConfig";
+import {
+  formatTechnicianName,
+  getBusinessCountryPreset,
+  isCostaRicaPreset,
+} from "./installation-form/installationFormUtils";
+import { FormSection } from "./installation-form/FormSection";
+import { RoleBadge } from "./installation-form/RoleBadge";
 
 export default function InstallationForm({
   mode,
@@ -775,53 +731,4 @@ export default function InstallationForm({
   );
 }
 
-function FormSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-      <div className="mb-5">
-        <div className="mb-2 flex items-center gap-3">
-          <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-            {title}
-          </h2>
-          <div className="h-px flex-1 bg-slate-100" />
-        </div>
-        <p className="text-sm leading-6 text-slate-600">{description}</p>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{children}</div>
-    </section>
-  );
-}
-
-function RoleBadge({ role }: { role: string }) {
-  return (
-    <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-      {formatRole(role)}
-    </span>
-  );
-}
-
-function formatTechnicianName(technician: TechnicianOption) {
-  return [technician.first_name, technician.last_name_1, technician.last_name_2]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function formatRole(role?: string | null) {
-  if (!role) return "-";
-
-  if (role === "TECHNICIAN") return "Técnico";
-  if (role === "SUPERVISOR") return "Supervisor";
-  if (role === "ADMINISTRATION") return "Administración";
-  if (role === "ADMIN") return "Admin";
-
-  return role;
-}
