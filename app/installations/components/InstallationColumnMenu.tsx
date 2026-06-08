@@ -28,19 +28,19 @@ export function InstallationColumnMenu({
       <button
         type="button"
         onClick={onToggleOpen}
-        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+        className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
       >
         Columnas
         <ChevronDown className="h-4 w-4 text-slate-400" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-30 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-          <div className="px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+        <div className="absolute right-0 z-30 mt-2 w-64 rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
+          <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Mostrar columnas
           </div>
 
-          <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
+          <div className="rounded-md bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500">
             Instalación y Acciones siempre permanecen visibles.
           </div>
 
@@ -48,7 +48,7 @@ export function InstallationColumnMenu({
             {OPTIONAL_COLUMNS.map((column) => (
               <label
                 key={column.key}
-                className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 <input
                   type="checkbox"

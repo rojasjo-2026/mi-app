@@ -75,7 +75,7 @@ export function InstallationTable({
   setCurrentPage,
 }: InstallationTableProps) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <div style={{ minWidth: tableMinWidth }}>
           <div
@@ -123,7 +123,7 @@ export function InstallationTable({
                   }}
                   style={{ gridTemplateColumns }}
                   className={[
-                    "group grid min-h-[82px] cursor-pointer transition hover:bg-blue-50/70",
+                    "group grid min-h-[76px] cursor-pointer transition hover:bg-blue-50/70",
                     isSelected
                       ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
                       : "bg-white",
@@ -131,10 +131,10 @@ export function InstallationTable({
                 >
                   {displayedColumns.includes("installation") && (
                     <TableBodyCell columnKey="installation">
-                      <div className="flex min-w-0 items-center gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
                         <div
                           className={[
-                            "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black transition",
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-semibold transition",
                             isSelected
                               ? "bg-blue-600 text-white"
                               : "bg-blue-50 text-blue-700 group-hover:bg-blue-100",
@@ -151,7 +151,7 @@ export function InstallationTable({
                           >
                             <h2
                               title={installationName}
-                              className="truncate text-sm font-black text-slate-950 transition hover:text-blue-700"
+                              className="truncate text-sm font-semibold text-slate-950 transition hover:text-blue-700"
                             >
                               {installationName}
                             </h2>
@@ -173,7 +173,7 @@ export function InstallationTable({
                       <div className="min-w-0">
                         <p
                           title={clientName}
-                          className="truncate text-sm font-bold text-slate-800"
+                          className="truncate text-sm font-semibold text-slate-800"
                         >
                           {clientName}
                         </p>
@@ -192,7 +192,7 @@ export function InstallationTable({
                     <TableBodyCell columnKey="service">
                       <span
                         title={item.service_type?.name || "Sin servicio"}
-                        className="truncate text-sm font-semibold text-slate-700"
+                        className="truncate text-sm font-medium text-slate-700"
                       >
                         {item.service_type?.name || "Sin servicio"}
                       </span>
@@ -201,7 +201,7 @@ export function InstallationTable({
 
                   {displayedColumns.includes("date") && (
                     <TableBodyCell columnKey="date">
-                      <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700">
+                      <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-700">
                         <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
                         <span
                           title={formatDateLabel(
@@ -225,7 +225,7 @@ export function InstallationTable({
                         <UserRound className="h-4 w-4 shrink-0 text-slate-400" />
                         <span
                           title={item.technician_name || "Técnico no asignado"}
-                          className="truncate text-sm font-semibold text-slate-700"
+                          className="truncate text-sm font-medium text-slate-700"
                         >
                           {item.technician_name || "Técnico no asignado"}
                         </span>
@@ -239,7 +239,7 @@ export function InstallationTable({
                         <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
                         <span
                           title={getLocationLabel(item)}
-                          className="truncate text-sm font-semibold text-slate-700"
+                          className="truncate text-sm font-medium text-slate-700"
                         >
                           {getLocationLabel(item)}
                         </span>
@@ -255,7 +255,7 @@ export function InstallationTable({
                           businessCurrency,
                           businessLocale,
                         )}
-                        className="truncate text-sm font-bold text-slate-800"
+                        className="truncate text-sm font-semibold text-slate-800"
                       >
                         {formatCurrency(
                           item.estimated_amount,
@@ -269,26 +269,12 @@ export function InstallationTable({
                   {displayedColumns.includes("status") && (
                     <TableBodyCell columnKey="status">
                       <span
-                        className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getStatusBadgeClass(
+                        className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
                           item.installation_status,
                         )}`}
                       >
                         {getInstallationStatusLabel(item.installation_status)}
                       </span>
-                    </TableBodyCell>
-                  )}
-
-                  {displayedColumns.includes("actions") && (
-                    <TableBodyCell columnKey="actions" className="justify-end">
-                      <div className="flex items-center justify-end gap-3">
-                        <Link
-                          href={`/installations/${item.installation_id}`}
-                          onClick={(event) => event.stopPropagation()}
-                          className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-                        >
-                          Ver detalle
-                        </Link>
-                      </div>
                     </TableBodyCell>
                   )}
                 </li>
