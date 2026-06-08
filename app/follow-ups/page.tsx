@@ -7,24 +7,12 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
-  type ReactNode,
 } from "react";
 import {
-  CalendarDays,
-  ChevronDown,
-  MapPin,
-  Phone,
-  Search,
-  UserRound,
-  Wrench,
-} from "lucide-react";
-import {
-  COLUMN_LABELS,
   INITIAL_COLUMN_WIDTHS,
   INITIAL_VISIBLE_COLUMNS,
   MIN_COLUMN_WIDTHS,
   OPTIONAL_COLUMNS,
-  PAGE_SIZE_OPTIONS,
 } from "./constants/followUpsPageConstants";
 import type {
   AppSettingsResponse,
@@ -39,38 +27,15 @@ import type {
   PriorityFilter,
   SortDirection,
   SortKey,
-  Technician,
   TimingFilter,
   VisibleColumns,
 } from "./types/followUpsPageTypes";
-import {
-  compareNumber,
-  compareText,
-  formatDateLabel,
-  formatMaintenanceType,
-  formatMoney,
-  getBillingStatusClasses,
-  getBillingStatusLabel,
-  getBusinessCountryMeta,
-  getClientName,
-  getDateTimeForSort,
-  getFilterButtonClass,
-  getMainAmount,
-  getPriorityClasses,
-  getPriorityLabel,
-  getSearchText,
-  getStatusClasses,
-  getStickyBodyClass,
-  getStickyHeaderClass,
-  getTechnicianName,
-  getTimingMeta,
-} from "./utils/followUpsPageUtils";
-import { TableHeaderCell } from "./components/TableHeaderCell";
-import { TableBodyCell } from "./components/TableBodyCell";
-import { DetailField } from "./components/DetailField";
-import { MetricCard } from "./components/MetricCard";
-import { ColumnPicker } from "./components/ColumnPicker";
+import { getBusinessCountryMeta } from "./utils/followUpsPageUtils";
 import { FollowUpPreviewPanel } from "./components/FollowUpPreviewPanel";
+import { FollowUpMetricsGrid } from "./components/FollowUpMetricsGrid";
+import { FollowUpFiltersPanel } from "./components/FollowUpFiltersPanel";
+import { FollowUpTable } from "./components/FollowUpTable";
+import { FollowUpPagination } from "./components/FollowUpPagination";
 
 export default function FollowUpsPage() {
   const [items, setItems] = useState<FollowUp[]>([]);
@@ -119,6 +84,7 @@ export default function FollowUpsPage() {
     INITIAL_VISIBLE_COLUMNS,
   );
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+
   const columnMenuRef = useRef<HTMLDivElement | null>(null);
 
   const displayedColumns = useMemo<ColumnKey[]>(() => {
@@ -190,7 +156,6 @@ export default function FollowUpsPage() {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
         }
-        // Keep default business metadata if settings cannot be loaded.
       }
     }
 
@@ -242,6 +207,7 @@ export default function FollowUpsPage() {
         const nextItems: FollowUp[] = Array.isArray(result.data)
           ? result.data
           : [];
+
         const nextPagination: PaginationState = result.pagination ?? {
           page: currentPage,
           pageSize,
@@ -261,6 +227,7 @@ export default function FollowUpsPage() {
           today: Number(result.metrics?.today ?? 0),
           pendingBilling: Number(result.metrics?.pendingBilling ?? 0),
         });
+
         setSelectedFollowUpId((currentSelectedId) => {
           if (
             currentSelectedId &&
@@ -307,8 +274,6 @@ export default function FollowUpsPage() {
     timingFilter,
   ]);
 
-  const counters = metrics;
-
   const filteredItems = items;
 
   useEffect(() => {
@@ -343,7 +308,6 @@ export default function FollowUpsPage() {
   const pageStartIndex =
     visibleTotal === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
   const pageEndIndex = Math.min(safeCurrentPage * pageSize, visibleTotal);
-  const paginatedItems = items;
 
   const selectedItem = useMemo(
     () =>
@@ -422,6 +386,11 @@ export default function FollowUpsPage() {
     document.addEventListener("mouseup", handleMouseUp);
   }
 
+  function handlePageSizeChange(value: number) {
+    setPageSize(value);
+    setCurrentPage(1);
+  }
+
   if (loading && !hasLoadedOnce) {
     return (
       <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
@@ -471,269 +440,33 @@ export default function FollowUpsPage() {
           </Link>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-          <MetricCard
-            title="Total"
-            value={counters.total}
-            detail="Registrados"
-            accentClass="text-slate-950"
-            bgClass="border-slate-200 bg-white text-slate-500"
-          />
+        <FollowUpMetricsGrid metrics={metrics} />
 
-          <MetricCard
-            title="Pendientes"
-            value={counters.pending}
-            detail="En seguimiento"
-            accentClass="text-blue-800"
-            bgClass="border-blue-200 bg-blue-50 text-blue-600"
-          />
-
-          <MetricCard
-            title="Atrasados"
-            value={counters.overdue}
-            detail="Atención urgente"
-            accentClass="text-red-800"
-            bgClass="border-red-200 bg-red-50 text-red-600"
-          />
-
-          <MetricCard
-            title="Hoy"
-            value={counters.today}
-            detail="Para revisar"
-            accentClass="text-amber-800"
-            bgClass="border-amber-200 bg-amber-50 text-amber-600"
-          />
-
-          <MetricCard
-            title="Facturación"
-            value={counters.pendingBilling}
-            detail="Pendientes"
-            accentClass="text-violet-800"
-            bgClass="border-violet-200 bg-violet-50 text-violet-600"
-          />
-
-          <MetricCard
-            title="Cerrados"
-            value={counters.completed}
-            detail="Completados"
-            accentClass="text-emerald-800"
-            bgClass="border-emerald-200 bg-emerald-50 text-emerald-600"
-          />
-        </section>
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <div className="space-y-6">
-            <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.8fr]">
-              <div>
-                <label className="mb-2 block text-sm font-bold text-slate-800">
-                  Buscar
-                </label>
-
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                  <input
-                    type="search"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por cliente, teléfono, instalación, técnico o motivo..."
-                    className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-bold text-slate-800">
-                  Prioridad
-                </label>
-                <select
-                  value={priorityFilter}
-                  onChange={(e) =>
-                    setPriorityFilter(e.target.value as PriorityFilter)
-                  }
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-300"
-                >
-                  <option value="all">Todas</option>
-                  <option value="1">Alta</option>
-                  <option value="2">Media</option>
-                  <option value="3">Baja</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-bold text-slate-800">
-                  Facturación
-                </label>
-                <select
-                  value={billingFilter}
-                  onChange={(e) =>
-                    setBillingFilter(e.target.value as BillingFilter)
-                  }
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-300"
-                >
-                  <option value="all">Todos</option>
-                  <option value="PENDING">Pendiente</option>
-                  <option value="INVOICED">Facturado</option>
-                  <option value="PARTIALLY_PAID">Pago parcial</option>
-                  <option value="PAID">Pagado</option>
-                  <option value="NOT_BILLABLE">No facturable</option>
-                  <option value="BILLING_ERROR">Error</option>
-                  <option value="CANCELLED">Cancelado</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid gap-5 lg:grid-cols-2">
-              <div>
-                <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                  Estado
-                </p>
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter("all")}
-                    className={getFilterButtonClass(statusFilter === "all")}
-                  >
-                    Todos
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter("pending")}
-                    className={getFilterButtonClass(statusFilter === "pending")}
-                  >
-                    Pendientes
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter("completed")}
-                    className={getFilterButtonClass(
-                      statusFilter === "completed",
-                    )}
-                  >
-                    Completados
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter("postponed")}
-                    className={getFilterButtonClass(
-                      statusFilter === "postponed",
-                    )}
-                  >
-                    Pospuestos
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                  Urgencia
-                </p>
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTimingFilter("all")}
-                    className={getFilterButtonClass(timingFilter === "all")}
-                  >
-                    Todas
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTimingFilter("overdue")}
-                    className={getFilterButtonClass(timingFilter === "overdue")}
-                  >
-                    Atrasados
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTimingFilter("today")}
-                    className={getFilterButtonClass(timingFilter === "today")}
-                  >
-                    Hoy
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTimingFilter("upcoming")}
-                    className={getFilterButtonClass(
-                      timingFilter === "upcoming",
-                    )}
-                  >
-                    Próximos
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between">
-              <p>
-                Mostrando{" "}
-                <span className="font-bold">
-                  {pageStartIndex}-{pageEndIndex}
-                </span>{" "}
-                de <span className="font-bold">{visibleTotal}</span>{" "}
-                mantenimiento{visibleTotal === 1 ? "" : "s"}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {loading && hasLoadedOnce && (
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                    Actualizando...
-                  </span>
-                )}
-
-                <div ref={columnMenuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsColumnMenuOpen((current) => !current)}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-100"
-                  >
-                    Columnas
-                    <ChevronDown className="h-4 w-4 text-slate-400" />
-                  </button>
-
-                  <ColumnPicker
-                    isOpen={isColumnMenuOpen}
-                    visibleColumns={visibleColumns}
-                    onToggleColumn={toggleColumn}
-                  />
-                </div>
-
-                <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm">
-                  Ver
-                  <select
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="bg-transparent text-sm font-bold outline-none"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-100"
-                >
-                  Limpiar filtros
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+        <FollowUpFiltersPanel
+          searchTerm={searchTerm}
+          priorityFilter={priorityFilter}
+          billingFilter={billingFilter}
+          statusFilter={statusFilter}
+          timingFilter={timingFilter}
+          pageSize={pageSize}
+          pageStartIndex={pageStartIndex}
+          pageEndIndex={pageEndIndex}
+          visibleTotal={visibleTotal}
+          loading={loading}
+          hasLoadedOnce={hasLoadedOnce}
+          isColumnMenuOpen={isColumnMenuOpen}
+          columnMenuRef={columnMenuRef}
+          visibleColumns={visibleColumns}
+          onSearchTermChange={setSearchTerm}
+          onPriorityFilterChange={setPriorityFilter}
+          onBillingFilterChange={setBillingFilter}
+          onStatusFilterChange={setStatusFilter}
+          onTimingFilterChange={setTimingFilter}
+          onPageSizeChange={handlePageSizeChange}
+          onToggleColumnMenu={() => setIsColumnMenuOpen((current) => !current)}
+          onToggleColumn={toggleColumn}
+          onClearFilters={clearFilters}
+        />
 
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
           {filteredItems.length === 0 ? (
@@ -755,338 +488,31 @@ export default function FollowUpsPage() {
             </section>
           ) : (
             <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="overflow-x-auto">
-                <div style={{ minWidth: tableMinWidth }}>
-                  <div
-                    style={{ gridTemplateColumns }}
-                    className="grid border-b border-slate-200 bg-slate-50"
-                  >
-                    {displayedColumns.map((column) => (
-                      <TableHeaderCell
-                        key={column}
-                        columnKey={column}
-                        label={COLUMN_LABELS[column]}
-                        activeSortKey={sortKey}
-                        sortDirection={sortDirection}
-                        onSort={handleHeaderSort}
-                        onResizeStart={startColumnResize}
-                      />
-                    ))}
-                  </div>
+              <FollowUpTable
+                items={filteredItems}
+                selectedFollowUpId={selectedFollowUpId}
+                displayedColumns={displayedColumns}
+                visibleColumns={visibleColumns}
+                gridTemplateColumns={gridTemplateColumns}
+                tableMinWidth={tableMinWidth}
+                pageStartIndex={pageStartIndex}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                businessCurrency={businessCurrency}
+                businessLocale={businessLocale}
+                onSelectFollowUp={setSelectedFollowUpId}
+                onHeaderSort={handleHeaderSort}
+                onResizeStart={startColumnResize}
+              />
 
-                  <ul className="divide-y divide-slate-100">
-                    {paginatedItems.map((item) => {
-                      const clientName = getClientName(item.client);
-                      const maintenanceType = formatMaintenanceType(
-                        item.maintenance_type,
-                      );
-                      const technicianName = getTechnicianName(item.technician);
-                      const targetDate = formatDateLabel(
-                        item.target_date,
-                        businessLocale,
-                      );
-                      const scheduledDate = formatDateLabel(
-                        item.scheduled_date,
-                        businessLocale,
-                      );
-                      const timingMeta = getTimingMeta(
-                        item.target_date,
-                        item.follow_up_status?.code,
-                      );
-                      const amount = getMainAmount(item);
-                      const isSelected =
-                        item.follow_up_id === selectedFollowUpId;
-
-                      return (
-                        <li
-                          key={item.follow_up_id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() =>
-                            setSelectedFollowUpId(item.follow_up_id)
-                          }
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              setSelectedFollowUpId(item.follow_up_id);
-                            }
-                          }}
-                          style={{ gridTemplateColumns }}
-                          className={[
-                            "group grid min-h-[76px] cursor-pointer transition hover:bg-blue-50/70",
-                            isSelected
-                              ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
-                              : "bg-white",
-                          ].join(" ")}
-                        >
-                          <TableBodyCell
-                            columnKey="maintenance"
-                            isSelected={isSelected}
-                          >
-                            <div className="flex min-w-0 items-center gap-4">
-                              <div
-                                className={[
-                                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black transition",
-                                  isSelected
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-blue-50 text-blue-700 group-hover:bg-blue-100",
-                                ].join(" ")}
-                              >
-                                <Wrench className="h-5 w-5" />
-                              </div>
-
-                              <div className="min-w-0">
-                                <Link
-                                  href={`/follow-ups/${item.follow_up_id}`}
-                                  onClick={(event) => event.stopPropagation()}
-                                  className="block"
-                                >
-                                  <h2
-                                    title={clientName}
-                                    className="truncate text-sm font-black text-slate-950 transition hover:text-blue-700"
-                                  >
-                                    {clientName}
-                                  </h2>
-                                </Link>
-
-                                <p
-                                  title={maintenanceType}
-                                  className="mt-1 truncate text-xs font-medium text-slate-500"
-                                >
-                                  {maintenanceType}
-                                </p>
-                              </div>
-                            </div>
-                          </TableBodyCell>
-
-                          {visibleColumns.client && (
-                            <TableBodyCell
-                              columnKey="client"
-                              isSelected={isSelected}
-                            >
-                              <div className="min-w-0">
-                                <p
-                                  title={
-                                    item.client?.phone_primary || "Sin teléfono"
-                                  }
-                                  className="truncate text-sm font-semibold text-slate-700"
-                                >
-                                  {item.client?.phone_primary || "Sin teléfono"}
-                                </p>
-                                <p
-                                  title={
-                                    item.reason || "Mantenimiento programado"
-                                  }
-                                  className="mt-1 truncate text-xs text-slate-500"
-                                >
-                                  {item.reason || "Mantenimiento programado"}
-                                </p>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {visibleColumns.installation && (
-                            <TableBodyCell
-                              columnKey="installation"
-                              isSelected={isSelected}
-                            >
-                              <div className="flex min-w-0 items-center gap-2">
-                                <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
-                                <span
-                                  title={
-                                    item.installation?.description ||
-                                    "Sin instalación asociada"
-                                  }
-                                  className="truncate text-sm font-semibold text-slate-700"
-                                >
-                                  {item.installation?.description ||
-                                    "Sin instalación asociada"}
-                                </span>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {visibleColumns.targetDate && (
-                            <TableBodyCell
-                              columnKey="targetDate"
-                              isSelected={isSelected}
-                            >
-                              <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700">
-                                <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
-                                <span
-                                  title={targetDate || "No disponible"}
-                                  className="truncate"
-                                >
-                                  {targetDate || "No disponible"}
-                                </span>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {visibleColumns.scheduledDate && (
-                            <TableBodyCell
-                              columnKey="scheduledDate"
-                              isSelected={isSelected}
-                            >
-                              <span
-                                title={scheduledDate || "Sin agendar"}
-                                className="truncate text-sm font-semibold text-slate-700"
-                              >
-                                {scheduledDate || "Sin agendar"}
-                              </span>
-                            </TableBodyCell>
-                          )}
-
-                          {visibleColumns.technician && (
-                            <TableBodyCell
-                              columnKey="technician"
-                              isSelected={isSelected}
-                            >
-                              <div className="flex min-w-0 items-center gap-2">
-                                <UserRound className="h-4 w-4 shrink-0 text-slate-400" />
-                                <span
-                                  title={technicianName}
-                                  className="truncate text-sm font-semibold text-slate-700"
-                                >
-                                  {technicianName}
-                                </span>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {visibleColumns.priority && (
-                            <TableBodyCell
-                              columnKey="priority"
-                              isSelected={isSelected}
-                            >
-                              <span
-                                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getPriorityClasses(
-                                  item.priority,
-                                )}`}
-                              >
-                                {getPriorityLabel(item.priority)}
-                              </span>
-                            </TableBodyCell>
-                          )}
-
-                          {visibleColumns.amount && (
-                            <TableBodyCell
-                              columnKey="amount"
-                              isSelected={isSelected}
-                            >
-                              <span
-                                title={
-                                  amount === null
-                                    ? "No definido"
-                                    : formatMoney(
-                                        amount,
-                                        businessCurrency,
-                                        businessLocale,
-                                      )
-                                }
-                                className="truncate text-sm font-bold text-slate-800"
-                              >
-                                {amount === null
-                                  ? "No definido"
-                                  : formatMoney(
-                                      amount,
-                                      businessCurrency,
-                                      businessLocale,
-                                    )}
-                              </span>
-                            </TableBodyCell>
-                          )}
-
-                          {visibleColumns.billing && (
-                            <TableBodyCell
-                              columnKey="billing"
-                              isSelected={isSelected}
-                            >
-                              <span
-                                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getBillingStatusClasses(
-                                  item.billing_status,
-                                )}`}
-                              >
-                                {getBillingStatusLabel(item.billing_status)}
-                              </span>
-                            </TableBodyCell>
-                          )}
-
-                          {visibleColumns.status && (
-                            <TableBodyCell
-                              columnKey="status"
-                              isSelected={isSelected}
-                            >
-                              <div className="flex flex-wrap gap-2">
-                                <span
-                                  className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getStatusClasses(
-                                    item.follow_up_status?.code,
-                                  )}`}
-                                >
-                                  {item.follow_up_status?.name || "Sin estado"}
-                                </span>
-
-                                <span
-                                  className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${timingMeta.classes}`}
-                                >
-                                  {timingMeta.label}
-                                </span>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          <TableBodyCell
-                            columnKey="actions"
-                            isSelected={isSelected}
-                            className="justify-end"
-                          >
-                            <Link
-                              href={`/follow-ups/${item.follow_up_id}`}
-                              onClick={(event) => event.stopPropagation()}
-                              className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-                            >
-                              Ver detalle
-                            </Link>
-                          </TableBodyCell>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-semibold text-slate-500">
-                  Mostrando {pageStartIndex}-{pageEndIndex} de {visibleTotal}{" "}
-                  mantenimiento
-                  {visibleTotal === 1 ? "" : "s"} · Página {safeCurrentPage} de{" "}
-                  {totalPages}
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentPage((page) => Math.max(1, page - 1))
-                    }
-                    disabled={safeCurrentPage <= 1}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Anterior
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentPage((page) => Math.min(totalPages, page + 1))
-                    }
-                    disabled={safeCurrentPage >= totalPages}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </div>
+              <FollowUpPagination
+                pageStartIndex={pageStartIndex}
+                pageEndIndex={pageEndIndex}
+                visibleTotal={visibleTotal}
+                safeCurrentPage={safeCurrentPage}
+                totalPages={totalPages}
+                setCurrentPage={setCurrentPage}
+              />
             </section>
           )}
 
@@ -1100,8 +526,3 @@ export default function FollowUpsPage() {
     </main>
   );
 }
-
-
-
-
-
