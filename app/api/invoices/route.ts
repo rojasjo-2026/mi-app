@@ -328,7 +328,7 @@ export async function GET(req: Request) {
     const page = normalizePositiveInt(searchParams.get("page"), 1, 100000);
     const pageSize = normalizePositiveInt(
       searchParams.get("pageSize"),
-      25,
+      15,
       100,
     );
     const sortKey = (searchParams.get("sortKey") || "date") as InvoiceSortKey;

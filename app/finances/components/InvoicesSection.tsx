@@ -5,15 +5,11 @@ import type { FinanceInvoice } from "../types";
 import {
   formatCurrency,
   formatDateLabel,
-  formatPaymentMethod,
-  formatPaymentTerm,
-  getBillingStatusLabel,
   getClientName,
   getInvoiceCurrency,
   getInvoiceOrigin,
   getInvoiceStatusClass,
   getInvoiceStatusLabel,
-  toSafeNumber,
 } from "../utils";
 import FinanceSummaryCard from "./FinanceSummaryCard";
 import SectionHeader from "./SectionHeader";
@@ -24,7 +20,6 @@ import {
   PAGE_SIZE_OPTIONS,
   STATUS_OPTIONS,
   type InvoiceColumnKey,
-  type InvoiceSortKey,
   type InvoiceStatusFilter,
   type InvoicesSectionProps,
   type OptionalInvoiceColumnKey,
@@ -228,29 +223,36 @@ export default function InvoicesSection({
           type="button"
           onClick={onRefresh}
           disabled={loading}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Actualizando..." : "Actualizar"}
         </button>
       </div>
 
       {metrics.overdueAmount > 0 && (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-          <p className="font-semibold">
-            {metrics.overdueCount} factura
-            {metrics.overdueCount === 1 ? "" : "s"} vencida
-            {metrics.overdueCount === 1 ? "" : "s"}.
-          </p>
-          <p className="mt-1">
-            Cobro urgente: saldo vencido total{" "}
-            {formatCurrency(metrics.overdueAmount, summaryCurrency)}.
+        <div className="mt-5 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white text-red-600">
+            !
+          </span>
+
+          <p className="font-medium">
+            <span className="font-semibold">
+              {metrics.overdueCount} factura
+              {metrics.overdueCount === 1 ? "" : "s"} vencida
+              {metrics.overdueCount === 1 ? "" : "s"}
+            </span>{" "}
+            · Cobro urgente: saldo vencido total{" "}
+            <span className="font-semibold">
+              {formatCurrency(metrics.overdueAmount, summaryCurrency)}
+            </span>
+            .
           </p>
         </div>
       )}
 
       {notification && (
         <div
-          className={`mt-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
+          className={`mt-5 rounded-lg border px-4 py-3 text-sm font-medium ${
             notification.type === "success"
               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
               : "border-red-200 bg-red-50 text-red-700"
@@ -260,7 +262,7 @@ export default function InvoicesSection({
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
         <FinanceSummaryCard
           label="Total facturado"
           value={formatCurrency(metrics.totalInvoiced, summaryCurrency)}
@@ -293,19 +295,19 @@ export default function InvoicesSection({
       </div>
 
       {error && (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </div>
       )}
 
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+      <div className="mt-5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <div className="grid gap-3 xl:grid-cols-[1.35fr_0.65fr_0.55fr_0.55fr_0.45fr_0.45fr]">
           <input
             type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Buscar por factura, cliente, teléfono, servicio o cédula"
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           />
 
           <select
@@ -314,7 +316,7 @@ export default function InvoicesSection({
               onStatusChange(event.target.value as InvoiceStatusFilter)
             }
             title="Filtrar por estado"
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300"
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -323,27 +325,27 @@ export default function InvoicesSection({
             ))}
           </select>
 
-          <label className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-            <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+          <label className="min-w-0 rounded-md border border-slate-200 bg-white px-3 py-1.5">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Desde
             </span>
             <input
               type="date"
               value={dateFrom}
               onChange={(event) => onDateFromChange(event.target.value)}
-              className="mt-1 w-full bg-transparent text-sm font-bold text-slate-700 outline-none"
+              className="mt-0.5 w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
             />
           </label>
 
-          <label className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-            <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+          <label className="min-w-0 rounded-md border border-slate-200 bg-white px-3 py-1.5">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Hasta
             </span>
             <input
               type="date"
               value={dateTo}
               onChange={(event) => onDateToChange(event.target.value)}
-              className="mt-1 w-full bg-transparent text-sm font-bold text-slate-700 outline-none"
+              className="mt-0.5 w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
             />
           </label>
 
@@ -351,7 +353,7 @@ export default function InvoicesSection({
             <button
               type="button"
               onClick={() => setIsColumnMenuOpen((current) => !current)}
-              className="inline-flex h-full w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-100"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Columnas
             </button>
@@ -363,12 +365,12 @@ export default function InvoicesSection({
             />
           </div>
 
-          <label className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm">
+          <label className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
             Ver
             <select
               value={pageSize}
               onChange={(event) => onPageSizeChange(Number(event.target.value))}
-              className="bg-transparent text-sm font-bold outline-none"
+              className="bg-transparent text-sm font-semibold outline-none"
             >
               {PAGE_SIZE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -381,18 +383,19 @@ export default function InvoicesSection({
 
         {(dateFrom || dateTo) && (
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-            <span className="rounded-full bg-white px-3 py-1 text-slate-600 shadow-sm">
+            <span className="rounded-md bg-slate-50 px-3 py-1 text-slate-600">
               Filtrando por fecha de emisión
               {dateFrom ? ` desde ${dateFrom}` : ""}
               {dateTo ? ` hasta ${dateTo}` : ""}
             </span>
+
             <button
               type="button"
               onClick={() => {
                 onDateFromChange("");
                 onDateToChange("");
               }}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 font-bold text-slate-600 transition hover:bg-slate-100"
+              className="rounded-md border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-600 transition hover:bg-slate-50"
             >
               Limpiar fechas
             </button>
@@ -401,20 +404,20 @@ export default function InvoicesSection({
       </div>
 
       {loading && invoices.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             Cargando facturas...
           </p>
         </div>
       ) : invoices.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             Todavía no hay facturas con los filtros seleccionados.
           </p>
         </div>
       ) : (
-        <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
-          <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+          <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <div style={{ minWidth: tableMinWidth }}>
                 <div
@@ -464,7 +467,7 @@ export default function InvoicesSection({
                           }
                         }}
                         style={{ gridTemplateColumns }}
-                        className={`grid min-h-[74px] cursor-pointer transition hover:bg-blue-50/70 ${
+                        className={`grid min-h-[62px] cursor-pointer transition hover:bg-blue-50/70 ${
                           isSelected
                             ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
                             : "bg-white"
@@ -475,11 +478,11 @@ export default function InvoicesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
                                   title={invoice.invoice_number || "Sin número"}
-                                  className="truncate text-sm font-black text-slate-950"
+                                  className="truncate text-sm font-semibold text-slate-950"
                                 >
                                   {invoice.invoice_number || "Sin número"}
                                 </span>
@@ -491,11 +494,11 @@ export default function InvoicesSection({
                             return (
                               <div
                                 key={column}
-                                className="min-w-0 border-r border-slate-100 px-4 py-3"
+                                className="min-w-0 border-r border-slate-100 px-3 py-2.5"
                               >
                                 <p
                                   title={clientName}
-                                  className="truncate text-sm font-bold text-slate-900"
+                                  className="truncate text-sm font-semibold text-slate-900"
                                 >
                                   {clientName}
                                 </p>
@@ -513,11 +516,11 @@ export default function InvoicesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
                                   title={formatDateLabel(invoice.invoice_date)}
-                                  className="truncate text-sm font-semibold text-slate-700"
+                                  className="truncate text-sm font-medium text-slate-700"
                                 >
                                   {formatDateLabel(invoice.invoice_date)}
                                 </span>
@@ -529,11 +532,11 @@ export default function InvoicesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
                                   title={formatDateLabel(invoice.due_date)}
-                                  className="truncate text-sm font-semibold text-slate-700"
+                                  className="truncate text-sm font-medium text-slate-700"
                                 >
                                   {formatDateLabel(invoice.due_date)}
                                 </span>
@@ -550,11 +553,11 @@ export default function InvoicesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
                                   title={totalLabel}
-                                  className="truncate text-sm font-black text-slate-900"
+                                  className="truncate text-sm font-semibold text-slate-900"
                                 >
                                   {totalLabel}
                                 </span>
@@ -571,11 +574,11 @@ export default function InvoicesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
                                   title={paidLabel}
-                                  className="truncate text-sm font-bold text-emerald-700"
+                                  className="truncate text-sm font-semibold text-emerald-700"
                                 >
                                   {paidLabel}
                                 </span>
@@ -592,11 +595,11 @@ export default function InvoicesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
                                   title={balanceLabel}
-                                  className="truncate text-sm font-bold text-red-700"
+                                  className="truncate text-sm font-semibold text-red-700"
                                 >
                                   {balanceLabel}
                                 </span>
@@ -607,11 +610,11 @@ export default function InvoicesSection({
                           return (
                             <div
                               key={column}
-                              className="flex min-w-0 items-center justify-center px-4 py-3"
+                              className="flex min-w-0 items-center justify-center px-3 py-2.5"
                             >
                               <span
                                 title={getInvoiceStatusLabel(invoice.status)}
-                                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getInvoiceStatusClass(invoice.status)}`}
+                                className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${getInvoiceStatusClass(invoice.status)}`}
                               >
                                 {getInvoiceStatusLabel(invoice.status)}
                               </span>
@@ -625,8 +628,8 @@ export default function InvoicesSection({
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-semibold text-slate-500">
+            <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium text-slate-500">
                 Mostrando {pageStartIndex}-{pageEndIndex} de {visibleTotal}{" "}
                 facturas · Página {safeCurrentPage} de {totalPages}
                 {loading && invoices.length > 0 ? " · Actualizando..." : ""}
@@ -637,7 +640,7 @@ export default function InvoicesSection({
                   type="button"
                   onClick={() => onPageChange(Math.max(1, safeCurrentPage - 1))}
                   disabled={safeCurrentPage <= 1}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Anterior
                 </button>
@@ -648,7 +651,7 @@ export default function InvoicesSection({
                     onPageChange(Math.min(totalPages, safeCurrentPage + 1))
                   }
                   disabled={safeCurrentPage >= totalPages}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Siguiente
                 </button>
@@ -666,4 +669,3 @@ export default function InvoicesSection({
     </div>
   );
 }
-

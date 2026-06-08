@@ -47,7 +47,10 @@ export type InvoiceColumnKey =
   | "balance"
   | "status";
 
-export type OptionalInvoiceColumnKey = Exclude<InvoiceColumnKey, "invoice" | "status">;
+export type OptionalInvoiceColumnKey = Exclude<
+  InvoiceColumnKey,
+  "invoice" | "status"
+>;
 
 export type VisibleInvoiceColumns = Record<OptionalInvoiceColumnKey, boolean>;
 
@@ -114,7 +117,7 @@ export type InvoicesSectionProps = {
   onSortChange: (key: InvoiceSortKey) => void;
 };
 
-export const PAGE_SIZE_OPTIONS = [25, 50, 100];
+export const PAGE_SIZE_OPTIONS = [15, 25, 50, 100];
 
 export const STATUS_OPTIONS: { label: string; value: InvoiceStatusFilter }[] = [
   { label: "Todas", value: "ALL" },
@@ -124,4 +127,3 @@ export const STATUS_OPTIONS: { label: string; value: InvoiceStatusFilter }[] = [
   { label: "Vencidas", value: "OVERDUE" },
   { label: "Canceladas", value: "CANCELLED" },
 ];
-

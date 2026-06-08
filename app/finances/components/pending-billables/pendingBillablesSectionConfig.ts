@@ -73,7 +73,7 @@ export type PendingBillablesSectionProps = {
 };
 
 export const DEFAULT_COUNTRY_CODE = "CR";
-export const PAGE_SIZE_OPTIONS = [25, 50, 100];
+export const PAGE_SIZE_OPTIONS = [15, 25, 50, 100];
 
 export const fallbackCountryPreset =
   getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
@@ -121,4 +121,3 @@ export const COLUMN_CLASSES: Record<ColumnKey, string> = {
   status: "minmax(145px,0.75fr)",
   action: "150px",
 };
-

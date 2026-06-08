@@ -152,7 +152,7 @@ function getPaginationParams(searchParams: URLSearchParams) {
   const page = Math.max(1, Math.floor(Number(searchParams.get("page")) || 1));
   const pageSize = Math.min(
     100,
-    Math.max(1, Math.floor(Number(searchParams.get("pageSize")) || 25)),
+    Math.max(1, Math.floor(Number(searchParams.get("pageSize")) || 15)),
   );
 
   return { page, pageSize };

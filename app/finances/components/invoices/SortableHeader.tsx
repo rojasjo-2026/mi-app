@@ -1,7 +1,4 @@
-﻿import type {
-  InvoiceSortKey,
-  SortDirection,
-} from "./invoicesSectionConfig";
+﻿import type { InvoiceSortKey, SortDirection } from "./invoicesSectionConfig";
 
 export function SortableHeader({
   label,
@@ -32,7 +29,7 @@ export function SortableHeader({
       type="button"
       title={`Ordenar por ${label}`}
       onClick={() => onSortChange(sortKey)}
-      className={`flex min-w-0 items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition hover:text-slate-700 ${alignmentClass} ${
+      className={`flex min-w-0 items-center gap-2 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition hover:text-slate-700 ${alignmentClass} ${
         isActive ? "text-slate-700" : "text-slate-400"
       }`}
     >
@@ -47,4 +44,3 @@ export function SortableHeader({
     </button>
   );
 }
-

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import FinanceMenu from "./components/FinanceMenu";
 import InvoicesSection from "./components/InvoicesSection";
 import NewInvoiceSection from "./components/NewInvoiceSection";
 import SearchInvoicesSection from "./components/SearchInvoicesSection";
@@ -63,6 +62,9 @@ type PendingSortKey =
   | "profit"
   | "status";
 
+const DEFAULT_INVOICE_PAGE_SIZE = 15;
+const DEFAULT_PENDING_PAGE_SIZE = 15;
+
 const DEFAULT_INVOICE_METRICS: InvoiceMetrics = {
   totalInvoiced: 0,
   pendingAmount: 0,
@@ -72,9 +74,34 @@ const DEFAULT_INVOICE_METRICS: InvoiceMetrics = {
   overdueCount: 0,
 };
 
+const FINANCE_TABS: FinanceMenuItem[] = [
+  "Facturas",
+  "Trabajos pendientes para facturar",
+  "Pagos",
+  "Clientes con crédito",
+  "Reportes / ingresos",
+];
+
+function getFinanceTabLabel(section: FinanceMenuItem) {
+  if (section === "Trabajos pendientes para facturar") {
+    return "Trabajos pendientes";
+  }
+
+  return section;
+}
+
+function getTabClass(active: boolean) {
+  return [
+    "relative inline-flex h-10 items-center justify-center whitespace-nowrap border-b-2 px-1 text-sm font-semibold transition",
+    active
+      ? "border-blue-600 text-blue-700"
+      : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800",
+  ].join(" ");
+}
+
 export default function FinancesPage() {
   const [activeSection, setActiveSection] =
-    useState<FinanceMenuItem>("Nueva factura");
+    useState<FinanceMenuItem>("Facturas");
 
   const [invoices, setInvoices] = useState<FinanceInvoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
@@ -84,14 +111,16 @@ export default function FinancesPage() {
     useState<InvoiceStatusFilter>("ALL");
   const [invoiceDateFrom, setInvoiceDateFrom] = useState("");
   const [invoiceDateTo, setInvoiceDateTo] = useState("");
-  const [invoicePageSize, setInvoicePageSize] = useState(25);
+  const [invoicePageSize, setInvoicePageSize] = useState(
+    DEFAULT_INVOICE_PAGE_SIZE,
+  );
   const [invoiceCurrentPage, setInvoiceCurrentPage] = useState(1);
   const [invoiceSortKey, setInvoiceSortKey] = useState<InvoiceSortKey>("date");
   const [invoiceSortDirection, setInvoiceSortDirection] =
     useState<SortDirection>("desc");
   const [invoicePagination, setInvoicePagination] = useState<PaginationState>({
     page: 1,
-    pageSize: 25,
+    pageSize: DEFAULT_INVOICE_PAGE_SIZE,
     totalItems: 0,
     totalPages: 1,
   });
@@ -110,14 +139,16 @@ export default function FinancesPage() {
   const [pendingStatus, setPendingStatus] = useState("ALL");
   const [pendingDateFrom, setPendingDateFrom] = useState("");
   const [pendingDateTo, setPendingDateTo] = useState("");
-  const [pendingPageSize, setPendingPageSize] = useState(25);
+  const [pendingPageSize, setPendingPageSize] = useState(
+    DEFAULT_PENDING_PAGE_SIZE,
+  );
   const [pendingCurrentPage, setPendingCurrentPage] = useState(1);
   const [pendingSortKey, setPendingSortKey] = useState<PendingSortKey>("date");
   const [pendingSortDirection, setPendingSortDirection] =
     useState<SortDirection>("desc");
   const [pendingPagination, setPendingPagination] = useState<PaginationState>({
     page: 1,
-    pageSize: 25,
+    pageSize: DEFAULT_PENDING_PAGE_SIZE,
     totalItems: 0,
     totalPages: 1,
   });
@@ -377,17 +408,19 @@ export default function FinancesPage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-gray-50 px-8 py-8">
-      <div className="mx-auto max-w-[1800px] space-y-6">
-        <div className="flex items-start justify-between">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="inline-flex rounded-full border bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
               Gestión financiera
-            </div>
+            </p>
 
-            <h1 className="mt-3 text-3xl font-bold text-slate-950">Finanzas</h1>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+              Finanzas
+            </h1>
 
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
               Facturas, pagos, créditos e ingresos.
             </p>
           </div>
@@ -395,90 +428,96 @@ export default function FinancesPage() {
           <button
             type="button"
             onClick={() => setActiveSection("Nueva factura")}
-            className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-slate-800"
+            className="inline-flex items-center justify-center rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
           >
             + Nueva factura
           </button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-          <FinanceMenu
-            activeSection={activeSection}
-            onChange={setActiveSection}
-          />
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            {activeSection === "Facturas" && (
-              <InvoicesSection
-                invoices={invoices}
-                loading={loadingInvoices}
-                error={invoiceError}
-                onRefresh={loadInvoices}
-                pagination={invoicePagination}
-                metrics={invoiceMetrics}
-                search={invoiceSearch}
-                status={invoiceStatus}
-                dateFrom={invoiceDateFrom}
-                dateTo={invoiceDateTo}
-                pageSize={invoicePageSize}
-                sortKey={invoiceSortKey}
-                sortDirection={invoiceSortDirection}
-                onSearchChange={setInvoiceSearch}
-                onStatusChange={setInvoiceStatus}
-                onDateFromChange={setInvoiceDateFrom}
-                onDateToChange={setInvoiceDateTo}
-                onPageChange={setInvoiceCurrentPage}
-                onPageSizeChange={setInvoicePageSize}
-                onSortChange={handleInvoiceSortChange}
-              />
-            )}
-
-            {activeSection === "Nueva factura" && <NewInvoiceSection />}
-
-            {activeSection === "Buscar facturas" && <SearchInvoicesSection />}
-
-            {activeSection === "Trabajos pendientes para facturar" && (
-              <PendingBillablesSection
-                items={pendingBillables}
-                summary={pendingSummary}
-                loading={loadingPendingBillables}
-                error={pendingBillablesError}
-                search={pendingSearch}
-                status={pendingStatus}
-                dateFrom={pendingDateFrom}
-                dateTo={pendingDateTo}
-                selectedBillable={selectedBillable}
-                pagination={pendingPagination}
-                pageSize={pendingPageSize}
-                sortKey={pendingSortKey}
-                sortDirection={pendingSortDirection}
-                onSearchChange={setPendingSearch}
-                onStatusChange={setPendingStatus}
-                onDateFromChange={setPendingDateFrom}
-                onDateToChange={setPendingDateTo}
-                onRefresh={loadPendingBillables}
-                onSelectBillable={setSelectedBillable}
-                onClearSelection={() => setSelectedBillable(null)}
-                onPageChange={setPendingCurrentPage}
-                onPageSizeChange={setPendingPageSize}
-                onSortChange={handlePendingSortChange}
-                onInvoiceCreated={() => {
-                  setSelectedBillable(null);
-                  loadPendingBillables();
-                  loadInvoices();
-                }}
-              />
-            )}
-
-            {activeSection === "Pagos" && <PaymentsSection />}
-
-            {activeSection === "Clientes con crédito" && (
-              <CreditClientsSection />
-            )}
-
-            {activeSection === "Reportes / ingresos" && <ReportsSection />}
-          </section>
+        <div className="border-b border-slate-200">
+          <div className="flex gap-6 overflow-x-auto">
+            {FINANCE_TABS.map((section) => (
+              <button
+                key={section}
+                type="button"
+                onClick={() => setActiveSection(section)}
+                className={getTabClass(activeSection === section)}
+              >
+                {getFinanceTabLabel(section)}
+              </button>
+            ))}
+          </div>
         </div>
+
+        <section className="min-w-0">
+          {activeSection === "Facturas" && (
+            <InvoicesSection
+              invoices={invoices}
+              loading={loadingInvoices}
+              error={invoiceError}
+              onRefresh={loadInvoices}
+              pagination={invoicePagination}
+              metrics={invoiceMetrics}
+              search={invoiceSearch}
+              status={invoiceStatus}
+              dateFrom={invoiceDateFrom}
+              dateTo={invoiceDateTo}
+              pageSize={invoicePageSize}
+              sortKey={invoiceSortKey}
+              sortDirection={invoiceSortDirection}
+              onSearchChange={setInvoiceSearch}
+              onStatusChange={setInvoiceStatus}
+              onDateFromChange={setInvoiceDateFrom}
+              onDateToChange={setInvoiceDateTo}
+              onPageChange={setInvoiceCurrentPage}
+              onPageSizeChange={setInvoicePageSize}
+              onSortChange={handleInvoiceSortChange}
+            />
+          )}
+
+          {activeSection === "Nueva factura" && <NewInvoiceSection />}
+
+          {activeSection === "Buscar facturas" && <SearchInvoicesSection />}
+
+          {activeSection === "Trabajos pendientes para facturar" && (
+            <PendingBillablesSection
+              items={pendingBillables}
+              summary={pendingSummary}
+              loading={loadingPendingBillables}
+              error={pendingBillablesError}
+              search={pendingSearch}
+              status={pendingStatus}
+              dateFrom={pendingDateFrom}
+              dateTo={pendingDateTo}
+              selectedBillable={selectedBillable}
+              pagination={pendingPagination}
+              pageSize={pendingPageSize}
+              sortKey={pendingSortKey}
+              sortDirection={pendingSortDirection}
+              onSearchChange={setPendingSearch}
+              onStatusChange={setPendingStatus}
+              onDateFromChange={setPendingDateFrom}
+              onDateToChange={setPendingDateTo}
+              onRefresh={loadPendingBillables}
+              onSelectBillable={setSelectedBillable}
+              onClearSelection={() => setSelectedBillable(null)}
+              onPageChange={setPendingCurrentPage}
+              onPageSizeChange={setPendingPageSize}
+              onSortChange={handlePendingSortChange}
+              onInvoiceCreated={() => {
+                setSelectedBillable(null);
+                loadPendingBillables();
+                loadInvoices();
+              }}
+            />
+          )}
+
+          {activeSection === "Pagos" && <PaymentsSection />}
+
+          {activeSection === "Clientes con crédito" && <CreditClientsSection />}
+
+          {activeSection === "Reportes / ingresos" && <ReportsSection />}
+        </section>
       </div>
     </main>
   );

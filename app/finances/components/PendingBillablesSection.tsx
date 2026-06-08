@@ -37,6 +37,8 @@ import { SortableHeader } from "./pending-billables/SortableHeader";
 import { ColumnPicker } from "./pending-billables/ColumnPicker";
 import { PendingBillablePanel } from "./pending-billables/PendingBillablePanel";
 
+const DEFAULT_PENDING_PAGE_SIZE = 15;
+
 export default function PendingBillablesSection({
   items,
   summary,
@@ -100,7 +102,7 @@ export default function PendingBillablesSection({
 
   const resolvedSortKey: PendingSortKey = sortKey ?? "date";
   const resolvedSortDirection: SortDirection = sortDirection ?? "desc";
-  const resolvedPageSize = pageSize ?? (items.length || 25);
+  const resolvedPageSize = pageSize ?? DEFAULT_PENDING_PAGE_SIZE;
   const resolvedPagination: PaginationState = pagination ?? {
     page: 1,
     pageSize: resolvedPageSize,
@@ -191,13 +193,13 @@ export default function PendingBillablesSection({
           type="button"
           onClick={onRefresh}
           disabled={loading}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Actualizando..." : "Actualizar"}
         </button>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
         <FinanceSummaryCard
           label="Trabajos"
           value={String(
@@ -227,46 +229,48 @@ export default function PendingBillablesSection({
         />
       </div>
 
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+      <div className="mt-5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <div className="grid gap-3 xl:grid-cols-[1fr_190px_160px_160px_150px_145px]">
           <input
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Buscar por cliente, teléfono, cédula o descripción del trabajo..."
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           />
 
           <select
             value={status}
-            onChange={(e) => onStatusChange(e.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            onChange={(event) => onStatusChange(event.target.value)}
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           >
             <option value="ALL">Todos pendientes</option>
             <option value="PENDING">Pendiente</option>
             <option value="BILLING_ERROR">Error de facturación</option>
           </select>
 
-          <label className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-            <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+          <label className="min-w-0 rounded-md border border-slate-200 bg-white px-3 py-1.5">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Desde
             </span>
+
             <input
               type="date"
               value={dateFrom ?? ""}
-              onChange={(e) => onDateFromChange?.(e.target.value)}
-              className="mt-1 w-full bg-transparent text-sm font-bold text-slate-700 outline-none"
+              onChange={(event) => onDateFromChange?.(event.target.value)}
+              className="mt-0.5 w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
             />
           </label>
 
-          <label className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-            <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+          <label className="min-w-0 rounded-md border border-slate-200 bg-white px-3 py-1.5">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Hasta
             </span>
+
             <input
               type="date"
               value={dateTo ?? ""}
-              onChange={(e) => onDateToChange?.(e.target.value)}
-              className="mt-1 w-full bg-transparent text-sm font-bold text-slate-700 outline-none"
+              onChange={(event) => onDateToChange?.(event.target.value)}
+              className="mt-0.5 w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
             />
           </label>
 
@@ -274,7 +278,7 @@ export default function PendingBillablesSection({
             <button
               type="button"
               onClick={() => setIsColumnMenuOpen((current) => !current)}
-              className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-100"
+              className="inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Columnas
             </button>
@@ -286,14 +290,14 @@ export default function PendingBillablesSection({
             />
           </div>
 
-          <label className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm">
+          <label className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
             Ver
             <select
               value={resolvedPageSize}
               onChange={(event) =>
                 onPageSizeChange?.(Number(event.target.value))
               }
-              className="bg-transparent text-sm font-bold outline-none"
+              className="bg-transparent text-sm font-semibold outline-none"
             >
               {PAGE_SIZE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -306,18 +310,19 @@ export default function PendingBillablesSection({
       </div>
 
       {error && (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </div>
       )}
 
       {selectedBillable && (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Facturar trabajo seleccionado
               </p>
+
               <p className="mt-1 text-sm font-semibold text-slate-900">
                 {selectedBillable.client_name} · {selectedBillable.description}
               </p>
@@ -326,7 +331,7 @@ export default function PendingBillablesSection({
             <button
               type="button"
               onClick={onClearSelection}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Cerrar
             </button>
@@ -354,20 +359,20 @@ export default function PendingBillablesSection({
       )}
 
       {loading && items.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             Cargando trabajos pendientes...
           </p>
         </div>
       ) : items.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             No hay trabajos pendientes para facturar con los filtros actuales.
           </p>
         </div>
       ) : (
-        <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
-          <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+          <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <div className="min-w-[980px]">
                 <div
@@ -418,7 +423,7 @@ export default function PendingBillablesSection({
                           }
                         }}
                         style={{ gridTemplateColumns }}
-                        className={`grid min-h-[74px] cursor-pointer transition hover:bg-blue-50/70 ${
+                        className={`grid min-h-[62px] cursor-pointer transition hover:bg-blue-50/70 ${
                           isSelected
                             ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
                             : "bg-white"
@@ -429,14 +434,15 @@ export default function PendingBillablesSection({
                             return (
                               <div
                                 key={column}
-                                className="min-w-0 border-r border-slate-100 px-4 py-3"
+                                className="min-w-0 border-r border-slate-100 px-3 py-2.5"
                               >
                                 <p
                                   title={item.client_name || "-"}
-                                  className="truncate text-sm font-black text-slate-950"
+                                  className="truncate text-sm font-semibold text-slate-950"
                                 >
                                   {item.client_name || "-"}
                                 </p>
+
                                 <p
                                   title={item.client_phone || "Sin teléfono"}
                                   className="mt-1 truncate text-xs font-medium text-slate-500"
@@ -451,9 +457,9 @@ export default function PendingBillablesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center border-r border-slate-100 px-3 py-2.5"
                               >
-                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">
+                                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-600">
                                   {getTypeLabel(item)}
                                 </span>
                               </div>
@@ -464,14 +470,15 @@ export default function PendingBillablesSection({
                             return (
                               <div
                                 key={column}
-                                className="min-w-0 border-r border-slate-100 px-4 py-3"
+                                className="min-w-0 border-r border-slate-100 px-3 py-2.5"
                               >
                                 <p
                                   title={item.description || "-"}
-                                  className="truncate text-sm font-bold text-slate-900"
+                                  className="truncate text-sm font-semibold text-slate-900"
                                 >
                                   {item.description || "-"}
                                 </p>
+
                                 {item.billing_notes && (
                                   <p
                                     title={item.billing_notes}
@@ -488,14 +495,14 @@ export default function PendingBillablesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
                                   title={formatDateLabel(
                                     item.date,
                                     businessLocale,
                                   )}
-                                  className="truncate text-sm font-semibold text-slate-700"
+                                  className="truncate text-sm font-medium text-slate-700"
                                 >
                                   {formatDateLabel(item.date, businessLocale)}
                                 </span>
@@ -504,72 +511,66 @@ export default function PendingBillablesSection({
                           }
 
                           if (column === "amount") {
+                            const amountLabel = formatCurrency(
+                              amount,
+                              businessCurrency,
+                              businessLocale,
+                            );
+
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
-                                  title={formatCurrency(
-                                    amount,
-                                    businessCurrency,
-                                    businessLocale,
-                                  )}
-                                  className="truncate text-sm font-black text-slate-900"
+                                  title={amountLabel}
+                                  className="truncate text-sm font-semibold text-slate-900"
                                 >
-                                  {formatCurrency(
-                                    amount,
-                                    businessCurrency,
-                                    businessLocale,
-                                  )}
+                                  {amountLabel}
                                 </span>
                               </div>
                             );
                           }
 
                           if (column === "cost") {
+                            const costLabel = formatCurrency(
+                              cost,
+                              businessCurrency,
+                              businessLocale,
+                            );
+
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
-                                  title={formatCurrency(
-                                    cost,
-                                    businessCurrency,
-                                    businessLocale,
-                                  )}
-                                  className="truncate text-sm font-bold text-slate-800"
+                                  title={costLabel}
+                                  className="truncate text-sm font-semibold text-slate-800"
                                 >
-                                  {formatCurrency(
-                                    cost,
-                                    businessCurrency,
-                                    businessLocale,
-                                  )}
+                                  {costLabel}
                                 </span>
                               </div>
                             );
                           }
 
                           if (column === "profit") {
+                            const profitLabel = formatCurrency(
+                              profit,
+                              businessCurrency,
+                              businessLocale,
+                            );
+
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center justify-end border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
-                                  title={formatCurrency(
-                                    profit,
-                                    businessCurrency,
-                                    businessLocale,
-                                  )}
-                                  className="truncate text-sm font-bold text-emerald-700"
+                                  title={profitLabel}
+                                  className="truncate text-sm font-semibold text-emerald-700"
                                 >
-                                  {formatCurrency(
-                                    profit,
-                                    businessCurrency,
-                                    businessLocale,
-                                  )}
+                                  {profitLabel}
                                 </span>
                               </div>
                             );
@@ -579,10 +580,10 @@ export default function PendingBillablesSection({
                             return (
                               <div
                                 key={column}
-                                className="flex min-w-0 items-center justify-center border-r border-slate-100 px-4 py-3"
+                                className="flex min-w-0 items-center justify-center border-r border-slate-100 px-3 py-2.5"
                               >
                                 <span
-                                  className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getBillingStatusClass(
+                                  className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${getBillingStatusClass(
                                     item.billing_status,
                                   )}`}
                                 >
@@ -595,7 +596,7 @@ export default function PendingBillablesSection({
                           return (
                             <div
                               key={column}
-                              className="flex min-w-0 items-center justify-center px-4 py-3"
+                              className="flex min-w-0 items-center justify-center px-3 py-2.5"
                             >
                               <button
                                 type="button"
@@ -603,7 +604,7 @@ export default function PendingBillablesSection({
                                   event.stopPropagation();
                                   onSelectBillable(item);
                                 }}
-                                className="rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
+                                className="inline-flex min-w-[118px] items-center justify-center rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
                               >
                                 Generar factura
                               </button>
@@ -617,8 +618,8 @@ export default function PendingBillablesSection({
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-semibold text-slate-500">
+            <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium text-slate-500">
                 Mostrando {pageStartIndex}-{pageEndIndex} de {visibleTotal}{" "}
                 trabajos · Página {safeCurrentPage} de {totalPages}
                 {loading && items.length > 0 ? " · Actualizando..." : ""}
@@ -631,7 +632,7 @@ export default function PendingBillablesSection({
                     onPageChange?.(Math.max(1, safeCurrentPage - 1))
                   }
                   disabled={safeCurrentPage <= 1}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Anterior
                 </button>
@@ -642,7 +643,7 @@ export default function PendingBillablesSection({
                     onPageChange?.(Math.min(totalPages, safeCurrentPage + 1))
                   }
                   disabled={safeCurrentPage >= totalPages}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Siguiente
                 </button>
@@ -661,4 +662,3 @@ export default function PendingBillablesSection({
     </div>
   );
 }
-
