@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type SVGProps,
 } from "react";
 import {
   INITIAL_COLUMN_WIDTHS,
@@ -37,6 +38,8 @@ import { FollowUpFiltersPanel } from "./components/FollowUpFiltersPanel";
 import { FollowUpTable } from "./components/FollowUpTable";
 import { FollowUpPagination } from "./components/FollowUpPagination";
 
+const DEFAULT_FOLLOW_UP_PAGE_SIZE = 15;
+
 export default function FollowUpsPage() {
   const [items, setItems] = useState<FollowUp[]>([]);
   const [selectedFollowUpId, setSelectedFollowUpId] = useState<string | null>(
@@ -61,11 +64,11 @@ export default function FollowUpsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("targetDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [searchTerm, setSearchTerm] = useState("");
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(DEFAULT_FOLLOW_UP_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
-    pageSize: 25,
+    pageSize: DEFAULT_FOLLOW_UP_PAGE_SIZE,
     totalItems: 0,
     totalPages: 1,
   });
@@ -92,7 +95,7 @@ export default function FollowUpsPage() {
       (column) => visibleColumns[column.key],
     ).map((column) => column.key);
 
-    return ["maintenance", ...middleColumns, "actions"];
+    return ["maintenance", ...middleColumns];
   }, [visibleColumns]);
 
   const gridTemplateColumns = useMemo(
@@ -355,7 +358,7 @@ export default function FollowUpsPage() {
     event.preventDefault();
     event.stopPropagation();
 
-    if (columnKey === "maintenance" || columnKey === "actions") return;
+    if (columnKey === "maintenance") return;
 
     const startX = event.clientX;
     const startWidth = columnWidths[columnKey];
@@ -393,40 +396,46 @@ export default function FollowUpsPage() {
 
   if (loading && !hasLoadedOnce) {
     return (
-      <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-        <div className="mx-auto max-w-[1500px] rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-medium text-slate-600">
-            Cargando mantenimientos...
-          </p>
-        </div>
+      <main className="min-h-screen bg-slate-50 p-5 text-slate-900 md:p-6">
+        <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+          <PageContextBar />
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-slate-600">
+              Cargando mantenimientos...
+            </p>
+          </div>
+        </section>
       </main>
     );
   }
 
   if (error) {
     return (
-      <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-        <div className="mx-auto max-w-[1500px] rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-medium text-red-600">{error}</p>
-        </div>
+      <main className="min-h-screen bg-slate-50 p-5 text-slate-900 md:p-6">
+        <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+          <PageContextBar />
+
+          <div className="rounded-xl border border-red-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-red-600">{error}</p>
+          </div>
+        </section>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/60 p-6 text-slate-900 md:p-8">
-      <div className="mx-auto w-full max-w-[1800px] space-y-6">
-        <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">
-              Centro operativo
-            </p>
+    <main className="min-h-screen bg-slate-50 p-5 text-slate-900 md:p-6">
+      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+        <PageContextBar />
 
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
               Mantenimientos
             </h1>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
               Cliente, instalación, técnico, agenda y facturación conectados en
               una sola vista.
             </p>
@@ -434,11 +443,11 @@ export default function FollowUpsPage() {
 
           <Link
             href="/follow-ups/new"
-            className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
           >
             + Nuevo mantenimiento
           </Link>
-        </section>
+        </div>
 
         <FollowUpMetricsGrid metrics={metrics} />
 
@@ -468,10 +477,10 @@ export default function FollowUpsPage() {
           onClearFilters={clearFilters}
         />
 
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
           {filteredItems.length === 0 ? (
-            <section className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-              <p className="text-base font-bold text-slate-800">
+            <section className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+              <p className="text-base font-semibold text-slate-800">
                 No se encontraron mantenimientos
               </p>
 
@@ -481,13 +490,13 @@ export default function FollowUpsPage() {
 
               <Link
                 href="/follow-ups/new"
-                className="mt-5 inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                className="mt-5 inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Crear mantenimiento
               </Link>
             </section>
           ) : (
-            <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               <FollowUpTable
                 items={filteredItems}
                 selectedFollowUpId={selectedFollowUpId}
@@ -522,7 +531,118 @@ export default function FollowUpsPage() {
             businessLocale={businessLocale}
           />
         </div>
-      </div>
+      </section>
     </main>
+  );
+}
+
+function PageContextBar() {
+  return (
+    <div className="flex min-h-12 items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+      <nav
+        aria-label="Ubicación actual"
+        className="flex min-w-0 items-center gap-2 text-sm font-semibold"
+      >
+        <Link
+          href="/"
+          className="truncate text-blue-700 transition hover:text-blue-800"
+        >
+          Operaciones 360
+        </Link>
+
+        <span className="text-slate-300">/</span>
+
+        <span className="truncate text-slate-800">Mantenimientos</span>
+      </nav>
+
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          title="Búsqueda global - próximamente"
+          aria-label="Búsqueda global - próximamente"
+          className="inline-flex h-9 w-9 cursor-default items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700"
+        >
+          <SearchIcon className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          title="Notificaciones - próximamente"
+          aria-label="Notificaciones - próximamente"
+          className="relative inline-flex h-9 w-9 cursor-default items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700"
+        >
+          <BellIcon className="h-4 w-4" />
+
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+            3
+          </span>
+        </button>
+
+        <button
+          type="button"
+          title="Perfil de usuario - próximamente"
+          aria-label="Perfil de usuario - próximamente"
+          className="inline-flex cursor-default items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
+            J
+          </span>
+
+          <span className="hidden md:inline">José Admin</span>
+
+          <ChevronDownIcon className="hidden h-4 w-4 text-slate-400 md:block" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SearchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
+function BellIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   );
 }

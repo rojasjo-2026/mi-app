@@ -55,7 +55,6 @@ export function FollowUpTable({
   visibleColumns,
   gridTemplateColumns,
   tableMinWidth,
-  pageStartIndex,
   sortKey,
   sortDirection,
   businessCurrency,
@@ -127,10 +126,10 @@ export function FollowUpTable({
                 ].join(" ")}
               >
                 <TableBodyCell columnKey="maintenance" isSelected={isSelected}>
-                  <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div
                       className={[
-                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black transition",
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-semibold transition",
                         isSelected
                           ? "bg-blue-600 text-white"
                           : "bg-blue-50 text-blue-700 group-hover:bg-blue-100",
@@ -147,7 +146,7 @@ export function FollowUpTable({
                       >
                         <h2
                           title={clientName}
-                          className="truncate text-sm font-black text-slate-950 transition hover:text-blue-700"
+                          className="truncate text-sm font-semibold text-slate-950 transition hover:text-blue-700"
                         >
                           {clientName}
                         </h2>
@@ -168,7 +167,7 @@ export function FollowUpTable({
                     <div className="min-w-0">
                       <p
                         title={item.client?.phone_primary || "Sin teléfono"}
-                        className="truncate text-sm font-semibold text-slate-700"
+                        className="truncate text-sm font-medium text-slate-700"
                       >
                         {item.client?.phone_primary || "Sin teléfono"}
                       </p>
@@ -196,7 +195,7 @@ export function FollowUpTable({
                           item.installation?.description ||
                           "Sin instalación asociada"
                         }
-                        className="truncate text-sm font-semibold text-slate-700"
+                        className="truncate text-sm font-medium text-slate-700"
                       >
                         {item.installation?.description ||
                           "Sin instalación asociada"}
@@ -207,7 +206,7 @@ export function FollowUpTable({
 
                 {visibleColumns.targetDate && (
                   <TableBodyCell columnKey="targetDate" isSelected={isSelected}>
-                    <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-700">
                       <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
 
                       <span
@@ -227,7 +226,7 @@ export function FollowUpTable({
                   >
                     <span
                       title={scheduledDate || "Sin agendar"}
-                      className="truncate text-sm font-semibold text-slate-700"
+                      className="truncate text-sm font-medium text-slate-700"
                     >
                       {scheduledDate || "Sin agendar"}
                     </span>
@@ -241,7 +240,7 @@ export function FollowUpTable({
 
                       <span
                         title={technicianName}
-                        className="truncate text-sm font-semibold text-slate-700"
+                        className="truncate text-sm font-medium text-slate-700"
                       >
                         {technicianName}
                       </span>
@@ -252,7 +251,7 @@ export function FollowUpTable({
                 {visibleColumns.priority && (
                   <TableBodyCell columnKey="priority" isSelected={isSelected}>
                     <span
-                      className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getPriorityClasses(
+                      className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${getPriorityClasses(
                         item.priority,
                       )}`}
                     >
@@ -273,7 +272,7 @@ export function FollowUpTable({
                               businessLocale,
                             )
                       }
-                      className="truncate text-sm font-bold text-slate-800"
+                      className="truncate text-sm font-semibold text-slate-800"
                     >
                       {amount === null
                         ? "No definido"
@@ -285,7 +284,7 @@ export function FollowUpTable({
                 {visibleColumns.billing && (
                   <TableBodyCell columnKey="billing" isSelected={isSelected}>
                     <span
-                      className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getBillingStatusClasses(
+                      className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${getBillingStatusClasses(
                         item.billing_status,
                       )}`}
                     >
@@ -298,7 +297,7 @@ export function FollowUpTable({
                   <TableBodyCell columnKey="status" isSelected={isSelected}>
                     <div className="flex flex-wrap gap-2">
                       <span
-                        className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getStatusClasses(
+                        className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusClasses(
                           item.follow_up_status?.code,
                         )}`}
                       >
@@ -306,27 +305,13 @@ export function FollowUpTable({
                       </span>
 
                       <span
-                        className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${timingMeta.classes}`}
+                        className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${timingMeta.classes}`}
                       >
                         {timingMeta.label}
                       </span>
                     </div>
                   </TableBodyCell>
                 )}
-
-                <TableBodyCell
-                  columnKey="actions"
-                  isSelected={isSelected}
-                  className="justify-end"
-                >
-                  <Link
-                    href={`/follow-ups/${item.follow_up_id}`}
-                    onClick={(event) => event.stopPropagation()}
-                    className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-                  >
-                    Ver detalle
-                  </Link>
-                </TableBodyCell>
               </li>
             );
           })}
