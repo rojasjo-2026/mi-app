@@ -26,10 +26,12 @@ type SortDirection = "asc" | "desc";
 
 type ContactAttemptsTableProps = {
   flows: ContactFlowItem[];
+  selectedFlowId: string | null;
   sortKey: ContactFlowSortKey;
   sortDirection: SortDirection;
   viewMode: "list" | "grid";
   onSort: (sortKey: ContactFlowSortKey) => void;
+  onSelectFlow: (flow: ContactFlowItem) => void;
   onOpenConversation: (flow: ContactFlowItem) => void;
 };
 
@@ -44,15 +46,30 @@ const SORTABLE_HEADERS: {
   { key: "targetDate", label: "Objetivo" },
   { key: "selectedDate", label: "Agendada" },
   { key: "lastInteraction", label: "Última interacción" },
-  { key: null, label: "Acciones" },
+  { key: null, label: "" },
 ];
+
+function getInitials(name: string) {
+  const parts = name.trim().split(" ").filter(Boolean);
+
+  if (parts.length === 0) {
+    return "C";
+  }
+
+  const first = parts[0]?.charAt(0) ?? "";
+  const second = parts[1]?.charAt(0) ?? "";
+
+  return `${first}${second}`.toUpperCase();
+}
 
 export function ContactAttemptsTable({
   flows,
+  selectedFlowId,
   sortKey,
   sortDirection,
   viewMode,
   onSort,
+  onSelectFlow,
   onOpenConversation,
 }: ContactAttemptsTableProps) {
   function getSortIndicator(headerKey: ContactFlowSortKey | null) {
@@ -67,31 +84,43 @@ export function ContactAttemptsTable({
 
   if (viewMode === "grid") {
     return (
-      <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {flows.map((flow) => {
           const risk = getOperationalRisk(flow);
+          const clientName = getClientFullName(flow.client);
+          const selected = flow.contact_flow_id === selectedFlowId;
 
           return (
             <article
               key={flow.contact_flow_id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelectFlow(flow)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectFlow(flow);
+                }
+              }}
               className={[
                 "rounded-xl border p-5 shadow-sm transition hover:shadow-md",
-                hasUnreadMessages(flow)
-                  ? "border-emerald-200 bg-emerald-50/60 hover:border-emerald-300"
-                  : "border-slate-200 bg-white hover:border-slate-300",
+                selected
+                  ? "border-blue-200 bg-blue-50 ring-1 ring-inset ring-blue-200"
+                  : hasUnreadMessages(flow)
+                    ? "border-emerald-200 bg-emerald-50/60 hover:border-emerald-300"
+                    : "border-slate-200 bg-white hover:border-slate-300",
               ].join(" ")}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="truncate text-lg font-semibold text-slate-900">
-                      {getClientFullName(flow.client)}
+                      {clientName}
                     </h2>
 
                     {hasUnreadMessages(flow) && (
                       <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                        {flow.unread_count} nuevo
-                        {flow.unread_count === 1 ? "" : "s"}
+                        {flow.unread_count}
                       </span>
                     )}
                   </div>
@@ -119,10 +148,6 @@ export function ContactAttemptsTable({
                 </span>
 
                 <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                  Prioridad {flow.follow_up.priority}
-                </span>
-
-                <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                   {flow.client.phone_primary}
                 </span>
               </div>
@@ -143,42 +168,21 @@ export function ContactAttemptsTable({
                 </p>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => onOpenConversation(flow)}
-                  className="relative rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                >
-                  Conversación
-                  {hasUnreadMessages(flow) && (
-                    <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
-                      {flow.unread_count}
-                    </span>
-                  )}
-                </button>
-
-                {flow.installation?.installation_id && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      window.location.href = `/installations/${flow.installation?.installation_id}`;
-                    }}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    Instalación
-                  </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenConversation(flow);
+                }}
+                className="mt-5 relative inline-flex rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+              >
+                Ver conversación
+                {hasUnreadMessages(flow) && (
+                  <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
+                    {flow.unread_count}
+                  </span>
                 )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.location.href = `/follow-ups/${flow.follow_up.follow_up_id}`;
-                  }}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                >
-                  Mant.
-                </button>
-              </div>
+              </button>
             </article>
           );
         })}
@@ -188,10 +192,10 @@ export function ContactAttemptsTable({
 
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="hidden grid-cols-[1.3fr_1.4fr_1fr_1fr_120px_120px_145px_130px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 xl:grid">
+      <div className="hidden grid-cols-[1.25fr_1.4fr_0.9fr_0.9fr_110px_110px_145px_56px] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 xl:grid">
         {SORTABLE_HEADERS.map((header) => (
           <button
-            key={header.label}
+            key={header.label || "actions"}
             type="button"
             disabled={!header.key}
             title={header.key ? `Ordenar por ${header.label}` : undefined}
@@ -201,7 +205,7 @@ export function ContactAttemptsTable({
               }
             }}
             className={[
-              "flex min-w-0 items-center gap-2 text-left uppercase tracking-[0.16em]",
+              "flex min-w-0 items-center gap-2 text-left uppercase tracking-[0.14em]",
               header.key
                 ? "cursor-pointer transition hover:text-slate-800"
                 : "cursor-default",
@@ -222,39 +226,66 @@ export function ContactAttemptsTable({
       <div className="divide-y divide-slate-100">
         {flows.map((flow) => {
           const risk = getOperationalRisk(flow);
+          const clientName = getClientFullName(flow.client);
+          const selected = flow.contact_flow_id === selectedFlowId;
+          const initials = getInitials(clientName);
 
           return (
             <article
               key={flow.contact_flow_id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelectFlow(flow)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectFlow(flow);
+                }
+              }}
               className={[
-                "grid gap-4 px-5 py-4 transition xl:grid-cols-[1.3fr_1.4fr_1fr_1fr_120px_120px_145px_130px] xl:items-center",
-                hasUnreadMessages(flow)
-                  ? "bg-emerald-50/60 hover:bg-emerald-50"
-                  : "hover:bg-slate-50",
+                "grid cursor-pointer gap-4 px-4 py-4 transition xl:grid-cols-[1.25fr_1.4fr_0.9fr_0.9fr_110px_110px_145px_56px] xl:items-center",
+                selected
+                  ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
+                  : hasUnreadMessages(flow)
+                    ? "bg-emerald-50/60 hover:bg-emerald-50"
+                    : "hover:bg-slate-50",
               ].join(" ")}
             >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p
-                    title={getClientFullName(flow.client)}
-                    className="truncate text-sm font-semibold text-slate-900"
-                  >
-                    {getClientFullName(flow.client)}
-                  </p>
-
-                  {hasUnreadMessages(flow) && (
-                    <span className="shrink-0 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                      {flow.unread_count}
-                    </span>
-                  )}
+              <div className="flex min-w-0 items-center gap-3">
+                <div
+                  className={[
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-semibold",
+                    selected
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-50 text-blue-700",
+                  ].join(" ")}
+                >
+                  {initials}
                 </div>
 
-                <p
-                  title={flow.client.phone_primary || "Sin teléfono"}
-                  className="mt-1 text-xs font-medium text-slate-500"
-                >
-                  {flow.client.phone_primary}
-                </p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p
+                      title={clientName}
+                      className="truncate text-sm font-semibold text-slate-900"
+                    >
+                      {clientName}
+                    </p>
+
+                    {hasUnreadMessages(flow) && (
+                      <span className="shrink-0 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                        {flow.unread_count}
+                      </span>
+                    )}
+                  </div>
+
+                  <p
+                    title={flow.client.phone_primary || "Sin teléfono"}
+                    className="mt-1 truncate text-xs font-medium text-slate-500"
+                  >
+                    {flow.client.phone_primary || "Sin teléfono"}
+                  </p>
+                </div>
               </div>
 
               <div className="min-w-0">
@@ -279,7 +310,7 @@ export function ContactAttemptsTable({
 
               <div>
                 <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getStatusClasses(
+                  className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getStatusClasses(
                     flow.status,
                   )}`}
                 >
@@ -289,7 +320,7 @@ export function ContactAttemptsTable({
 
               <div>
                 <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${risk.classes}`}
+                  className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${risk.classes}`}
                 >
                   {risk.label}
                 </span>
@@ -340,40 +371,22 @@ export function ContactAttemptsTable({
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-2 xl:justify-end">
+              <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() => onOpenConversation(flow)}
-                  className="relative rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                  title="Abrir conversación"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenConversation(flow);
+                  }}
+                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
                 >
-                  Conversación
+                  💬
                   {hasUnreadMessages(flow) && (
                     <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
                       {flow.unread_count}
                     </span>
                   )}
-                </button>
-
-                {flow.installation?.installation_id && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      window.location.href = `/installations/${flow.installation?.installation_id}`;
-                    }}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    Instalación
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.location.href = `/follow-ups/${flow.follow_up.follow_up_id}`;
-                  }}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                >
-                  Mant.
                 </button>
               </div>
             </article>

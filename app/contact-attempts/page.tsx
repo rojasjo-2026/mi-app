@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { ContactAttemptPreviewPanel } from "./components/ContactAttemptPreviewPanel";
 import ContactFlowChat from "./components/ContactFlowChat";
 import { ContactAttemptsFilters } from "./components/ContactAttemptsFilters";
 import type {
@@ -9,7 +10,6 @@ import type {
   ObjectiveFilter,
   RiskFilter,
 } from "./components/ContactAttemptsFilters";
-import { ContactAttemptsHeader } from "./components/ContactAttemptsHeader";
 import { ContactAttemptsMetrics } from "./components/ContactAttemptsMetrics";
 import type { ContactStatusFilter } from "./components/ContactAttemptsMetrics";
 import { ContactAttemptsPagination } from "./components/ContactAttemptsPagination";
@@ -28,7 +28,6 @@ import {
   getClientFullName,
   getLastMessagePreview,
   getOperationalRisk,
-  hasUnreadMessages,
 } from "./utils";
 
 type PaginationState = {
@@ -58,9 +57,9 @@ export default function ContactAttemptsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [mounted, setMounted] = useState(false);
-  const [selectedFlow, setSelectedFlow] = useState<ContactFlowItem | null>(
-    null,
-  );
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
+  const [conversationFlow, setConversationFlow] =
+    useState<ContactFlowItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -138,6 +137,17 @@ export default function ContactAttemptsPage() {
         confirmed: Number(result.metrics?.confirmed ?? 0),
         manual: Number(result.metrics?.manual ?? 0),
       });
+
+      setSelectedFlowId((currentSelectedId) => {
+        if (
+          currentSelectedId &&
+          nextFlows.some((flow) => flow.contact_flow_id === currentSelectedId)
+        ) {
+          return currentSelectedId;
+        }
+
+        return nextFlows[0]?.contact_flow_id ?? null;
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -163,7 +173,7 @@ export default function ContactAttemptsPage() {
     void loadFlows(false);
   }
 
-  function handleOpenConversation(flow: ContactFlowItem) {
+  function markFlowAsRead(flow: ContactFlowItem) {
     setFlows((currentFlows) =>
       currentFlows.map((item) =>
         item.contact_flow_id === flow.contact_flow_id
@@ -175,8 +185,17 @@ export default function ContactAttemptsPage() {
           : item,
       ),
     );
+  }
 
-    setSelectedFlow({
+  function handleSelectFlow(flow: ContactFlowItem) {
+    setSelectedFlowId(flow.contact_flow_id);
+  }
+
+  function handleOpenConversation(flow: ContactFlowItem) {
+    markFlowAsRead(flow);
+    setSelectedFlowId(flow.contact_flow_id);
+
+    setConversationFlow({
       ...flow,
       unread_count: 0,
       has_unread_messages: false,
@@ -342,6 +361,26 @@ export default function ContactAttemptsPage() {
     );
   }, [flows, filter, searchTerm, riskFilter, objectiveFilter, dateFilter]);
 
+  useEffect(() => {
+    setSelectedFlowId((currentSelectedId) => {
+      if (
+        currentSelectedId &&
+        filteredFlows.some((flow) => flow.contact_flow_id === currentSelectedId)
+      ) {
+        return currentSelectedId;
+      }
+
+      return filteredFlows[0]?.contact_flow_id ?? null;
+    });
+  }, [filteredFlows]);
+
+  const selectedPreviewFlow = useMemo(
+    () =>
+      filteredFlows.find((flow) => flow.contact_flow_id === selectedFlowId) ??
+      null,
+    [filteredFlows, selectedFlowId],
+  );
+
   const usesLocalFilters =
     filter === "archived" ||
     searchTerm.trim() !== "" ||
@@ -368,10 +407,25 @@ export default function ContactAttemptsPage() {
 
   return (
     <div className="space-y-5">
-      <ContactAttemptsHeader
-        refreshing={refreshing}
-        onRefresh={handleRefreshList}
-      />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+            Intentos de contacto
+          </h1>
+
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Visualiza el estado de los contactos automáticos, respuestas y
+            seguimientos de WhatsApp.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+        >
+          + Nuevo intento manual
+        </button>
+      </div>
 
       <ContactAttemptsMetrics
         metrics={metrics}
@@ -397,6 +451,7 @@ export default function ContactAttemptsPage() {
         onPageSizeChange={handlePageSizeChange}
         onViewModeChange={setViewMode}
         onClearFilters={clearFilters}
+        onRefreshList={handleRefreshList}
       />
 
       {loading && !hasLoadedOnce ? (
@@ -414,14 +469,23 @@ export default function ContactAttemptsPage() {
             : "No hay contactos para mostrar con el filtro seleccionado."}
         </div>
       ) : (
-        <ContactAttemptsTable
-          flows={filteredFlows}
-          sortKey={sortKey}
-          sortDirection={sortDirection}
-          viewMode={viewMode}
-          onSort={handleSort}
-          onOpenConversation={handleOpenConversation}
-        />
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+          <ContactAttemptsTable
+            flows={filteredFlows}
+            selectedFlowId={selectedFlowId}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            viewMode={viewMode}
+            onSort={handleSort}
+            onSelectFlow={handleSelectFlow}
+            onOpenConversation={handleOpenConversation}
+          />
+
+          <ContactAttemptPreviewPanel
+            flow={selectedPreviewFlow}
+            onOpenConversation={handleOpenConversation}
+          />
+        </div>
       )}
 
       {!loading && !error && filteredFlows.length > 0 && (
@@ -439,15 +503,15 @@ export default function ContactAttemptsPage() {
         />
       )}
 
-      {selectedFlow && (
+      {conversationFlow && (
         <ContactFlowChat
-          contactFlowId={selectedFlow.contact_flow_id}
-          clientName={getClientFullName(selectedFlow.client)}
+          contactFlowId={conversationFlow.contact_flow_id}
+          clientName={getClientFullName(conversationFlow.client)}
           installationName={
-            selectedFlow.installation?.description ||
+            conversationFlow.installation?.description ||
             "Instalación sin descripción"
           }
-          onClose={() => setSelectedFlow(null)}
+          onClose={() => setConversationFlow(null)}
           onMessageSent={loadFlows}
         />
       )}

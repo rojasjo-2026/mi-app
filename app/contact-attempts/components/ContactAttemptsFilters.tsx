@@ -25,6 +25,7 @@ type ContactAttemptsFiltersProps = {
   onPageSizeChange: (value: number) => void;
   onViewModeChange: (value: ViewMode) => void;
   onClearFilters: () => void;
+  onRefreshList: () => void;
 };
 
 const PAGE_SIZE_OPTIONS = [15, 25, 50, 100];
@@ -56,6 +57,7 @@ export function ContactAttemptsFilters({
   onPageSizeChange,
   onViewModeChange,
   onClearFilters,
+  onRefreshList,
 }: ContactAttemptsFiltersProps) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -247,11 +249,14 @@ export function ContactAttemptsFilters({
               </div>
             )}
 
-            {refreshing && (
-              <span className="inline-flex h-9 items-center rounded-lg bg-slate-100 px-3 text-xs font-semibold text-slate-600">
-                Actualizando...
-              </span>
-            )}
+            <button
+              type="button"
+              onClick={onRefreshList}
+              disabled={refreshing}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {refreshing ? "Refrescando..." : "Refrescar"}
+            </button>
 
             <button
               type="button"
