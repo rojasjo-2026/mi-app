@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type SVGProps,
 } from "react";
 import {
   normalizeClientStatus,
@@ -389,6 +390,8 @@ export default function ClientsPage() {
       <ClientListToast toast={toast} />
 
       <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+        <PageContextBar />
+
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
@@ -639,5 +642,108 @@ export default function ClientsPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function PageContextBar() {
+  return (
+    <div className="flex min-h-12 items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+      <nav
+        aria-label="Ubicación actual"
+        className="flex min-w-0 items-center gap-2 text-sm font-semibold"
+      >
+        <span className="truncate text-blue-700">Operaciones 360</span>
+        <span className="text-slate-300">/</span>
+        <span className="truncate text-slate-800">Clientes</span>
+      </nav>
+
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          title="Búsqueda global - próximamente"
+          aria-label="Búsqueda global - próximamente"
+          className="inline-flex h-9 w-9 cursor-default items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700"
+        >
+          <SearchIcon className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          title="Notificaciones - próximamente"
+          aria-label="Notificaciones - próximamente"
+          className="relative inline-flex h-9 w-9 cursor-default items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700"
+        >
+          <BellIcon className="h-4 w-4" />
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+            3
+          </span>
+        </button>
+
+        <button
+          type="button"
+          title="Perfil de usuario - próximamente"
+          aria-label="Perfil de usuario - próximamente"
+          className="inline-flex cursor-default items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
+            J
+          </span>
+
+          <span className="hidden md:inline">José Admin</span>
+
+          <ChevronDownIcon className="hidden h-4 w-4 text-slate-400 md:block" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SearchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
+function BellIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   );
 }

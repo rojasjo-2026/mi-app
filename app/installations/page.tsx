@@ -9,20 +9,10 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import {
-  CalendarDays,
-  ChevronDown,
-  MapPin,
-  Search,
-  UserRound,
-} from "lucide-react";
-import {
-  COLUMN_LABELS,
   INITIAL_COLUMN_WIDTHS,
   INITIAL_VISIBLE_COLUMNS,
   MIN_COLUMN_WIDTHS,
   OPTIONAL_COLUMNS,
-  PAGE_SIZE_OPTIONS,
-  STATUS_FILTERS,
   type AppSettingsResponse,
   type ColumnKey,
   type ColumnWidths,
@@ -36,21 +26,10 @@ import {
   type SortType,
   type VisibleColumns,
 } from "./config/installationsPageConfig";
-import {
-  formatCurrency,
-  formatDateLabel,
-  getBusinessCountryMeta,
-  getClientName,
-  getFilterButtonClass,
-  getInitials,
-  getInstallationCode,
-  getInstallationStatusLabel,
-  getLocationLabel,
-  getStatusBadgeClass,
-} from "./utils/installationsPageUtils";
-import { TableHeaderCell } from "./components/TableHeaderCell";
-import { TableBodyCell } from "./components/TableBodyCell";
+import { getBusinessCountryMeta } from "./utils/installationsPageUtils";
 import { InstallationPreviewPanel } from "./components/InstallationPreviewPanel";
+import { InstallationFiltersPanel } from "./components/InstallationFiltersPanel";
+import { InstallationTable } from "./components/InstallationTable";
 
 export default function InstallationsPage() {
   const [installations, setInstallations] = useState<InstallationItem[]>([]);
@@ -86,6 +65,7 @@ export default function InstallationsPage() {
     INITIAL_VISIBLE_COLUMNS,
   );
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+
   const columnMenuRef = useRef<HTMLDivElement | null>(null);
 
   const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
@@ -165,6 +145,9 @@ export default function InstallationsPage() {
 
     async function loadInstallations() {
       try {
+        setLoading(true);
+        setError("");
+
         await loadBusinessSettings();
 
         const params = new URLSearchParams();
@@ -354,14 +337,9 @@ export default function InstallationsPage() {
     }));
   }
 
-  function getStatusFilterCount(statusValue: FilterType) {
-    if (statusValue === "all") return metrics.total;
-    if (statusValue === "OPEN") return metrics.open;
-    if (statusValue === "IN_PROGRESS") return metrics.inProgress;
-    if (statusValue === "CLOSED") return metrics.closed;
-    if (statusValue === "CANCELLED") return metrics.cancelled;
-
-    return 0;
+  function handlePageSizeChange(value: number) {
+    setPageSize(value);
+    setCurrentPage(1);
   }
 
   if (loading) {
@@ -411,120 +389,25 @@ export default function InstallationsPage() {
             + Nueva instalación
           </Link>
         </section>
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <div className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-bold text-slate-800">
-                Buscar instalación
-              </label>
 
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <InstallationFiltersPanel
+          search={search}
+          filter={filter}
+          sortBy={sortBy}
+          metrics={metrics}
+          visibleColumns={visibleColumns}
+          isColumnMenuOpen={isColumnMenuOpen}
+          columnMenuRef={columnMenuRef}
+          pageStartIndex={pageStartIndex}
+          pageEndIndex={pageEndIndex}
+          visibleTotal={visibleTotal}
+          onSearchChange={setSearch}
+          onFilterChange={setFilter}
+          onSortChange={handleSortSelectChange}
+          onToggleColumnMenu={() => setIsColumnMenuOpen((current) => !current)}
+          onToggleColumn={toggleColumn}
+        />
 
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por cliente, descripción, técnico, servicio o ubicación"
-                  className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                  Estado de instalación
-                </p>
-
-                <div className="flex flex-wrap gap-2">
-                  {STATUS_FILTERS.map((statusFilter) => (
-                    <button
-                      key={statusFilter.value}
-                      type="button"
-                      onClick={() => setFilter(statusFilter.value)}
-                      className={getFilterButtonClass(
-                        filter === statusFilter.value,
-                      )}
-                    >
-                      {statusFilter.label}
-                      <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 text-xs">
-                        {getStatusFilterCount(statusFilter.value)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <div ref={columnMenuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsColumnMenuOpen((current) => !current)}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
-                  >
-                    Columnas
-                    <ChevronDown className="h-4 w-4 text-slate-400" />
-                  </button>
-
-                  {isColumnMenuOpen && (
-                    <div className="absolute right-0 z-30 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                      <div className="px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-                        Mostrar columnas
-                      </div>
-
-                      <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
-                        Instalación y Acciones siempre permanecen visibles.
-                      </div>
-
-                      <div className="mt-2">
-                        {OPTIONAL_COLUMNS.map((column) => (
-                          <label
-                            key={column.key}
-                            className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={visibleColumns[column.key]}
-                              onChange={() => toggleColumn(column.key)}
-                              className="h-4 w-4 rounded border-slate-300"
-                            />
-                            {column.label}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-slate-500">
-                    Ordenar por
-                  </span>
-
-                  <select
-                    value={sortBy}
-                    onChange={(e) =>
-                      handleSortSelectChange(e.target.value as SortType)
-                    }
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-300"
-                  >
-                    <option value="recent">Más recientes</option>
-                    <option value="oldest">Más antiguas</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              Mostrando{" "}
-              <span className="font-bold">
-                {pageStartIndex}-{pageEndIndex}
-              </span>{" "}
-              de <span className="font-bold">{visibleTotal}</span> instalaciones
-            </div>
-          </div>
-        </section>
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
           {filteredInstallations.length === 0 ? (
             <section className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
@@ -537,292 +420,27 @@ export default function InstallationsPage() {
               </p>
             </section>
           ) : (
-            <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="overflow-x-auto">
-                <div style={{ minWidth: tableMinWidth }}>
-                  <div
-                    style={{ gridTemplateColumns }}
-                    className="grid border-b border-slate-200 bg-slate-50"
-                  >
-                    {displayedColumns.map((column) => (
-                      <TableHeaderCell
-                        key={column}
-                        columnKey={column}
-                        label={COLUMN_LABELS[column]}
-                        sortKey={column === "actions" ? undefined : column}
-                        activeSortKey={sortKey}
-                        sortDirection={sortDirection}
-                        onSort={handleHeaderSort}
-                        onResizeStart={startColumnResize}
-                      />
-                    ))}
-                  </div>
-
-                  <ul className="divide-y divide-slate-100">
-                    {filteredInstallations.map((item, index) => {
-                      const installationName =
-                        item.description || "Instalación sin descripción";
-                      const clientName = getClientName(item.client);
-                      const installationCode = getInstallationCode(
-                        item,
-                        pageStartIndex + index - 1,
-                      );
-                      const isSelected =
-                        item.installation_id === selectedInstallationId;
-
-                      return (
-                        <li
-                          key={item.installation_id}
-                          role="button"
-                          tabIndex={0}
-                          data-selected={isSelected ? "true" : "false"}
-                          onClick={() =>
-                            setSelectedInstallationId(item.installation_id)
-                          }
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              setSelectedInstallationId(item.installation_id);
-                            }
-                          }}
-                          style={{ gridTemplateColumns }}
-                          className={[
-                            "group grid min-h-[82px] cursor-pointer transition hover:bg-blue-50/70",
-                            isSelected
-                              ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
-                              : "bg-white",
-                          ].join(" ")}
-                        >
-                          {displayedColumns.includes("installation") && (
-                            <TableBodyCell columnKey="installation">
-                              <div className="flex min-w-0 items-center gap-4">
-                                <div
-                                  className={[
-                                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black transition",
-                                    isSelected
-                                      ? "bg-blue-600 text-white"
-                                      : "bg-blue-50 text-blue-700 group-hover:bg-blue-100",
-                                  ].join(" ")}
-                                >
-                                  {getInitials(installationName)}
-                                </div>
-
-                                <div className="min-w-0">
-                                  <Link
-                                    href={`/installations/${item.installation_id}`}
-                                    className="block"
-                                    onClick={(event) => event.stopPropagation()}
-                                  >
-                                    <h2
-                                      title={installationName}
-                                      className="truncate text-sm font-black text-slate-950 transition hover:text-blue-700"
-                                    >
-                                      {installationName}
-                                    </h2>
-                                  </Link>
-
-                                  <p
-                                    title={installationCode}
-                                    className="mt-1 truncate text-xs font-medium text-slate-500"
-                                  >
-                                    {installationCode}
-                                  </p>
-                                </div>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {displayedColumns.includes("client") && (
-                            <TableBodyCell columnKey="client">
-                              <div className="min-w-0">
-                                <p
-                                  title={clientName}
-                                  className="truncate text-sm font-bold text-slate-800"
-                                >
-                                  {clientName}
-                                </p>
-
-                                <p
-                                  title={
-                                    item.client?.phone_primary || "Sin teléfono"
-                                  }
-                                  className="mt-1 truncate text-xs text-slate-500"
-                                >
-                                  {item.client?.phone_primary || "Sin teléfono"}
-                                </p>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {displayedColumns.includes("service") && (
-                            <TableBodyCell columnKey="service">
-                              <span
-                                title={
-                                  item.service_type?.name || "Sin servicio"
-                                }
-                                className="truncate text-sm font-semibold text-slate-700"
-                              >
-                                {item.service_type?.name || "Sin servicio"}
-                              </span>
-                            </TableBodyCell>
-                          )}
-
-                          {displayedColumns.includes("date") && (
-                            <TableBodyCell columnKey="date">
-                              <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700">
-                                <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
-                                <span
-                                  title={formatDateLabel(
-                                    item.installation_date,
-                                    businessLocale,
-                                  )}
-                                  className="truncate"
-                                >
-                                  {formatDateLabel(
-                                    item.installation_date,
-                                    businessLocale,
-                                  )}
-                                </span>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {displayedColumns.includes("technician") && (
-                            <TableBodyCell columnKey="technician">
-                              <div className="flex min-w-0 items-center gap-2">
-                                <UserRound className="h-4 w-4 shrink-0 text-slate-400" />
-                                <span
-                                  title={
-                                    item.technician_name ||
-                                    "Técnico no asignado"
-                                  }
-                                  className="truncate text-sm font-semibold text-slate-700"
-                                >
-                                  {item.technician_name ||
-                                    "Técnico no asignado"}
-                                </span>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {displayedColumns.includes("location") && (
-                            <TableBodyCell columnKey="location">
-                              <div className="flex min-w-0 items-center gap-2">
-                                <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
-                                <span
-                                  title={getLocationLabel(item)}
-                                  className="truncate text-sm font-semibold text-slate-700"
-                                >
-                                  {getLocationLabel(item)}
-                                </span>
-                              </div>
-                            </TableBodyCell>
-                          )}
-
-                          {displayedColumns.includes("amount") && (
-                            <TableBodyCell columnKey="amount">
-                              <span
-                                title={formatCurrency(
-                                  item.estimated_amount,
-                                  businessCurrency,
-                                  businessLocale,
-                                )}
-                                className="truncate text-sm font-bold text-slate-800"
-                              >
-                                {formatCurrency(
-                                  item.estimated_amount,
-                                  businessCurrency,
-                                  businessLocale,
-                                )}
-                              </span>
-                            </TableBodyCell>
-                          )}
-
-                          {displayedColumns.includes("status") && (
-                            <TableBodyCell columnKey="status">
-                              <span
-                                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getStatusBadgeClass(
-                                  item.installation_status,
-                                )}`}
-                              >
-                                {getInstallationStatusLabel(
-                                  item.installation_status,
-                                )}
-                              </span>
-                            </TableBodyCell>
-                          )}
-
-                          {displayedColumns.includes("actions") && (
-                            <TableBodyCell
-                              columnKey="actions"
-                              className="justify-end"
-                            >
-                              <div className="flex items-center justify-end gap-3">
-                                <Link
-                                  href={`/installations/${item.installation_id}`}
-                                  onClick={(event) => event.stopPropagation()}
-                                  className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-                                >
-                                  Ver detalle
-                                </Link>
-                              </div>
-                            </TableBodyCell>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-semibold text-slate-500">
-                  Página {safeCurrentPage} de {totalPages}
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700">
-                    Ver
-                    <select
-                      value={pageSize}
-                      onChange={(event) => {
-                        setPageSize(Number(event.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="bg-transparent text-sm font-bold outline-none"
-                    >
-                      {PAGE_SIZE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentPage((page) => Math.max(1, page - 1))
-                    }
-                    disabled={safeCurrentPage <= 1 || loading}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Anterior
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentPage((page) => Math.min(totalPages, page + 1))
-                    }
-                    disabled={safeCurrentPage >= totalPages || loading}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </div>
-            </section>
+            <InstallationTable
+              installations={filteredInstallations}
+              selectedInstallationId={selectedInstallationId}
+              displayedColumns={displayedColumns}
+              gridTemplateColumns={gridTemplateColumns}
+              tableMinWidth={tableMinWidth}
+              pageStartIndex={pageStartIndex}
+              pageSize={pageSize}
+              safeCurrentPage={safeCurrentPage}
+              totalPages={totalPages}
+              loading={loading}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              businessCurrency={businessCurrency}
+              businessLocale={businessLocale}
+              onSelectInstallation={setSelectedInstallationId}
+              onHeaderSort={handleHeaderSort}
+              onResizeStart={startColumnResize}
+              onPageSizeChange={handlePageSizeChange}
+              setCurrentPage={setCurrentPage}
+            />
           )}
 
           <InstallationPreviewPanel
@@ -835,4 +453,3 @@ export default function InstallationsPage() {
     </main>
   );
 }
-
