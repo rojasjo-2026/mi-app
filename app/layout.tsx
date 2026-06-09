@@ -1,6 +1,7 @@
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 import GlobalTopBar from "@/components/layout/GlobalTopBar";
+import BottomStatusBar from "@/components/layout/BottomStatusBar";
 import Script from "next/script";
 
 export default function RootLayout({
@@ -14,10 +15,12 @@ export default function RootLayout({
         <div className="flex min-h-screen">
           <Sidebar />
 
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-h-screen flex-1 flex-col">
             <GlobalTopBar />
 
             <main className="flex-1 p-4 lg:p-6">{children}</main>
+
+            <BottomStatusBar />
           </div>
         </div>
 

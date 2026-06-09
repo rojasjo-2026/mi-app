@@ -1,7 +1,16 @@
 ﻿import type { FinanceInvoice } from "../../types";
 
-export type PaymentMethod = "CASH" | "SINPE" | "BANK_TRANSFER" | "CARD" | "OTHER";
-export type PaymentStatusFilter = "ALL" | "PENDING" | "PARTIALLY_PAID" | "OVERDUE";
+export type PaymentMethod =
+  | "CASH"
+  | "SINPE"
+  | "BANK_TRANSFER"
+  | "CARD"
+  | "OTHER";
+export type PaymentStatusFilter =
+  | "ALL"
+  | "PENDING"
+  | "PARTIALLY_PAID"
+  | "OVERDUE";
 export type PaymentSortKey =
   | "invoice"
   | "client"
@@ -49,7 +58,7 @@ export type InvoicesApiResponse = {
   metrics?: InvoiceMetrics;
 };
 
-export const PAGE_SIZE_OPTIONS = [25, 50, 100];
+export const PAGE_SIZE_OPTIONS = [15, 25, 50, 100];
 
 export const STATUS_OPTIONS: { label: string; value: PaymentStatusFilter }[] = [
   { label: "Todos", value: "ALL" },
@@ -101,4 +110,3 @@ export const COLUMN_CLASSES: Record<ColumnKey, string> = {
   status: "minmax(165px,0.9fr)",
   action: "160px",
 };
-

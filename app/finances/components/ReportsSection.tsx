@@ -6,7 +6,6 @@ import {
   getCountryPreset,
 } from "@/lib/settings/countryPresets";
 import { formatCurrency } from "../utils";
-import FinanceSummaryCard from "./FinanceSummaryCard";
 import SectionHeader from "./SectionHeader";
 
 type AppSettingsResponse = {
@@ -133,7 +132,7 @@ function getChange(current: number, previous?: number | null) {
 function ChangeLabel({ value }: { value: number | null }) {
   if (value === null) {
     return (
-      <span className="text-xs font-semibold text-slate-400">
+      <span className="text-[11px] font-medium text-slate-400">
         Sin comparación anterior
       </span>
     );
@@ -143,7 +142,7 @@ function ChangeLabel({ value }: { value: number | null }) {
 
   return (
     <span
-      className={`text-xs font-bold ${
+      className={`text-[11px] font-semibold ${
         isPositive ? "text-emerald-600" : "text-red-600"
       }`}
     >
@@ -164,21 +163,45 @@ function DashboardCard({
   change?: number | null;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+    <article className="min-h-[118px] rounded-lg border border-slate-200 bg-white px-4 py-3.5 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
         {label}
       </p>
 
-      <p className="mt-3 text-2xl font-black tracking-tight text-slate-950">
+      <p className="mt-2.5 text-xl font-semibold tracking-tight text-slate-950">
         {value}
       </p>
 
-      <p className="mt-1 text-sm font-medium text-slate-500">{helper}</p>
+      <p className="mt-1 text-xs font-medium text-slate-500">{helper}</p>
 
-      <div className="mt-3">
+      <div className="mt-2.5">
         <ChangeLabel value={change ?? null} />
       </div>
-    </div>
+    </article>
+  );
+}
+
+function CompactMetricCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+}) {
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-2 text-lg font-semibold tracking-tight text-slate-950">
+        {value}
+      </p>
+
+      <p className="mt-1 text-xs font-medium text-slate-500">{helper}</p>
+    </article>
   );
 }
 
@@ -197,12 +220,25 @@ function SimpleBarChart({
   );
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-        Ingresos vs costos
-      </p>
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          Ingresos vs costos
+        </p>
 
-      <div className="mt-5 flex h-56 items-end gap-4 border-b border-slate-200 pb-4">
+        <div className="flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-200" />
+            Ingresos
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-200" />
+            Costos
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex h-56 items-end gap-4 rounded-md bg-slate-50 px-4 pb-4 pt-5">
         {data.map((item) => {
           const paidHeight = Math.max(6, (item.paid / maxValue) * 170);
           const costHeight = Math.max(6, (item.cost / maxValue) * 170);
@@ -215,34 +251,24 @@ function SimpleBarChart({
               <div className="flex h-[175px] items-end gap-1">
                 <div
                   title={`Pagado: ${formatCurrency(item.paid, currency, locale)}`}
-                  className="w-5 rounded-t-lg bg-emerald-200"
+                  className="w-5 rounded-t-md bg-emerald-200"
                   style={{ height: `${paidHeight}px` }}
                 />
                 <div
                   title={`Costo: ${formatCurrency(item.cost, currency, locale)}`}
-                  className="w-5 rounded-t-lg bg-red-200"
+                  className="w-5 rounded-t-md bg-red-200"
                   style={{ height: `${costHeight}px` }}
                 />
               </div>
-              <span className="truncate text-xs font-bold text-slate-500">
+
+              <span className="truncate text-xs font-semibold text-slate-500">
                 {item.label}
               </span>
             </div>
           );
         })}
       </div>
-
-      <div className="mt-4 flex flex-wrap gap-4 text-xs font-bold text-slate-500">
-        <span className="inline-flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-emerald-200" />
-          Ingresos
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-red-200" />
-          Costos
-        </span>
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -274,15 +300,15 @@ function SimpleLineChart({
     .join(" ");
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
         Facturación mensual
       </p>
 
-      <div className="mt-5 overflow-hidden">
+      <div className="mt-4 overflow-hidden rounded-md bg-slate-50 px-4 pb-3 pt-5">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="h-56 w-full rounded-2xl bg-slate-50"
+          className="h-56 w-full"
           role="img"
           aria-label="Facturación mensual"
         >
@@ -312,7 +338,7 @@ function SimpleLineChart({
           ))}
         </svg>
 
-        <div className="mt-3 grid grid-cols-6 gap-2 text-center text-xs font-bold text-slate-500">
+        <div className="grid grid-cols-6 gap-2 text-center text-xs font-semibold text-slate-500">
           {data.map((item) => (
             <span key={item.label} className="truncate">
               {item.label}
@@ -320,7 +346,7 @@ function SimpleLineChart({
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -336,51 +362,53 @@ function StatusDonut({ status }: { status: InvoiceStatusBreakdown }) {
   const overduePercent = total ? Math.round((status.overdue / total) * 100) : 0;
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
         Estado de facturas
       </p>
 
-      <div className="mt-6 grid gap-5 md:grid-cols-[180px_1fr] md:items-center">
-        <div className="relative mx-auto h-40 w-40 rounded-full bg-amber-200">
-          <div className="absolute inset-7 rounded-full bg-white" />
+      <div className="mt-5 grid gap-5 md:grid-cols-[160px_1fr] md:items-center">
+        <div className="relative mx-auto h-36 w-36 rounded-full bg-amber-200">
+          <div className="absolute inset-6 rounded-full bg-white" />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-bold text-slate-500">Total</span>
-            <span className="text-2xl font-black text-slate-950">{total}</span>
+            <span className="text-xs font-semibold text-slate-500">Total</span>
+            <span className="text-xl font-semibold text-slate-950">
+              {total}
+            </span>
           </div>
         </div>
 
-        <div className="space-y-3 text-sm">
+        <div className="space-y-2.5 text-sm">
           <div className="flex items-center justify-between gap-4">
-            <span className="font-semibold text-slate-600">Pagadas</span>
-            <span className="font-black text-emerald-700">
+            <span className="font-medium text-slate-600">Pagadas</span>
+            <span className="font-semibold text-emerald-700">
               {status.paid} ({paidPercent}%)
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <span className="font-semibold text-slate-600">Pendientes</span>
-            <span className="font-black text-amber-700">
+            <span className="font-medium text-slate-600">Pendientes</span>
+            <span className="font-semibold text-amber-700">
               {status.pending + status.partial} ({pendingPercent}%)
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <span className="font-semibold text-slate-600">Vencidas</span>
-            <span className="font-black text-red-700">
+            <span className="font-medium text-slate-600">Vencidas</span>
+            <span className="font-semibold text-red-700">
               {status.overdue} ({overduePercent}%)
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <span className="font-semibold text-slate-600">Canceladas</span>
-            <span className="font-black text-slate-600">
+            <span className="font-medium text-slate-600">Canceladas</span>
+            <span className="font-semibold text-slate-600">
               {status.cancelled}
             </span>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -473,8 +501,8 @@ export default function ReportsSection() {
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <SectionHeader
           eyebrow="Reportes / ingresos"
-          title="Reportes e ingresos"
-          description="Resumen general de facturación, cobros, pendientes y utilidad estimada."
+          title="Resumen financiero"
+          description="Vista general de facturación, cobros, pendientes y rentabilidad del periodo."
         />
 
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -482,36 +510,37 @@ export default function ReportsSection() {
             type="button"
             onClick={loadReports}
             disabled={loading}
-            className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Actualizando..." : "Actualizar datos"}
           </button>
 
-          <div className="flex gap-2 rounded-xl border border-slate-200 bg-white p-1">
+          <div className="flex gap-2 rounded-md border border-slate-200 bg-white p-1 shadow-sm">
             <input
               type="date"
               value={dateFrom}
               onChange={(event) => setDateFrom(event.target.value)}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 outline-none"
+              className="h-8 rounded-md px-3 text-sm font-semibold text-slate-700 outline-none"
             />
+
             <input
               type="date"
               value={dateTo}
               onChange={(event) => setDateTo(event.target.value)}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 outline-none"
+              className="h-8 rounded-md px-3 text-sm font-semibold text-slate-700 outline-none"
             />
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </div>
       )}
 
       {!dashboard && loading && (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             Cargando reportes financieros...
           </p>
@@ -521,7 +550,7 @@ export default function ReportsSection() {
       {dashboard && (
         <>
           {dashboard.billing.totalOverdue > 0 && (
-            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+            <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
               <p className="font-semibold">Cobro prioritario</p>
               <p className="mt-1">
                 Hay {dashboard.billing.overdueInvoiceCount} factura
@@ -538,12 +567,12 @@ export default function ReportsSection() {
             </div>
           )}
 
-          <div className="mt-6">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+          <div className="mt-5">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
               Estado de facturación
             </p>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
               <DashboardCard
                 label="Total facturado"
                 value={formatCurrency(
@@ -602,12 +631,12 @@ export default function ReportsSection() {
             </div>
           </div>
 
-          <div className="mt-6">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-              Trabajos pendientes para facturar
+          <div className="mt-5">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Pendientes y rentabilidad
             </p>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
               <DashboardCard
                 label="Trabajos pendientes"
                 value={String(dashboard.pendingBillables.count)}
@@ -656,52 +685,47 @@ export default function ReportsSection() {
             </div>
           </div>
 
-          <div className="mt-6">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-              Indicadores rápidos
-            </p>
+          <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <CompactMetricCard
+              label="Cancelado"
+              value={formatCurrency(
+                dashboard.billing.totalCancelled,
+                reportCurrency,
+                businessLocale,
+              )}
+              helper="Facturas canceladas"
+            />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <FinanceSummaryCard
-                label="Cancelado"
-                value={formatCurrency(
-                  dashboard.billing.totalCancelled,
-                  reportCurrency,
-                  businessLocale,
-                )}
-                helper="Facturas canceladas"
-              />
+            <CompactMetricCard
+              label="Facturas abiertas"
+              value={String(dashboard.billing.openInvoiceCount)}
+              helper="Pendiente, parcial o vencida"
+            />
 
-              <FinanceSummaryCard
-                label="Facturas abiertas"
-                value={String(dashboard.billing.openInvoiceCount)}
-                helper="Pendiente, parcial o vencida"
-              />
+            <CompactMetricCard
+              label="Tasa de cobro"
+              value={formatPercent(dashboard.indicators.collectionRate)}
+              helper="Pagado sobre facturado"
+            />
 
-              <FinanceSummaryCard
-                label="Tasa de cobro"
-                value={formatPercent(dashboard.indicators.collectionRate)}
-                helper="Pagado sobre facturado"
-              />
-
-              <FinanceSummaryCard
-                label="Potencial total"
-                value={formatCurrency(
-                  dashboard.indicators.potentialTotal,
-                  reportCurrency,
-                  businessLocale,
-                )}
-                helper="Facturado + pendiente"
-              />
-            </div>
+            <CompactMetricCard
+              label="Potencial total"
+              value={formatCurrency(
+                dashboard.indicators.potentialTotal,
+                reportCurrency,
+                businessLocale,
+              )}
+              helper="Facturado + pendiente"
+            />
           </div>
 
-          <div className="mt-6 grid gap-5 xl:grid-cols-2">
+          <div className="mt-5 grid gap-5 xl:grid-cols-2">
             <SimpleBarChart
               data={dashboard.trends}
               currency={reportCurrency}
               locale={businessLocale}
             />
+
             <SimpleLineChart
               data={dashboard.trends}
               currency={reportCurrency}
@@ -713,7 +737,7 @@ export default function ReportsSection() {
             <StatusDonut status={dashboard.invoiceStatus} />
           </div>
 
-          <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800">
+          <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800">
             Los datos se actualizan desde facturas, pagos y trabajos pendientes
             para facturar. Última actualización basada en el rango seleccionado.
           </div>

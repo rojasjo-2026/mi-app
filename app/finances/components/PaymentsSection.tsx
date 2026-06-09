@@ -2,24 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FinanceInvoice } from "../types";
-import {
-  formatCurrency,
-  formatDateLabel,
-  getClientName,
-  getInvoiceCurrency,
-  getInvoiceOrigin,
-  getInvoiceStatusClass,
-  getInvoiceStatusLabel,
-  toSafeNumber,
-} from "../utils";
-import FinanceSummaryCard from "./FinanceSummaryCard";
+import { getInvoiceCurrency, toSafeNumber } from "../utils";
 import SectionHeader from "./SectionHeader";
 import {
-  COLUMN_LABELS,
   DEFAULT_VISIBLE_COLUMNS,
   OPTIONAL_COLUMNS,
-  PAGE_SIZE_OPTIONS,
-  STATUS_OPTIONS,
   type ColumnKey,
   type InvoicesApiResponse,
   type InvoiceMetrics,
@@ -31,13 +18,15 @@ import {
   type SortDirection,
   type VisibleColumns,
 } from "./payments/paymentsSectionConfig";
-import {
-  getDueLabel,
-  getGridTemplate,
-  getPaginationStartEnd,
-} from "./payments/paymentsSectionUtils";
-import { SortableHeader } from "./payments/SortableHeader";
-import { ColumnPicker } from "./payments/ColumnPicker";
+import { getGridTemplate } from "./payments/paymentsSectionUtils";
+import { PaymentSummaryCards } from "./payments/PaymentSummaryCards";
+import { PaymentFiltersPanel } from "./payments/PaymentFiltersPanel";
+import { PaymentRegisterForm } from "./payments/PaymentRegisterForm";
+import { PaymentsTable } from "./payments/PaymentsTable";
+import { PaymentsPagination } from "./payments/PaymentsPagination";
+import { PaymentInfoNote } from "./payments/PaymentInfoNote";
+
+const DEFAULT_PAYMENT_PAGE_SIZE = 15;
 
 export default function PaymentsSection() {
   const [invoices, setInvoices] = useState<FinanceInvoice[]>([]);
@@ -54,13 +43,13 @@ export default function PaymentsSection() {
   const [status, setStatus] = useState<PaymentStatusFilter>("ALL");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAYMENT_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<PaymentSortKey>("dueDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
-    pageSize: 25,
+    pageSize: DEFAULT_PAYMENT_PAGE_SIZE,
     totalItems: 0,
     totalPages: 1,
   });
@@ -98,10 +87,6 @@ export default function PaymentsSection() {
 
   const summaryCurrency =
     invoices.find((invoice) => invoice.currency)?.currency ?? "CRC";
-
-  const pageRange = getPaginationStartEnd(pagination);
-  const totalPages = Math.max(1, pagination.totalPages);
-  const safeCurrentPage = Math.min(pagination.page || 1, totalPages);
 
   async function loadInvoices() {
     setLoading(true);
@@ -297,6 +282,11 @@ export default function PaymentsSection() {
     }));
   }
 
+  function handlePageSizeChange(value: number) {
+    setPageSize(value);
+    setCurrentPage(1);
+  }
+
   return (
     <div>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -310,481 +300,99 @@ export default function PaymentsSection() {
           type="button"
           onClick={loadInvoices}
           disabled={loading}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Actualizando..." : "Actualizar"}
         </button>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <FinanceSummaryCard
-          label="Facturas abiertas"
-          value={String(pagination.totalItems)}
-          helper="Con saldo pendiente"
-        />
-
-        <FinanceSummaryCard
-          label="Saldo pendiente"
-          value={formatCurrency(metrics.pendingAmount, summaryCurrency)}
-          helper="Por cobrar"
-        />
-
-        <FinanceSummaryCard
-          label="Vencido"
-          value={formatCurrency(metrics.overdueAmount, summaryCurrency)}
-          helper="Monto vencido"
-        />
-      </div>
+      <PaymentSummaryCards
+        totalItems={pagination.totalItems}
+        metrics={metrics}
+        summaryCurrency={summaryCurrency}
+      />
 
       {message && (
-        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+        <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
           {message}
         </div>
       )}
 
       {error && (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </div>
       )}
 
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-        <div className="grid gap-3 xl:grid-cols-[1.3fr_220px_160px_160px_150px_145px]">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por cliente, factura, teléfono o servicio..."
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-          />
-
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as PaymentStatusFilter)}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => setDateFrom(event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300"
-            title="Desde"
-          />
-
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(event) => setDateTo(event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300"
-            title="Hasta"
-          />
-
-          <div ref={columnMenuRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setIsColumnMenuOpen((current) => !current)}
-              className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-100"
-            >
-              Columnas
-            </button>
-
-            <ColumnPicker
-              isOpen={isColumnMenuOpen}
-              visibleColumns={visibleColumns}
-              onToggleColumn={toggleColumn}
-            />
-          </div>
-
-          <label className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm">
-            Ver
-            <select
-              value={pageSize}
-              onChange={(event) => setPageSize(Number(event.target.value))}
-              className="bg-transparent text-sm font-bold outline-none"
-            >
-              {PAGE_SIZE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </div>
+      <PaymentFiltersPanel
+        search={search}
+        status={status}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        pageSize={pageSize}
+        isColumnMenuOpen={isColumnMenuOpen}
+        columnMenuRef={columnMenuRef}
+        visibleColumns={visibleColumns}
+        onSearchChange={setSearch}
+        onStatusChange={setStatus}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        onPageSizeChange={handlePageSizeChange}
+        onToggleColumnMenu={() => setIsColumnMenuOpen((current) => !current)}
+        onToggleColumn={toggleColumn}
+      />
 
       {selectedInvoice && (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                Registrar pago
-              </p>
-
-              <h3 className="mt-1 text-lg font-bold text-slate-950">
-                {selectedInvoice.invoice_number || "Factura sin número"}
-              </h3>
-
-              <p className="mt-1 text-sm text-slate-600">
-                {getClientName(selectedInvoice.client)} · Saldo pendiente:{" "}
-                <span className="font-semibold text-slate-900">
-                  {formatCurrency(
-                    selectedInvoice.balance_amount,
-                    getInvoiceCurrency(selectedInvoice),
-                  )}
-                </span>
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setSelectedInvoice(null)}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Cerrar
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div>
-              <label className="text-sm font-medium text-slate-600">
-                Monto del pago
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-600">
-                Método de pago
-              </label>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-              >
-                <option value="CASH">Efectivo</option>
-                <option value="SINPE">SINPE</option>
-                <option value="BANK_TRANSFER">Transferencia bancaria</option>
-                <option value="CARD">Tarjeta</option>
-                <option value="OTHER">Otro</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-600">
-                Número de referencia
-              </label>
-              <input
-                value={referenceNumber}
-                onChange={(e) => setReferenceNumber(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                placeholder="Opcional"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-600">
-                Notas
-              </label>
-              <input
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                placeholder="Opcional"
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleRegisterPayment}
-            disabled={savingPayment}
-            className="mt-5 w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {savingPayment ? "Registrando pago..." : "Registrar pago"}
-          </button>
-        </div>
+        <PaymentRegisterForm
+          invoice={selectedInvoice}
+          amount={amount}
+          method={method}
+          referenceNumber={referenceNumber}
+          notes={notes}
+          savingPayment={savingPayment}
+          onAmountChange={setAmount}
+          onMethodChange={setMethod}
+          onReferenceNumberChange={setReferenceNumber}
+          onNotesChange={setNotes}
+          onClose={() => setSelectedInvoice(null)}
+          onSubmit={handleRegisterPayment}
+        />
       )}
 
       {loading && invoices.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             Cargando facturas pendientes...
           </p>
         </div>
       ) : invoices.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             No hay facturas con saldo pendiente.
           </p>
         </div>
       ) : (
-        <section className="mt-6 min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <div className="min-w-[1080px]">
-              <div
-                style={{ gridTemplateColumns }}
-                className="grid border-b border-slate-200 bg-slate-50"
-              >
-                {displayedColumns.map((column) => (
-                  <SortableHeader
-                    key={column}
-                    columnKey={column}
-                    label={COLUMN_LABELS[column]}
-                    activeSortKey={sortKey}
-                    sortDirection={sortDirection}
-                    align={
-                      column === "total" ||
-                      column === "paid" ||
-                      column === "balance"
-                        ? "right"
-                        : column === "status" || column === "action"
-                          ? "center"
-                          : "left"
-                    }
-                    onSortChange={handleSortChange}
-                  />
-                ))}
-              </div>
+        <>
+          <PaymentsTable
+            invoices={invoices}
+            displayedColumns={displayedColumns}
+            gridTemplateColumns={gridTemplateColumns}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSortChange={handleSortChange}
+            onSelectInvoice={handleSelectInvoice}
+          />
 
-              <ul className="divide-y divide-slate-100">
-                {invoices.map((invoice) => {
-                  const invoiceCurrency = getInvoiceCurrency(invoice);
-                  const clientName =
-                    invoice.customer_snapshot_name ||
-                    getClientName(invoice.client) ||
-                    "-";
-
-                  return (
-                    <li
-                      key={invoice.invoice_id}
-                      style={{ gridTemplateColumns }}
-                      className="grid min-h-[74px] bg-white transition hover:bg-blue-50/70"
-                    >
-                      {displayedColumns.map((column) => {
-                        if (column === "invoice") {
-                          return (
-                            <div
-                              key={column}
-                              className="min-w-0 border-r border-slate-100 px-4 py-3"
-                            >
-                              <p
-                                title={invoice.invoice_number || "Sin número"}
-                                className="truncate text-sm font-black text-slate-950"
-                              >
-                                {invoice.invoice_number || "Sin número"}
-                              </p>
-                              <p
-                                title={getInvoiceOrigin(invoice)}
-                                className="mt-1 truncate text-xs font-medium text-slate-500"
-                              >
-                                {getInvoiceOrigin(invoice)}
-                              </p>
-                            </div>
-                          );
-                        }
-
-                        if (column === "client") {
-                          return (
-                            <div
-                              key={column}
-                              className="min-w-0 border-r border-slate-100 px-4 py-3"
-                            >
-                              <p
-                                title={clientName}
-                                className="truncate text-sm font-bold text-slate-900"
-                              >
-                                {clientName}
-                              </p>
-                              <p
-                                title={
-                                  invoice.customer_snapshot_phone ||
-                                  invoice.client?.phone_primary ||
-                                  ""
-                                }
-                                className="mt-1 truncate text-xs font-medium text-slate-500"
-                              >
-                                {invoice.customer_snapshot_phone ||
-                                  invoice.client?.phone_primary ||
-                                  "Sin teléfono"}
-                              </p>
-                            </div>
-                          );
-                        }
-
-                        if (column === "date") {
-                          return (
-                            <div
-                              key={column}
-                              className="flex min-w-0 items-center border-r border-slate-100 px-4 py-3"
-                            >
-                              <span className="truncate text-sm font-semibold text-slate-700">
-                                {formatDateLabel(invoice.invoice_date)}
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        if (column === "dueDate") {
-                          const dueLabel = getDueLabel(invoice);
-
-                          return (
-                            <div
-                              key={column}
-                              className="flex min-w-0 items-center border-r border-slate-100 px-4 py-3"
-                            >
-                              <span
-                                title={dueLabel}
-                                className={`truncate text-sm font-semibold ${
-                                  invoice.status === "OVERDUE"
-                                    ? "text-red-700"
-                                    : "text-slate-700"
-                                }`}
-                              >
-                                {dueLabel}
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        if (column === "total") {
-                          return (
-                            <div
-                              key={column}
-                              className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
-                            >
-                              <span className="truncate text-sm font-black text-slate-900">
-                                {formatCurrency(
-                                  invoice.total_amount,
-                                  invoiceCurrency,
-                                )}
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        if (column === "paid") {
-                          return (
-                            <div
-                              key={column}
-                              className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
-                            >
-                              <span className="truncate text-sm font-bold text-slate-800">
-                                {formatCurrency(
-                                  invoice.paid_amount,
-                                  invoiceCurrency,
-                                )}
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        if (column === "balance") {
-                          return (
-                            <div
-                              key={column}
-                              className="flex min-w-0 items-center justify-end border-r border-slate-100 px-4 py-3"
-                            >
-                              <span className="truncate text-sm font-black text-slate-950">
-                                {formatCurrency(
-                                  invoice.balance_amount,
-                                  invoiceCurrency,
-                                )}
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        if (column === "status") {
-                          return (
-                            <div
-                              key={column}
-                              className="flex min-w-0 items-center justify-center border-r border-slate-100 px-4 py-3"
-                            >
-                              <span
-                                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${getInvoiceStatusClass(invoice.status)}`}
-                              >
-                                {getInvoiceStatusLabel(invoice.status)}
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div
-                            key={column}
-                            className="flex min-w-0 items-center justify-center px-4 py-3"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleSelectInvoice(invoice)}
-                              className="rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-                            >
-                              Registrar pago
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-semibold text-slate-500">
-              Mostrando {pageRange.start}-{pageRange.end} de{" "}
-              {pagination.totalItems} facturas · Página {safeCurrentPage} de{" "}
-              {totalPages}
-              {loading && invoices.length > 0 ? " · Actualizando..." : ""}
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
-                disabled={safeCurrentPage <= 1}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Anterior
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
-                }
-                disabled={safeCurrentPage >= totalPages}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        </section>
+          <PaymentsPagination
+            pagination={pagination}
+            loading={loading}
+            invoicesLength={invoices.length}
+            onPageChange={setCurrentPage}
+          />
+        </>
       )}
 
-      <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-        <p className="font-bold">
-          Solo se muestran facturas con saldo pendiente mayor a cero.
-        </p>
-        <p className="mt-1">
-          Las facturas pagadas en su totalidad no se muestran en esta sección.
-        </p>
-      </div>
+      <PaymentInfoNote />
     </div>
   );
 }
-

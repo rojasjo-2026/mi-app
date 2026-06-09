@@ -7,8 +7,6 @@ import {
   getInvoiceStatusClass,
   getInvoiceStatusLabel,
 } from "../utils";
-import FinanceSummaryCard from "./FinanceSummaryCard";
-import MiniAmountCard from "./MiniAmountCard";
 import SectionHeader from "./SectionHeader";
 
 type CreditClientInvoice = {
@@ -66,7 +64,7 @@ type CreditClientSortKey =
   | "invoiceCount";
 type SortDirection = "asc" | "desc";
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const PAGE_SIZE_OPTIONS = [10, 15, 25, 50];
 
 const SCOPE_OPTIONS: { label: string; value: CreditClientScope }[] = [
   { label: "Todos", value: "ALL" },
@@ -113,6 +111,44 @@ function getClientStatusClass(item: CreditClientItem) {
   return "border border-slate-200 bg-slate-100 text-slate-600";
 }
 
+function SummaryCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+}) {
+  return (
+    <article className="min-h-[92px] rounded-lg border border-slate-200 bg-white px-4 py-3.5 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-2.5 text-xl font-semibold tracking-tight text-slate-950">
+        {value}
+      </p>
+
+      <p className="mt-1 text-xs font-medium text-slate-500">{helper}</p>
+    </article>
+  );
+}
+
+function MiniStatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-slate-200 bg-white px-3 py-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-1 truncate text-sm font-semibold text-slate-950">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function SortButton({
   label,
   sortKey,
@@ -134,7 +170,7 @@ function SortButton({
       type="button"
       onClick={() => onSort(sortKey)}
       title={`Ordenar por ${label}`}
-      className={`inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
+      className={`inline-flex h-8 items-center gap-2 rounded-md border px-3 text-xs font-semibold uppercase tracking-[0.1em] transition ${
         isActive
           ? "border-blue-200 bg-blue-50 text-blue-700"
           : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
@@ -307,51 +343,51 @@ export default function CreditClientsSection() {
           type="button"
           onClick={loadCreditClients}
           disabled={loading}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Actualizando..." : "Actualizar"}
         </button>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
-        <FinanceSummaryCard
+      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4">
+        <SummaryCard
           label="Clientes"
           value={String(summary.count)}
           helper="Con crédito o saldo"
         />
 
-        <FinanceSummaryCard
+        <SummaryCard
           label="Crédito activo"
           value={String(summary.credit_clients_count)}
           helper="Condición de crédito"
         />
 
-        <FinanceSummaryCard
+        <SummaryCard
           label="Por cobrar"
           value={formatCurrency(summary.total_pending)}
           helper="Saldo pendiente total"
         />
 
-        <FinanceSummaryCard
+        <SummaryCard
           label="Vencido"
           value={formatCurrency(summary.total_overdue)}
           helper="Saldo vencido total"
         />
       </div>
 
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+      <div className="mt-5 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_210px_160px_160px_120px]">
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
+            onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
                 setPage(1);
                 loadCreditClients();
               }
             }}
             placeholder="Buscar por cliente, teléfono, cédula o correo..."
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           />
 
           <select
@@ -359,7 +395,7 @@ export default function CreditClientsSection() {
             onChange={(event) =>
               setScope(event.target.value as CreditClientScope)
             }
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           >
             {SCOPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -368,29 +404,21 @@ export default function CreditClientsSection() {
             ))}
           </select>
 
-          <label className="rounded-2xl border border-slate-200 bg-white px-4 py-2">
-            <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
-              Desde
-            </span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-              className="mt-1 w-full bg-transparent text-sm font-bold text-slate-700 outline-none"
-            />
-          </label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(event) => setDateFrom(event.target.value)}
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+            title="Desde"
+          />
 
-          <label className="rounded-2xl border border-slate-200 bg-white px-4 py-2">
-            <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
-              Hasta
-            </span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-              className="mt-1 w-full bg-transparent text-sm font-bold text-slate-700 outline-none"
-            />
-          </label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(event) => setDateTo(event.target.value)}
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+            title="Hasta"
+          />
 
           <button
             type="button"
@@ -399,13 +427,13 @@ export default function CreditClientsSection() {
               loadCreditClients();
             }}
             disabled={loading}
-            className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Buscar
           </button>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
             <SortButton
               label="Cliente"
@@ -414,6 +442,7 @@ export default function CreditClientsSection() {
               sortDirection={sortDirection}
               onSort={handleSort}
             />
+
             <SortButton
               label="Por cobrar"
               sortKey="pending"
@@ -421,6 +450,7 @@ export default function CreditClientsSection() {
               sortDirection={sortDirection}
               onSort={handleSort}
             />
+
             <SortButton
               label="Vencido"
               sortKey="overdue"
@@ -428,6 +458,7 @@ export default function CreditClientsSection() {
               sortDirection={sortDirection}
               onSort={handleSort}
             />
+
             <SortButton
               label="Límite"
               sortKey="creditLimit"
@@ -435,6 +466,7 @@ export default function CreditClientsSection() {
               sortDirection={sortDirection}
               onSort={handleSort}
             />
+
             <SortButton
               label="Facturas"
               sortKey="invoiceCount"
@@ -449,18 +481,18 @@ export default function CreditClientsSection() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
               >
                 Limpiar filtros
               </button>
             )}
 
-            <label className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm">
+            <label className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
               Ver
               <select
                 value={pageSize}
                 onChange={(event) => setPageSize(Number(event.target.value))}
-                className="bg-transparent text-sm font-bold outline-none"
+                className="bg-transparent text-sm font-semibold outline-none"
               >
                 {PAGE_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -474,25 +506,25 @@ export default function CreditClientsSection() {
       </div>
 
       {error && (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </div>
       )}
 
       {loading && items.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             Cargando clientes con crédito...
           </p>
         </div>
       ) : sortedVisibleItems.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             No hay clientes con crédito o saldos pendientes.
           </p>
         </div>
       ) : (
-        <div className="mt-6 space-y-3">
+        <div className="mt-5 space-y-3">
           {sortedVisibleItems.map((item) => {
             const uniqueInvoices = getUniqueInvoices(item.invoices);
             const visibleInvoices = uniqueInvoices.slice(0, 3);
@@ -505,7 +537,7 @@ export default function CreditClientsSection() {
             return (
               <article
                 key={item.client_id}
-                className={`overflow-hidden rounded-3xl border bg-white shadow-sm ${
+                className={`overflow-hidden rounded-lg border bg-white shadow-sm ${
                   item.overdue_amount > 0
                     ? "border-red-200"
                     : isOverCredit
@@ -513,31 +545,25 @@ export default function CreditClientsSection() {
                       : "border-slate-200"
                 }`}
               >
-                <div
-                  className={`grid gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_420px] ${
-                    item.overdue_amount > 0
-                      ? "bg-red-50/50"
-                      : isOverCredit
-                        ? "bg-amber-50/40"
-                        : "bg-slate-50/60"
-                  }`}
-                >
+                <div className="grid gap-4 border-b border-slate-100 bg-white p-4 xl:grid-cols-[minmax(0,1fr)_420px]">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-bold ${getClientStatusClass(item)}`}
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${getClientStatusClass(
+                          item,
+                        )}`}
                       >
                         {clientStatusLabel}
                       </span>
 
                       {item.has_credit_terms && (
-                        <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                        <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
                           Crédito activo
                         </span>
                       )}
 
                       {isOverCredit && (
-                        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                           Sobre límite
                         </span>
                       )}
@@ -545,7 +571,7 @@ export default function CreditClientsSection() {
 
                     <h3
                       title={item.client_name}
-                      className="mt-3 truncate text-base font-black text-slate-950"
+                      className="mt-3 truncate text-base font-semibold text-slate-950"
                     >
                       {item.client_name}
                     </h3>
@@ -560,16 +586,18 @@ export default function CreditClientsSection() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <MiniAmountCard
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <MiniStatCard
                       label="Facturas"
                       value={String(item.invoice_count)}
                     />
-                    <MiniAmountCard
+
+                    <MiniStatCard
                       label="Por cobrar"
                       value={formatCurrency(item.pending_amount)}
                     />
-                    <MiniAmountCard
+
+                    <MiniStatCard
                       label="Límite crédito"
                       value={formatCurrency(item.credit_limit)}
                     />
@@ -577,9 +605,9 @@ export default function CreditClientsSection() {
                 </div>
 
                 {visibleInvoices.length > 0 ? (
-                  <div className="overflow-x-auto border-t border-slate-100">
+                  <div className="overflow-x-auto">
                     <div className="min-w-[840px]">
-                      <div className="grid grid-cols-[1.2fr_150px_130px_130px_160px_40px] bg-white px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
+                      <div className="grid grid-cols-[1.2fr_150px_130px_130px_160px_40px] border-b border-slate-100 bg-slate-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                         <div>Factura</div>
                         <div>Estado</div>
                         <div>Fecha</div>
@@ -593,18 +621,18 @@ export default function CreditClientsSection() {
                           <a
                             key={`${item.client_id}-${invoice.invoice_id}`}
                             href={`/finances?invoice_id=${invoice.invoice_id}`}
-                            className="grid grid-cols-[1.2fr_150px_130px_130px_160px_40px] px-4 py-3 text-sm transition hover:bg-blue-50/60"
+                            className="grid grid-cols-[1.2fr_150px_130px_130px_160px_40px] px-4 py-2.5 text-sm transition hover:bg-slate-50"
                           >
                             <div
                               title={invoice.invoice_number || "Sin número"}
-                              className="truncate font-black text-slate-900"
+                              className="truncate font-semibold text-slate-900"
                             >
                               {invoice.invoice_number || "Sin número"}
                             </div>
 
                             <div>
                               <span
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${getInvoiceStatusClass(
+                                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${getInvoiceStatusClass(
                                   invoice.status,
                                 )}`}
                               >
@@ -612,12 +640,12 @@ export default function CreditClientsSection() {
                               </span>
                             </div>
 
-                            <div className="font-semibold text-slate-700">
+                            <div className="font-medium text-slate-700">
                               {formatDateLabel(invoice.invoice_date)}
                             </div>
 
                             <div
-                              className={`font-semibold ${
+                              className={`font-medium ${
                                 invoice.status === "OVERDUE"
                                   ? "text-red-700"
                                   : "text-slate-700"
@@ -626,7 +654,7 @@ export default function CreditClientsSection() {
                               {formatDateLabel(invoice.due_date)}
                             </div>
 
-                            <div className="text-right font-black text-slate-950">
+                            <div className="text-right font-semibold text-slate-950">
                               {formatCurrency(invoice.balance_amount)}
                             </div>
 
@@ -637,14 +665,14 @@ export default function CreditClientsSection() {
                     </div>
                   </div>
                 ) : (
-                  <div className="border-t border-slate-100 px-4 py-3 text-sm font-medium text-slate-500">
+                  <div className="px-4 py-3 text-sm font-medium text-slate-500">
                     Este cliente tiene crédito activo, pero no tiene facturas
                     abiertas con saldo pendiente.
                   </div>
                 )}
 
                 {hiddenInvoicesCount > 0 && (
-                  <div className="border-t border-slate-100 px-4 py-3 text-right text-sm font-bold text-blue-700">
+                  <div className="border-t border-slate-100 px-4 py-3 text-right text-sm font-semibold text-blue-700">
                     +{hiddenInvoicesCount} factura
                     {hiddenInvoicesCount === 1 ? "" : "s"} más
                   </div>
@@ -655,8 +683,8 @@ export default function CreditClientsSection() {
         </div>
       )}
 
-      <div className="mt-6 flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-semibold text-slate-500">
+      <div className="mt-5 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-medium text-slate-500">
           Mostrando {pageStartIndex}-{pageEndIndex} de {pagination.totalItems}{" "}
           clientes · Página {safeCurrentPage} de {totalPages}
           {loading && items.length > 0 ? " · Actualizando..." : ""}
@@ -667,7 +695,7 @@ export default function CreditClientsSection() {
             type="button"
             onClick={() => setPage(Math.max(1, safeCurrentPage - 1))}
             disabled={safeCurrentPage <= 1}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Anterior
           </button>
@@ -676,7 +704,7 @@ export default function CreditClientsSection() {
             type="button"
             onClick={() => setPage(Math.min(totalPages, safeCurrentPage + 1))}
             disabled={safeCurrentPage >= totalPages}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Siguiente
           </button>
