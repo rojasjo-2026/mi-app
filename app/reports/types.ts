@@ -1,3 +1,5 @@
+export type ReportSource = "clients" | "installations";
+
 export type ClientColumnKey =
   | "client_name"
   | "client_type"
@@ -33,30 +35,85 @@ export type ClientColumnKey =
   | "created_at"
   | "updated_at";
 
+export type InstallationColumnKey =
+  | "installation_id"
+  | "client_name"
+  | "service_type"
+  | "installation_date"
+  | "installation_status"
+  | "is_active"
+  | "billing_status"
+  | "estimated_amount"
+  | "final_amount"
+  | "cost_amount"
+  | "pending_billing"
+  | "warranty_months"
+  | "warranty_end_date"
+  | "technician_name"
+  | "address_line"
+  | "city"
+  | "admin_level_1"
+  | "admin_level_2"
+  | "admin_level_3"
+  | "zone"
+  | "operational_zone"
+  | "components_count"
+  | "follow_ups_count"
+  | "pending_follow_up_date"
+  | "invoices_count"
+  | "description"
+  | "technical_observations"
+  | "reference_point"
+  | "location_notes"
+  | "created_at"
+  | "updated_at";
+
+export type ReportColumnKey = ClientColumnKey | InstallationColumnKey;
+
 export type ReportMode = "builder" | "import" | "templates";
 
 export type ReportColumn = {
-  key: ClientColumnKey;
+  key: ReportColumnKey;
   label: string;
   description: string;
 };
 
 export type ReportFilters = {
   search: string;
+
   clientType: string;
   status: string;
   whatsapp: string;
   autoContact: string;
   taxExempt: string;
+
+  clientId: string;
+  serviceTypeId: string;
+  technicianId: string;
   installationStatus: string;
+  billingStatus: string;
+  isActive: string;
+  pendingMaintenance: string;
+
   pendingBilling: string;
   countryCode: string;
   adminLevel1: string;
   adminLevel2: string;
   adminLevel3: string;
+  city: string;
+  zone: string;
   operationalZoneId: string;
+
   paymentTerm: string;
   preferredCurrency: string;
+
+  minEstimatedAmount: string;
+  maxEstimatedAmount: string;
+
+  installationFrom: string;
+  installationTo: string;
+  warrantyFrom: string;
+  warrantyTo: string;
   createdFrom: string;
   createdTo: string;
   updatedFrom: string;
@@ -72,9 +129,10 @@ export type PaginationState = {
   totalPages: number;
 };
 
-export type ClientReportResponse = {
+export type ReportBuilderResponse = {
   success: boolean;
   message?: string;
+  source?: ReportSource;
   columns?: string[];
   data?: ReportRow[];
   pagination?: PaginationState;
@@ -117,7 +175,7 @@ export type ReportOption = {
   count?: number;
 };
 
-export type ReportBuilderMetadata = {
+export type ClientReportBuilderMetadata = {
   clientTypes: ReportOption[];
   clientStatuses: ReportOption[];
   countries: ReportOption[];
@@ -137,8 +195,41 @@ export type ReportBuilderMetadata = {
   };
 };
 
-export type ReportMetadataResponse = {
+export type InstallationReportBuilderMetadata = {
+  installationStatuses: ReportOption[];
+  billingStatuses: ReportOption[];
+  serviceTypes: ReportOption[];
+  technicians: ReportOption[];
+  clients: ReportOption[];
+  countries: ReportOption[];
+  adminLevel1Options: ReportOption[];
+  adminLevel2Options: ReportOption[];
+  adminLevel3Options: ReportOption[];
+  cityOptions: ReportOption[];
+  zoneOptions: ReportOption[];
+  operationalZones: ReportOption[];
+  booleanOptions: {
+    isActive: ReportOption[];
+    pendingBilling: ReportOption[];
+    pendingMaintenance: ReportOption[];
+  };
+  counters: {
+    totalInstallations: number;
+    withoutTechnicianCount: number;
+    withoutOperationalZoneCount: number;
+    pendingBillingCount: number;
+    pendingMaintenanceCount: number;
+  };
+};
+
+export type ClientMetadataResponse = {
   success: boolean;
   message?: string;
-  data?: ReportBuilderMetadata;
+  data?: ClientReportBuilderMetadata;
+};
+
+export type InstallationMetadataResponse = {
+  success: boolean;
+  message?: string;
+  data?: InstallationReportBuilderMetadata;
 };

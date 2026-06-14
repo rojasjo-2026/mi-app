@@ -1,24 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  CLIENT_COLUMNS,
-  DEFAULT_COLUMNS,
+  DEFAULT_COLUMNS_BY_SOURCE,
   EXCEL_EXPORT_LIMIT,
   initialFilters,
   PDF_EXPORT_LIMIT,
   PDF_MAX_COLUMNS,
+  REPORT_COLUMNS_BY_SOURCE,
 } from "./config/reportBuilderConfig";
 import type {
-  ClientColumnKey,
-  ClientReportResponse,
+  ClientMetadataResponse,
+  ClientReportBuilderMetadata,
   ImportPreviewRow,
+  InstallationMetadataResponse,
+  InstallationReportBuilderMetadata,
   PaginationState,
-  ReportBuilderMetadata,
+  ReportBuilderResponse,
+  ReportColumnKey,
   ReportFilters,
-  ReportMetadataResponse,
   ReportMode,
   ReportRow,
+  ReportSource,
 } from "./types";
 import ReportsHeader from "./components/ReportsHeader";
 import ReportsTabs from "./components/ReportsTabs";
@@ -33,365 +36,383 @@ import {
   downloadPdfReport,
 } from "./utils/reportExportUtils";
 
+const REPORT_ENDPOINTS: Record<ReportSource, string> = {
+  clients: "/api/reports/builder/clients",
+  installations: "/api/reports/builder/installations",
+};
+
+const METADATA_ENDPOINTS: Record<ReportSource, string> = {
+  clients: "/api/reports/builder/metadata",
+  installations: "/api/reports/builder/installations/metadata",
+};
+
+const initialPagination: PaginationState = {
+  page: 1,
+  pageSize: 25,
+  totalItems: 0,
+  totalPages: 1,
+};
+
+function getSourceTitle(source: ReportSource) {
+  if (source === "clients") return "Clientes";
+
+  return "Instalaciones";
+}
+
+function getSourceFilename(source: ReportSource) {
+  if (source === "clients") return "clientes";
+
+  return "instalaciones";
+}
+
+function appendParam(params: URLSearchParams, key: string, value: string) {
+  if (!value || value === "all") return;
+
+  params.set(key, value);
+}
+
+function buildQueryParams({
+  source,
+  filters,
+  columns,
+  page,
+  pageSize,
+}: {
+  source: ReportSource;
+  filters: ReportFilters;
+  columns: ReportColumnKey[];
+  page: number;
+  pageSize: number;
+}) {
+  const params = new URLSearchParams();
+
+  params.set("page", String(page));
+  params.set("pageSize", String(pageSize));
+  params.set("columns", columns.join(","));
+
+  appendParam(params, "search", filters.search);
+
+  appendParam(params, "pendingBilling", filters.pendingBilling);
+  appendParam(params, "countryCode", filters.countryCode);
+  appendParam(params, "adminLevel1", filters.adminLevel1);
+  appendParam(params, "adminLevel2", filters.adminLevel2);
+  appendParam(params, "adminLevel3", filters.adminLevel3);
+  appendParam(params, "operationalZoneId", filters.operationalZoneId);
+  appendParam(params, "createdFrom", filters.createdFrom);
+  appendParam(params, "createdTo", filters.createdTo);
+  appendParam(params, "updatedFrom", filters.updatedFrom);
+  appendParam(params, "updatedTo", filters.updatedTo);
+
+  if (source === "clients") {
+    appendParam(params, "clientType", filters.clientType);
+    appendParam(params, "status", filters.status);
+    appendParam(params, "whatsapp", filters.whatsapp);
+    appendParam(params, "autoContact", filters.autoContact);
+    appendParam(params, "taxExempt", filters.taxExempt);
+    appendParam(params, "paymentTerm", filters.paymentTerm);
+    appendParam(params, "preferredCurrency", filters.preferredCurrency);
+  }
+
+  if (source === "installations") {
+    appendParam(params, "clientId", filters.clientId);
+    appendParam(params, "serviceTypeId", filters.serviceTypeId);
+    appendParam(params, "technicianId", filters.technicianId);
+    appendParam(params, "installationStatus", filters.installationStatus);
+    appendParam(params, "billingStatus", filters.billingStatus);
+    appendParam(params, "isActive", filters.isActive);
+    appendParam(params, "pendingMaintenance", filters.pendingMaintenance);
+    appendParam(params, "city", filters.city);
+    appendParam(params, "zone", filters.zone);
+    appendParam(params, "minEstimatedAmount", filters.minEstimatedAmount);
+    appendParam(params, "maxEstimatedAmount", filters.maxEstimatedAmount);
+    appendParam(params, "installationFrom", filters.installationFrom);
+    appendParam(params, "installationTo", filters.installationTo);
+    appendParam(params, "warrantyFrom", filters.warrantyFrom);
+    appendParam(params, "warrantyTo", filters.warrantyTo);
+  }
+
+  return params;
+}
+
 export default function ReportsPage() {
   const [mode, setMode] = useState<ReportMode>("builder");
-  const [selectedColumns, setSelectedColumns] =
-    useState<ClientColumnKey[]>(DEFAULT_COLUMNS);
+  const [source, setSource] = useState<ReportSource>("clients");
+
   const [filters, setFilters] = useState<ReportFilters>(initialFilters);
-  const [metadata, setMetadata] = useState<ReportBuilderMetadata | null>(null);
-  const [metadataLoading, setMetadataLoading] = useState(true);
+  const [selectedColumns, setSelectedColumns] = useState<ReportColumnKey[]>([
+    ...DEFAULT_COLUMNS_BY_SOURCE.clients,
+  ]);
+
   const [rows, setRows] = useState<ReportRow[]>([]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    page: 1,
-    pageSize: 25,
-    totalItems: 0,
-    totalPages: 1,
-  });
-  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] =
+    useState<PaginationState>(initialPagination);
+
+  const [clientMetadata, setClientMetadata] =
+    useState<ClientReportBuilderMetadata | null>(null);
+  const [installationMetadata, setInstallationMetadata] =
+    useState<InstallationReportBuilderMetadata | null>(null);
+
+  const [importPreview, setImportPreview] = useState<ImportPreviewRow[]>([]);
+
+  const [loading, setLoading] = useState(false);
+  const [metadataLoading, setMetadataLoading] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [error, setError] = useState("");
-  const [importPreview, setImportPreview] = useState<ImportPreviewRow[]>([]);
+
+  const availableColumns = useMemo(
+    () => REPORT_COLUMNS_BY_SOURCE[source],
+    [source],
+  );
 
   const selectedColumnMeta = useMemo(
     () =>
-      selectedColumns
-        .map((columnKey) =>
-          CLIENT_COLUMNS.find((column) => column.key === columnKey),
-        )
-        .filter((column): column is (typeof CLIENT_COLUMNS)[number] =>
-          Boolean(column),
-        ),
-    [selectedColumns],
+      availableColumns.filter((column) => selectedColumns.includes(column.key)),
+    [availableColumns, selectedColumns],
   );
 
-  const pdfAvailable =
-    rows.length > 0 && selectedColumns.length <= PDF_MAX_COLUMNS;
+  const canExportPdf =
+    selectedColumns.length > 0 && selectedColumns.length <= PDF_MAX_COLUMNS;
 
-  function updateFilter(key: keyof ReportFilters, value: string) {
-    setFilters((current) => ({
-      ...current,
-      [key]: value,
-    }));
-
-    setPagination((current) => ({
-      ...current,
-      page: 1,
-    }));
-  }
-
-  function toggleColumn(columnKey: ClientColumnKey) {
-    setSelectedColumns((current) => {
-      if (current.includes(columnKey)) {
-        if (current.length === 1) return current;
-
-        return current.filter((key) => key !== columnKey);
-      }
-
-      return [...current, columnKey];
-    });
-  }
-
-  function resetBuilder() {
-    setFilters(initialFilters);
-    setSelectedColumns(DEFAULT_COLUMNS);
-    setPagination({
-      page: 1,
-      pageSize: 25,
-      totalItems: 0,
-      totalPages: 1,
-    });
-  }
-
-  function buildQueryParams(options?: {
-    page?: number;
-    pageSize?: number;
-    columns?: ClientColumnKey[];
-  }) {
-    const params = new URLSearchParams();
-
-    params.set("page", String(options?.page ?? pagination.page));
-    params.set("pageSize", String(options?.pageSize ?? pagination.pageSize));
-    params.set("columns", (options?.columns ?? selectedColumns).join(","));
-
-    if (filters.search.trim()) {
-      params.set("search", filters.search.trim());
-    }
-
-    params.set("clientType", filters.clientType);
-    params.set("status", filters.status);
-    params.set("whatsapp", filters.whatsapp);
-    params.set("autoContact", filters.autoContact);
-    params.set("taxExempt", filters.taxExempt);
-    params.set("installationStatus", filters.installationStatus);
-    params.set("pendingBilling", filters.pendingBilling);
-    params.set("countryCode", filters.countryCode);
-    params.set("adminLevel1", filters.adminLevel1);
-    params.set("adminLevel2", filters.adminLevel2);
-    params.set("adminLevel3", filters.adminLevel3);
-    params.set("operationalZoneId", filters.operationalZoneId);
-    params.set("paymentTerm", filters.paymentTerm);
-    params.set("preferredCurrency", filters.preferredCurrency);
-
-    if (filters.createdFrom) params.set("createdFrom", filters.createdFrom);
-    if (filters.createdTo) params.set("createdTo", filters.createdTo);
-    if (filters.updatedFrom) params.set("updatedFrom", filters.updatedFrom);
-    if (filters.updatedTo) params.set("updatedTo", filters.updatedTo);
-
-    return params;
-  }
-
-  async function loadMetadata() {
+  const loadMetadata = useCallback(async () => {
     try {
       setMetadataLoading(true);
 
-      const response = await fetch("/api/reports/builder/metadata", {
-        cache: "no-store",
-      });
+      const [clientResponse, installationResponse] = await Promise.all([
+        fetch(METADATA_ENDPOINTS.clients),
+        fetch(METADATA_ENDPOINTS.installations),
+      ]);
 
-      const result: ReportMetadataResponse = await response.json();
+      const clientResult: ClientMetadataResponse = await clientResponse.json();
+      const installationResult: InstallationMetadataResponse =
+        await installationResponse.json();
 
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(result.message || "No se pudo cargar la metadata");
+      if (clientResponse.ok && clientResult.success && clientResult.data) {
+        setClientMetadata(clientResult.data);
       }
 
-      setMetadata(result.data);
-    } catch (err) {
-      console.error(err);
-      setMetadata(null);
+      if (
+        installationResponse.ok &&
+        installationResult.success &&
+        installationResult.data
+      ) {
+        setInstallationMetadata(installationResult.data);
+      }
+    } catch (metadataError) {
+      console.error(metadataError);
     } finally {
       setMetadataLoading(false);
     }
-  }
+  }, []);
 
-  async function fetchClientReportForExport(pageSize: number) {
-    const params = buildQueryParams({
-      page: 1,
-      pageSize,
-      columns: selectedColumns,
-    });
-
-    const response = await fetch(
-      `/api/reports/builder/clients?${params.toString()}`,
-      {
-        cache: "no-store",
-      },
-    );
-
-    const result: ClientReportResponse = await response.json();
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "No se pudo exportar el reporte");
-    }
-
-    return {
-      rows: result.data ?? [],
-      pagination:
-        result.pagination ??
-        ({
-          page: 1,
-          pageSize,
-          totalItems: result.data?.length ?? 0,
-          totalPages: 1,
-        } satisfies PaginationState),
-    };
-  }
-
-  async function loadReport() {
+  const loadReport = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
-      const params = buildQueryParams();
+      const params = buildQueryParams({
+        source,
+        filters,
+        columns: selectedColumns,
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+      });
 
-      const response = await fetch(
-        `/api/reports/builder/clients?${params.toString()}`,
-        {
-          cache: "no-store",
-        },
-      );
-
-      const result: ClientReportResponse = await response.json();
+      const response = await fetch(`${REPORT_ENDPOINTS[source]}?${params}`);
+      const result: ReportBuilderResponse = await response.json();
 
       if (!response.ok || !result.success) {
         throw new Error(result.message || "No se pudo cargar el reporte");
       }
 
       setRows(result.data ?? []);
-      setPagination(
-        result.pagination ?? {
-          page: 1,
-          pageSize: 25,
-          totalItems: 0,
-          totalPages: 1,
-        },
-      );
-    } catch (err) {
-      console.error(err);
+      setPagination((currentPagination) => ({
+        ...currentPagination,
+        ...(result.pagination ?? {}),
+      }));
+    } catch (reportError) {
+      console.error(reportError);
+      setError("No se pudo cargar el reporte");
       setRows([]);
-      setError("No se pudo cargar el reporte de clientes");
     } finally {
       setLoading(false);
     }
+  }, [source, filters, selectedColumns, pagination.page, pagination.pageSize]);
+
+  async function fetchRowsForExport(limit: number) {
+    const params = buildQueryParams({
+      source,
+      filters,
+      columns: selectedColumns,
+      page: 1,
+      pageSize: limit,
+    });
+
+    const response = await fetch(`${REPORT_ENDPOINTS[source]}?${params}`);
+    const result: ReportBuilderResponse = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "No se pudo exportar el reporte");
+    }
+
+    return result.data ?? [];
   }
 
-  async function exportExcel() {
+  async function handleExcelExport() {
     try {
       setExportingExcel(true);
-      setError("");
 
-      const exportResult = await fetchClientReportForExport(EXCEL_EXPORT_LIMIT);
+      const exportRows = await fetchRowsForExport(EXCEL_EXPORT_LIMIT);
 
       await downloadExcelReport(
-        `clarius-clientes-reporte-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        `clarius-reporte-${getSourceFilename(source)}.xlsx`,
+        source,
         selectedColumns,
-        exportResult.rows,
+        exportRows,
       );
-    } catch (err) {
-      console.error(err);
-      setError("No se pudo exportar el reporte a Excel");
+    } catch (exportError) {
+      console.error(exportError);
+      setError("No se pudo exportar el Excel");
     } finally {
       setExportingExcel(false);
     }
   }
 
-  async function exportPdf() {
-    if (!pdfAvailable) return;
+  async function handlePdfExport() {
+    if (!canExportPdf) return;
 
     try {
       setExportingPdf(true);
-      setError("");
 
-      const exportResult = await fetchClientReportForExport(PDF_EXPORT_LIMIT);
+      const exportRows = await fetchRowsForExport(PDF_EXPORT_LIMIT);
 
       await downloadPdfReport(
-        `clarius-clientes-reporte-${new Date().toISOString().slice(0, 10)}.pdf`,
+        `clarius-reporte-${getSourceFilename(source)}.pdf`,
+        `Reporte de ${getSourceTitle(source)}`,
+        source,
         selectedColumns,
-        exportResult.rows,
-        exportResult.pagination.totalItems,
+        exportRows,
       );
-    } catch (err) {
-      console.error(err);
-      setError("No se pudo exportar el reporte a PDF");
+    } catch (exportError) {
+      console.error(exportError);
+      setError("No se pudo exportar el PDF");
     } finally {
       setExportingPdf(false);
     }
   }
 
+  function handleSourceChange(nextSource: ReportSource) {
+    setSource(nextSource);
+    setFilters(initialFilters);
+    setSelectedColumns([...DEFAULT_COLUMNS_BY_SOURCE[nextSource]]);
+    setRows([]);
+    setPagination(initialPagination);
+  }
+
+  function handleFiltersChange(nextFilters: ReportFilters) {
+    setFilters(nextFilters);
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: 1,
+    }));
+  }
+
+  function handleSelectedColumnsChange(nextColumns: ReportColumnKey[]) {
+    setSelectedColumns(nextColumns);
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: 1,
+    }));
+  }
+
+  function handlePageChange(page: number) {
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page,
+    }));
+  }
+
+  function handlePageSizeChange(pageSize: number) {
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: 1,
+      pageSize,
+    }));
+  }
+
   useEffect(() => {
     void loadMetadata();
-  }, []);
+  }, [loadMetadata]);
 
   useEffect(() => {
+    if (mode !== "builder") return;
+
     void loadReport();
-  }, [
-    pagination.page,
-    pagination.pageSize,
-    selectedColumns,
-    filters.search,
-    filters.clientType,
-    filters.status,
-    filters.whatsapp,
-    filters.autoContact,
-    filters.taxExempt,
-    filters.installationStatus,
-    filters.pendingBilling,
-    filters.countryCode,
-    filters.adminLevel1,
-    filters.adminLevel2,
-    filters.adminLevel3,
-    filters.operationalZoneId,
-    filters.paymentTerm,
-    filters.preferredCurrency,
-    filters.createdFrom,
-    filters.createdTo,
-    filters.updatedFrom,
-    filters.updatedTo,
-  ]);
+  }, [mode, loadReport]);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-5">
         <ReportsHeader
-          rowsLength={rows.length}
+          source={source}
+          loading={loading || metadataLoading}
           exportingExcel={exportingExcel}
           exportingPdf={exportingPdf}
-          pdfAvailable={pdfAvailable}
-          loading={loading}
-          pdfMaxColumns={PDF_MAX_COLUMNS}
-          selectedColumnsLength={selectedColumns.length}
-          onExportExcel={exportExcel}
-          onExportPdf={exportPdf}
+          totalItems={pagination.totalItems}
+          selectedColumnCount={selectedColumns.length}
+          canExportPdf={canExportPdf}
           onRefresh={() => void loadReport()}
+          onExportExcel={() => void handleExcelExport()}
+          onExportPdf={() => void handlePdfExport()}
         />
 
-        <ReportsTabs mode={mode} onModeChange={setMode} />
+        <ReportsTabs
+          mode={mode}
+          onModeChange={setMode}
+          importCount={importPreview.length}
+        />
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        )}
 
         {mode === "builder" && (
           <>
-            {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                {error}
-              </div>
-            )}
+            <ReportSourcePanel
+              source={source}
+              onSourceChange={handleSourceChange}
+              clientMetadata={clientMetadata}
+              installationMetadata={installationMetadata}
+            />
 
-            {selectedColumns.length > PDF_MAX_COLUMNS && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                <p className="font-semibold">
-                  PDF no disponible para esta vista
-                </p>
-                <p className="mt-1">
-                  El reporte tiene {selectedColumns.length} columnas. Para PDF,
-                  seleccioná máximo {PDF_MAX_COLUMNS} columnas. Para análisis
-                  completo, usá Exportar Excel.
-                </p>
-              </div>
-            )}
+            <ReportFiltersPanel
+              source={source}
+              filters={filters}
+              clientMetadata={clientMetadata}
+              installationMetadata={installationMetadata}
+              onFiltersChange={handleFiltersChange}
+            />
 
-            <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-              <aside className="flex flex-col gap-5">
-                <ReportSourcePanel />
-
-                <ReportFiltersPanel
-                  filters={filters}
-                  metadata={metadata}
-                  metadataLoading={metadataLoading}
-                  onFilterChange={updateFilter}
-                  onReset={resetBuilder}
-                />
-
-                <ReportColumnsPanel
-                  selectedColumns={selectedColumns}
-                  onToggleColumn={toggleColumn}
-                />
-              </aside>
+            <section className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+              <ReportColumnsPanel
+                source={source}
+                columns={availableColumns}
+                selectedColumns={selectedColumns}
+                onSelectedColumnsChange={handleSelectedColumnsChange}
+              />
 
               <ReportPreviewTable
+                source={source}
+                columns={selectedColumnMeta}
                 rows={rows}
                 loading={loading}
                 pagination={pagination}
-                selectedColumns={selectedColumns}
-                selectedColumnMeta={selectedColumnMeta}
-                exportingExcel={exportingExcel}
-                exportingPdf={exportingPdf}
-                pdfAvailable={pdfAvailable}
-                onPageSizeChange={(pageSize) =>
-                  setPagination((current) => ({
-                    ...current,
-                    page: 1,
-                    pageSize,
-                  }))
-                }
-                onPageChange={(page) =>
-                  setPagination((current) => ({
-                    ...current,
-                    page,
-                  }))
-                }
-                onExportExcel={exportExcel}
-                onExportPdf={exportPdf}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
               />
-            </div>
+            </section>
           </>
         )}
 
@@ -403,7 +424,7 @@ export default function ReportsPage() {
         )}
 
         {mode === "templates" && <ReportTemplatesPanel />}
-      </section>
+      </div>
     </main>
   );
 }

@@ -1,36 +1,41 @@
-import type { ClientColumnKey, ReportRow } from "../types";
-import {
-  buildReportMatrix,
-  formatCellValue,
-  getColumnLabel,
-} from "./reportFormatUtils";
+import type { ReportColumnKey, ReportRow, ReportSource } from "../types";
+import { buildReportMatrix, getColumnLabel } from "./reportFormatUtils";
 
 export async function downloadExcelReport(
   filename: string,
-  columns: ClientColumnKey[],
+  source: ReportSource,
+  columns: ReportColumnKey[],
   rows: ReportRow[],
 ) {
   const XLSX = await import("xlsx");
 
-  const worksheet = XLSX.utils.aoa_to_sheet(buildReportMatrix(columns, rows));
+  const worksheet = XLSX.utils.aoa_to_sheet(
+    buildReportMatrix(source, columns, rows),
+  );
 
   worksheet["!cols"] = columns.map((columnKey) => ({
-    wch: Math.min(Math.max(getColumnLabel(columnKey).length + 8, 16), 42),
+    wch: Math.min(
+      Math.max(getColumnLabel(source, columnKey).length + 8, 16),
+      42,
+    ),
   }));
 
   const workbook = XLSX.utils.book_new();
 
   XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte");
-  XLSX.writeFile(workbook, filename, { compression: true });
+  XLSX.writeFile(workbook, filename, {
+    compression: true,
+  });
 }
 
 export async function downloadPdfReport(
   filename: string,
-  columns: ClientColumnKey[],
+  title: string,
+  source: ReportSource,
+  columns: ReportColumnKey[],
   rows: ReportRow[],
-  totalItems: number,
 ) {
-  const { jsPDF } = await import("jspdf");
+  const { default: jsPDF } = await import("jspdf");
   const { autoTable } = await import("jspdf-autotable");
 
   const doc = new jsPDF({
@@ -39,47 +44,22 @@ export async function downloadPdfReport(
     format: "a4",
   });
 
-  const generatedAt = new Intl.DateTimeFormat("es-CR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date());
-
-  const headers = columns.map((columnKey) => getColumnLabel(columnKey));
-
-  const body = rows.map((row) =>
-    columns.map((columnKey) =>
-      formatCellValue(columnKey, row[columnKey] ?? ""),
-    ),
-  );
-
-  doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text("CLARIUS - Reporte de clientes", 12, 14);
+  doc.text(title, 12, 14);
 
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Generado: ${generatedAt}`, 12, 21);
-  doc.text(`Registros en PDF: ${rows.length}`, 12, 27);
-  doc.text(`Registros encontrados: ${totalItems}`, 12, 33);
-
-  if (totalItems > rows.length) {
-    doc.setFont("helvetica", "bold");
-    doc.text(
-      `Nota: PDF limitado a ${rows.length} registros para mantener un formato presentable.`,
-      12,
-      39,
-    );
-  }
+  doc.text(`Generado: ${new Date().toLocaleString("es-CR")}`, 12, 21);
 
   autoTable(doc, {
-    head: [headers],
-    body,
-    startY: totalItems > rows.length ? 45 : 39,
+    startY: 28,
+    head: [columns.map((columnKey) => getColumnLabel(source, columnKey))],
+    body: rows.map((row) =>
+      columns.map((columnKey) => String(row[columnKey] ?? "")),
+    ),
     styles: {
-      fontSize: 7.5,
+      fontSize: 7,
       cellPadding: 2,
       overflow: "linebreak",
-      valign: "middle",
     },
     headStyles: {
       fillColor: [15, 23, 42],

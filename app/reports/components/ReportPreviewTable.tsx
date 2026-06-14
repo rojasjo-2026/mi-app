@@ -2,175 +2,190 @@
 
 import { PAGE_SIZE_OPTIONS } from "../config/reportBuilderConfig";
 import type {
-  ClientColumnKey,
   PaginationState,
   ReportColumn,
   ReportRow,
+  ReportSource,
 } from "../types";
 import { formatCellValue } from "../utils/reportFormatUtils";
 
 type ReportPreviewTableProps = {
+  source: ReportSource;
+  columns: ReportColumn[];
   rows: ReportRow[];
   loading: boolean;
   pagination: PaginationState;
-  selectedColumns: ClientColumnKey[];
-  selectedColumnMeta: ReportColumn[];
-  exportingExcel: boolean;
-  exportingPdf: boolean;
-  pdfAvailable: boolean;
-  onPageSizeChange: (pageSize: number) => void;
   onPageChange: (page: number) => void;
-  onExportExcel: () => void;
-  onExportPdf: () => void;
+  onPageSizeChange: (pageSize: number) => void;
 };
 
+function getSourceEmptyLabel(source: ReportSource) {
+  if (source === "clients") {
+    return "No hay clientes para mostrar con los filtros actuales.";
+  }
+
+  return "No hay instalaciones para mostrar con los filtros actuales.";
+}
+
 export default function ReportPreviewTable({
+  source,
+  columns,
   rows,
   loading,
   pagination,
-  selectedColumns,
-  selectedColumnMeta,
-  exportingExcel,
-  exportingPdf,
-  pdfAvailable,
-  onPageSizeChange,
   onPageChange,
-  onExportExcel,
-  onExportPdf,
+  onPageSizeChange,
 }: ReportPreviewTableProps) {
+  const hasColumns = columns.length > 0;
+  const hasRows = rows.length > 0;
+
+  const currentPage = pagination.page;
+  const totalPages = Math.max(1, pagination.totalPages);
+
   return (
     <section className="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Vista previa tipo Excel
+            Vista previa
           </p>
 
           <h2 className="mt-1 text-base font-semibold tracking-tight text-slate-950">
-            Reporte de clientes
+            Resultado del reporte
           </h2>
 
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            {pagination.totalItems} registros encontrados ·{" "}
-            {selectedColumns.length} columnas seleccionadas
+          <p className="mt-1 text-sm leading-5 text-slate-500">
+            {pagination.totalItems.toLocaleString("es-CR")} registros
+            encontrados
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <select
-            value={pagination.pageSize}
-            onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
-          >
-            {PAGE_SIZE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option} por página
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+            Filas
+            <select
+              value={pagination.pageSize}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            >
+              {PAGE_SIZE_OPTIONS.map((pageSize) => (
+                <option key={pageSize} value={pageSize}>
+                  {pageSize}
+                </option>
+              ))}
+            </select>
+          </label>
 
-          <button
-            type="button"
-            onClick={onExportExcel}
-            disabled={exportingExcel || rows.length === 0}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Excel
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={loading || currentPage <= 1}
+              onClick={() => onPageChange(currentPage - 1)}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Anterior
+            </button>
 
-          <button
-            type="button"
-            onClick={onExportPdf}
-            disabled={exportingPdf || !pdfAvailable}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            PDF
-          </button>
+            <span className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-600">
+              {currentPage} / {totalPages}
+            </span>
+
+            <button
+              type="button"
+              disabled={loading || currentPage >= totalPages}
+              onClick={() => onPageChange(currentPage + 1)}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-[1100px] w-full border-separate border-spacing-0 text-left">
+        <table className="min-w-full border-separate border-spacing-0 text-left">
           <thead>
             <tr className="bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              {selectedColumnMeta.map((column) => (
-                <th
-                  key={column.key}
-                  className="whitespace-nowrap border-b border-r border-slate-200 px-4 py-3 last:border-r-0"
-                >
-                  {column.label}
+              {hasColumns ? (
+                columns.map((column) => (
+                  <th
+                    key={column.key}
+                    className="whitespace-nowrap border-b border-r border-slate-200 px-4 py-3 last:border-r-0"
+                  >
+                    {column.label}
+                  </th>
+                ))
+              ) : (
+                <th className="border-b border-slate-200 px-4 py-3">
+                  Sin columnas
                 </th>
-              ))}
+              )}
             </tr>
           </thead>
 
           <tbody>
-            {loading ? (
+            {loading && (
               <tr>
                 <td
-                  colSpan={selectedColumns.length}
-                  className="px-4 py-10 text-center text-sm font-medium text-slate-500"
+                  colSpan={Math.max(columns.length, 1)}
+                  className="px-4 py-12 text-center text-sm font-medium text-slate-500"
                 >
                   Cargando reporte...
                 </td>
               </tr>
-            ) : rows.length === 0 ? (
+            )}
+
+            {!loading && !hasColumns && (
               <tr>
-                <td
-                  colSpan={selectedColumns.length}
-                  className="px-4 py-10 text-center text-sm font-medium text-slate-500"
-                >
-                  No hay registros con los filtros seleccionados.
+                <td className="px-4 py-12 text-center text-sm font-medium text-amber-700">
+                  Seleccioná al menos una columna para visualizar el reporte.
                 </td>
               </tr>
-            ) : (
-              rows.map((row, rowIndex) => (
-                <tr
-                  key={`${rowIndex}-${row.client_name ?? "row"}`}
-                  className="hover:bg-blue-50/40"
+            )}
+
+            {!loading && hasColumns && !hasRows && (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="px-4 py-12 text-center text-sm font-medium text-slate-500"
                 >
-                  {selectedColumns.map((columnKey) => (
+                  {getSourceEmptyLabel(source)}
+                </td>
+              </tr>
+            )}
+
+            {!loading &&
+              hasColumns &&
+              hasRows &&
+              rows.map((row, rowIndex) => (
+                <tr key={rowIndex} className="hover:bg-slate-50">
+                  {columns.map((column) => (
                     <td
-                      key={`${rowIndex}-${columnKey}`}
-                      className="max-w-[260px] truncate border-b border-r border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 last:border-r-0"
-                      title={String(row[columnKey] ?? "")}
+                      key={column.key}
+                      className="max-w-[320px] whitespace-nowrap border-b border-r border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 last:border-r-0"
+                      title={String(row[column.key] ?? "")}
                     >
-                      {formatCellValue(columnKey, row[columnKey] ?? "")}
+                      <span className="block truncate">
+                        {formatCellValue(column.key, row[column.key] ?? "") ||
+                          "-"}
+                      </span>
                     </td>
                   ))}
                 </tr>
-              ))
-            )}
+              ))}
           </tbody>
         </table>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-medium text-slate-500">
-          Página {pagination.page} de {pagination.totalPages}
-        </p>
+      <div className="flex flex-col gap-2 border-t border-slate-200 px-4 py-3 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
+        <span>
+          Página {currentPage} de {totalPages}
+        </span>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onPageChange(Math.max(1, pagination.page - 1))}
-            disabled={pagination.page <= 1 || loading}
-            className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Anterior
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              onPageChange(Math.min(pagination.totalPages, pagination.page + 1))
-            }
-            disabled={pagination.page >= pagination.totalPages || loading}
-            className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Siguiente
-          </button>
-        </div>
+        <span>
+          Mostrando {rows.length.toLocaleString("es-CR")} de{" "}
+          {pagination.totalItems.toLocaleString("es-CR")} registros
+        </span>
       </div>
     </section>
   );
