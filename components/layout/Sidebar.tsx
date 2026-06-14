@@ -19,6 +19,7 @@ const menuItems = [
     icon: PhoneIcon,
   },
   { href: "/finances", label: "Finanzas", icon: ReceiptIcon },
+  { href: "/reports", label: "Reportes", icon: ReportsIcon },
   { href: "/admin/users", label: "Personal y accesos", icon: ShieldIcon },
   { href: "/settings", label: "Configuración", icon: SettingsIcon },
 ];
@@ -354,10 +355,30 @@ function ReceiptIcon(props: IconProps) {
       strokeLinejoin="round"
       {...props}
     >
-      <path d="M6 2h12a1 1 0 0 1 1 1v19l-3-2-2 2-2-2-2 2-2-2-3 2V3a1 1 0 0 1 1-1Z" />
+      <path d="M6 2h12a1 1 0 0 1 1 1v19l-3-2-2 2-2-2-2 2-3 2V3a1 1 0 0 1 1-1Z" />
       <path d="M8 7h8" />
       <path d="M8 11h8" />
       <path d="M8 15h5" />
+    </svg>
+  );
+}
+
+function ReportsIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M4 19V5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+      <path d="M14 3v5h5" />
+      <path d="M8 17v-5" />
+      <path d="M12 17V9" />
+      <path d="M16 17v-3" />
     </svg>
   );
 }
