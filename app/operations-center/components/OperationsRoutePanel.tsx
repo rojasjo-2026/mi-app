@@ -2,29 +2,94 @@
 
 import { useMemo, useState } from "react";
 
-import { buildGoogleMapsUrl } from "../utils";
+import OperationalZonePlaceAutocomplete from "@/app/settings/components/OperationalZonePlaceAutocomplete";
+
+import {
+  buildGoogleMapsUrl,
+  formatRouteCoordinate,
+  normalizeRouteStops,
+  parseRouteCoordinate,
+  sortRouteStopsByNearestOrigin,
+  type RouteCoordinate,
+} from "../utils";
 
 type OperationsRoutePanelProps = {
   routeStopsText: string;
   onRouteStopsTextChange: (value: string) => void;
+  countryCode?: string;
 };
 
 export function OperationsRoutePanel({
   routeStopsText,
   onRouteStopsTextChange,
+  countryCode = "CR",
 }: OperationsRoutePanelProps) {
   const [origin, setOrigin] = useState("");
+  const [originCoordinate, setOriginCoordinate] =
+    useState<RouteCoordinate | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [routeError, setRouteError] = useState("");
 
-  const routeStops = useMemo(() => {
+  const rawRouteStops = useMemo(() => {
     return routeStopsText
       .split("\n")
       .map((stop) => stop.trim())
       .filter((stop) => stop.length > 0);
   }, [routeStopsText]);
 
+  const normalizedRouteStops = useMemo(() => {
+    return normalizeRouteStops(rawRouteStops);
+  }, [rawRouteStops]);
+
+  const routePlan = useMemo(() => {
+    return sortRouteStopsByNearestOrigin({
+      origin: originCoordinate,
+      stops: normalizedRouteStops,
+    });
+  }, [originCoordinate, normalizedRouteStops]);
+
+  const routeStops = routePlan.stops;
+  const duplicatedStopsCount =
+    rawRouteStops.length - normalizedRouteStops.length;
   const hasRouteStops = routeStops.length > 0;
+
+  const allStopsHaveCoordinates =
+    normalizedRouteStops.length > 0 &&
+    normalizedRouteStops.every((stop) => parseRouteCoordinate(stop));
+
+  function handleOriginValueChange(value: string) {
+    setOrigin(value);
+    setOriginCoordinate(null);
+    setRouteError("");
+  }
+
+  function handleOriginPlaceSelected(place: {
+    reference_address: string;
+    latitude: string;
+    longitude: string;
+  }) {
+    const latitude = Number(place.latitude);
+    const longitude = Number(place.longitude);
+
+    setOrigin(place.reference_address);
+    setRouteError("");
+
+    if (
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180
+    ) {
+      setOriginCoordinate({
+        latitude,
+        longitude,
+      });
+    } else {
+      setOriginCoordinate(null);
+    }
+  }
 
   function handleUseCurrentLocation() {
     setRouteError("");
@@ -38,10 +103,13 @@ export function OperationsRoutePanel({
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
+        const coordinate = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
 
-        setOrigin(`${latitude},${longitude}`);
+        setOrigin(formatRouteCoordinate(coordinate));
+        setOriginCoordinate(coordinate);
         setLoadingLocation(false);
       },
       () => {
@@ -60,14 +128,18 @@ export function OperationsRoutePanel({
   function handleOpenGoogleMapsRoute() {
     setRouteError("");
 
+    const originForRoute = originCoordinate
+      ? formatRouteCoordinate(originCoordinate)
+      : origin;
+
     const googleMapsUrl = buildGoogleMapsUrl({
-      origin,
+      origin: originForRoute,
       stops: routeStops,
     });
 
     if (!googleMapsUrl) {
       setRouteError(
-        "Ingrese un punto de salida y al menos una parada para abrir la ruta.",
+        "Ingrese un punto de salida y al menos una parada válida para abrir la ruta.",
       );
       return;
     }
@@ -100,18 +172,19 @@ export function OperationsRoutePanel({
       </div>
 
       <div className="mt-5 space-y-4">
-        <label className="space-y-2">
+        <div className="space-y-2">
           <span className="text-sm font-semibold text-slate-700">
             Punto de salida
           </span>
 
-          <input
+          <OperationalZonePlaceAutocomplete
             value={origin}
-            onChange={(event) => setOrigin(event.target.value)}
-            placeholder="Ej. San José, Costa Rica o ubicación actual"
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            countryCode={countryCode}
+            placeholder="Busque un punto de salida. Ej. Parque Central de San José"
+            onValueChange={handleOriginValueChange}
+            onPlaceSelected={handleOriginPlaceSelected}
           />
-        </label>
+        </div>
 
         <button
           type="button"
@@ -124,12 +197,44 @@ export function OperationsRoutePanel({
             : "Usar mi ubicación actual"}
         </button>
 
+        {originCoordinate &&
+        allStopsHaveCoordinates &&
+        routeStops.length > 1 ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-700">
+            Las paradas fueron ordenadas automáticamente por cercanía desde el
+            punto de salida.
+          </div>
+        ) : null}
+
+        {!originCoordinate &&
+        allStopsHaveCoordinates &&
+        routeStops.length > 1 ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">
+            Para ordenar automáticamente las paradas por cercanía, use la
+            ubicación actual o seleccione una dirección desde las sugerencias.
+          </div>
+        ) : null}
+
         {hasRouteStops ? (
           <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-slate-700">
-                Paradas cargadas
-              </p>
+              <div>
+                <p className="text-sm font-semibold text-slate-700">
+                  Paradas cargadas
+                </p>
+
+                {duplicatedStopsCount > 0 ? (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Se omitieron {duplicatedStopsCount} paradas duplicadas.
+                  </p>
+                ) : null}
+
+                {routePlan.sorted ? (
+                  <p className="mt-1 text-xs text-emerald-700">
+                    Ordenadas por cercanía al punto de salida.
+                  </p>
+                ) : null}
+              </div>
 
               <button
                 type="button"

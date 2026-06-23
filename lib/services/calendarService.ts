@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 
 type OperationalZoneInfo = {
@@ -10,12 +12,48 @@ type DecimalLike = {
   toNumber?: () => number;
 };
 
+type CalendarEventsServiceParams = {
+  startDate?: string;
+  endDate?: string;
+};
+
+type DateRangeFilter = {
+  gte: Date;
+  lt: Date;
+};
+
 function formatDate(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function parseDateOnly(dateValue: string) {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function buildDateRangeFilter(
+  params?: CalendarEventsServiceParams,
+): DateRangeFilter | null {
+  const startDate = params?.startDate ?? params?.endDate;
+  const endDate = params?.endDate ?? params?.startDate;
+
+  if (!startDate || !endDate) {
+    return null;
+  }
+
+  const gte = parseDateOnly(startDate);
+  const lt = parseDateOnly(endDate);
+
+  lt.setDate(lt.getDate() + 1);
+
+  return {
+    gte,
+    lt,
+  };
 }
 
 function getClientFullName(client: {
@@ -67,10 +105,45 @@ function buildCoordinateRouteAddress(params: {
   return `${params.latitude},${params.longitude}`;
 }
 
-export async function getCalendarEventsService() {
+export async function getCalendarEventsService(
+  params?: CalendarEventsServiceParams,
+) {
   const today = new Date();
+  const dateRangeFilter = buildDateRangeFilter(params);
+
+  const followUpWhere: Prisma.FollowUpWhereInput | undefined = dateRangeFilter
+    ? {
+        OR: [
+          {
+            scheduled_date: {
+              not: null,
+              gte: dateRangeFilter.gte,
+              lt: dateRangeFilter.lt,
+            },
+          },
+          {
+            scheduled_date: null,
+            target_date: {
+              gte: dateRangeFilter.gte,
+              lt: dateRangeFilter.lt,
+            },
+          },
+        ],
+      }
+    : undefined;
+
+  const installationWhere: Prisma.InstallationWhereInput | undefined =
+    dateRangeFilter
+      ? {
+          installation_date: {
+            gte: dateRangeFilter.gte,
+            lt: dateRangeFilter.lt,
+          },
+        }
+      : undefined;
 
   const followUps = await prisma.followUp.findMany({
+    where: followUpWhere,
     select: {
       follow_up_id: true,
       target_date: true,
@@ -128,6 +201,7 @@ export async function getCalendarEventsService() {
   });
 
   const installations = await prisma.installation.findMany({
+    where: installationWhere,
     select: {
       installation_id: true,
       installation_date: true,

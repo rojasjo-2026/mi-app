@@ -26,6 +26,13 @@ function formatDateOnly(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function addDays(dateValue: string, days: number) {
+  const date = parseDateOnly(dateValue);
+  date.setDate(date.getDate() + days);
+
+  return formatDateOnly(date);
+}
+
 function getWeekStartDate(dateValue: string) {
   const date = parseDateOnly(dateValue);
   const day = date.getDay();
@@ -47,7 +54,7 @@ function getMonthDays(dateValue: string) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
 
-function getAvailabilityRangeConfig(params: {
+function getRangeConfig(params: {
   selectedDate: string;
   viewMode: OperationsViewMode;
 }) {
@@ -78,6 +85,15 @@ function buildAvailabilityByDateMap(
     accumulator[item.date] = item;
     return accumulator;
   }, {});
+}
+
+function buildCalendarUrl(params: { startDate: string; endDate: string }) {
+  const searchParams = new URLSearchParams();
+
+  searchParams.set("startDate", params.startDate);
+  searchParams.set("endDate", params.endDate);
+
+  return `/api/calendar?${searchParams.toString()}`;
 }
 
 export function useOperationsCenterData(
@@ -112,12 +128,29 @@ export function useOperationsCenterData(
     );
   }, [selectedDateEvents]);
 
-  async function loadCalendarEvents() {
+  async function loadCalendarEvents(params?: {
+    startDate: string;
+    endDate: string;
+  }) {
     try {
       setLoadingEvents(true);
       setError("");
 
-      const response = await fetch("/api/calendar", {
+      const nextParams =
+        params ??
+        (() => {
+          const rangeConfig = getRangeConfig({
+            selectedDate,
+            viewMode,
+          });
+
+          return {
+            startDate: rangeConfig.startDate,
+            endDate: addDays(rangeConfig.startDate, rangeConfig.days - 1),
+          };
+        })();
+
+      const response = await fetch(buildCalendarUrl(nextParams), {
         cache: "no-store",
       });
 
@@ -129,6 +162,7 @@ export function useOperationsCenterData(
 
       setEvents(Array.isArray(result.data) ? result.data : []);
     } catch (err) {
+      setEvents([]);
       setError(
         err instanceof Error
           ? err.message
@@ -226,8 +260,16 @@ export function useOperationsCenterData(
   }
 
   useEffect(() => {
-    void loadCalendarEvents();
-  }, []);
+    const rangeConfig = getRangeConfig({
+      selectedDate,
+      viewMode,
+    });
+
+    void loadCalendarEvents({
+      startDate: rangeConfig.startDate,
+      endDate: addDays(rangeConfig.startDate, rangeConfig.days - 1),
+    });
+  }, [selectedDate, viewMode]);
 
   useEffect(() => {
     if (viewMode === "day") {
@@ -235,7 +277,7 @@ export function useOperationsCenterData(
       return;
     }
 
-    const rangeConfig = getAvailabilityRangeConfig({
+    const rangeConfig = getRangeConfig({
       selectedDate,
       viewMode,
     });
@@ -244,7 +286,7 @@ export function useOperationsCenterData(
       startDate: rangeConfig.startDate,
       days: rangeConfig.days,
     });
-  }, [selectedDate, viewMode]);
+  }, [countryCode, selectedDate, viewMode]);
 
   return {
     selectedDate,
