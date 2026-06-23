@@ -1,12 +1,22 @@
+export type CalendarEventEntityType = "installation" | "follow_up";
+
+export type CalendarEventType =
+  | "installation"
+  | "overdue"
+  | "today"
+  | "upcoming"
+  | "confirmed"
+  | "completed";
+
 export type CalendarEvent = {
   id: string;
-  entity_type: string;
+  entity_type: CalendarEventEntityType;
   date: string;
-  type?: string;
+  type?: CalendarEventType;
   title: string;
   description?: string;
   status?: string;
-  priority?: string;
+  priority?: string | number;
   billing_status?: string;
   is_confirmed?: boolean;
   is_completed?: boolean;
