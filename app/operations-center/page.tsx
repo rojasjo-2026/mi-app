@@ -12,6 +12,8 @@ import { OperationsZoneGroups } from "./components/OperationsZoneGroups";
 import { useOperationsCenterData } from "./hooks/useOperationsCenterData";
 import type { OperationsViewMode } from "./types";
 
+const OPERATIONS_COUNTRY_CODE = "CR";
+
 export default function OperationsCenterPage() {
   const [routeStopsText, setRouteStopsText] = useState("");
   const [viewMode, setViewMode] = useState<OperationsViewMode>("day");
@@ -32,7 +34,7 @@ export default function OperationsCenterPage() {
     error,
 
     loadCalendarEvents,
-  } = useOperationsCenterData("CR", viewMode);
+  } = useOperationsCenterData(OPERATIONS_COUNTRY_CODE, viewMode);
 
   function handleUseGroupAsRoute(routeStops: string[]) {
     setRouteStopsText(routeStops.join("\n"));
@@ -81,6 +83,7 @@ export default function OperationsCenterPage() {
                 <OperationsRoutePanel
                   routeStopsText={routeStopsText}
                   onRouteStopsTextChange={setRouteStopsText}
+                  countryCode={OPERATIONS_COUNTRY_CODE}
                 />
 
                 <OperationsAvailabilityPanel
@@ -105,6 +108,7 @@ export default function OperationsCenterPage() {
               <OperationsRoutePanel
                 routeStopsText={routeStopsText}
                 onRouteStopsTextChange={setRouteStopsText}
+                countryCode={OPERATIONS_COUNTRY_CODE}
               />
 
               <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-500 shadow-sm">
