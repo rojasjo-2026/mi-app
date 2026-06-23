@@ -75,8 +75,20 @@ export function OperationsZoneGroups({
 
       <div className="mt-5 space-y-3">
         {zoneGroups.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-            No hay trabajos programados para agrupar en esta fecha.
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
+            <p className="text-sm font-semibold text-slate-700">
+              No hay agrupaciones operativas para esta fecha.
+            </p>
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Esto ocurre cuando no existen instalaciones o mantenimientos
+              programados para el día seleccionado.
+            </p>
+
+            <p className="mt-3 text-xs leading-5 text-slate-400">
+              Cuando existan trabajos, CLARIUS los agrupará por zona operativa
+              para preparar rutas y visitas con más facilidad.
+            </p>
           </div>
         ) : (
           zoneGroups.map((group) => (

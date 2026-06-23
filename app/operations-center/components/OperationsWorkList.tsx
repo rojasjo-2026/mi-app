@@ -40,8 +40,20 @@ export function OperationsWorkList({
             Cargando trabajos...
           </div>
         ) : selectedDateEvents.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-            No hay trabajos programados para esta fecha.
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
+            <p className="text-sm font-semibold text-slate-700">
+              No hay trabajos programados para esta fecha.
+            </p>
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Puede revisar otra fecha o programar instalaciones y
+              mantenimientos desde el calendario.
+            </p>
+
+            <p className="mt-3 text-xs leading-5 text-slate-400">
+              Cuando existan trabajos programados, aparecerán aquí como lista
+              operativa para preparar visitas y rutas.
+            </p>
           </div>
         ) : (
           selectedDateEvents.map((event, index) => (

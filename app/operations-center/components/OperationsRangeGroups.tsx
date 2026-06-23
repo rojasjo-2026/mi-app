@@ -192,7 +192,7 @@ function getCapacityLabel(params: {
 
   const maxJobs = availability.capacity.max_jobs_per_day;
 
-  if (!maxJobs) {
+  if (typeof maxJobs !== "number") {
     return `${availability.workload.total_jobs} trabajos · Sin límite`;
   }
 
@@ -257,12 +257,13 @@ export function OperationsRangeGroups({
 
   const groups = buildRangeGroups(rangeEvents);
   const rangeLabel = getRangeLabel({ selectedDate, viewMode });
+  const rangeTypeLabel = viewMode === "week" ? "semana" : "mes";
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div>
         <h2 className="text-lg font-bold text-slate-900">
-          Agrupaciones operativas por {viewMode === "week" ? "semana" : "mes"}
+          Agrupaciones operativas por {rangeTypeLabel}
         </h2>
 
         <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -273,8 +274,20 @@ export function OperationsRangeGroups({
 
       <div className="mt-5 space-y-3">
         {groups.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-            No hay trabajos programados para este rango.
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
+            <p className="text-sm font-semibold text-slate-700">
+              No hay trabajos programados para este {rangeTypeLabel}.
+            </p>
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Revise otro rango o confirme si existen instalaciones y
+              mantenimientos programados en el calendario.
+            </p>
+
+            <p className="mt-3 text-xs leading-5 text-slate-400">
+              Cuando existan trabajos, CLARIUS los agrupará por fecha y zona
+              operativa para preparar rutas por día.
+            </p>
           </div>
         ) : (
           groups.map((group) => (
