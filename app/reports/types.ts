@@ -1,6 +1,6 @@
 export type RegisteredReportSource = "clients" | "installations" | "follow-ups";
 
-export type ActiveReportSource = Exclude<RegisteredReportSource, "follow-ups">;
+export type ActiveReportSource = RegisteredReportSource;
 
 export type ReportSource = RegisteredReportSource;
 

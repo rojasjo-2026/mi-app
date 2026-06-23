@@ -4,6 +4,7 @@ import { REPORT_SOURCES } from "../config/reportBuilderConfig";
 import type {
   ActiveReportSource,
   ClientReportBuilderMetadata,
+  FollowUpReportBuilderMetadata,
   InstallationReportBuilderMetadata,
 } from "../types";
 
@@ -12,6 +13,7 @@ type ReportSourcePanelProps = {
   onSourceChange: (source: ActiveReportSource) => void;
   clientMetadata: ClientReportBuilderMetadata | null;
   installationMetadata: InstallationReportBuilderMetadata | null;
+  followUpMetadata: FollowUpReportBuilderMetadata | null;
 };
 
 export default function ReportSourcePanel({
@@ -19,6 +21,7 @@ export default function ReportSourcePanel({
   onSourceChange,
   clientMetadata,
   installationMetadata,
+  followUpMetadata,
 }: ReportSourcePanelProps) {
   function getSourceCount(sourceKey: ActiveReportSource) {
     if (sourceKey === "clients") {
@@ -30,8 +33,14 @@ export default function ReportSourcePanel({
         : "Datos reales";
     }
 
-    return installationMetadata
-      ? `${installationMetadata.counters.totalInstallations} instalaciones`
+    if (sourceKey === "installations") {
+      return installationMetadata
+        ? `${installationMetadata.counters.totalInstallations} instalaciones`
+        : "Datos reales";
+    }
+
+    return followUpMetadata
+      ? `${followUpMetadata.counters.totalFollowUps} mantenimientos`
       : "Datos reales";
   }
 

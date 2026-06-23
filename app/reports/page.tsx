@@ -13,6 +13,7 @@ import type {
   ActiveReportSource,
   ClientMetadataResponse,
   ClientReportBuilderMetadata,
+  FollowUpReportBuilderMetadata,
   ImportPreviewRow,
   InstallationMetadataResponse,
   InstallationReportBuilderMetadata,
@@ -39,11 +40,13 @@ import {
 const REPORT_ENDPOINTS: Record<ActiveReportSource, string> = {
   clients: "/api/reports/builder/clients",
   installations: "/api/reports/builder/installations",
+  "follow-ups": "/api/reports/builder/follow-ups",
 };
 
 const METADATA_ENDPOINTS: Record<ActiveReportSource, string> = {
   clients: "/api/reports/builder/metadata",
   installations: "/api/reports/builder/installations/metadata",
+  "follow-ups": "/api/reports/builder/follow-ups/metadata",
 };
 
 const initialPagination: PaginationState = {
@@ -53,16 +56,24 @@ const initialPagination: PaginationState = {
   totalPages: 1,
 };
 
+type FollowUpMetadataResponse = {
+  success: boolean;
+  data?: FollowUpReportBuilderMetadata | null;
+  message?: string;
+};
+
 function getSourceTitle(source: ActiveReportSource) {
   if (source === "clients") return "Clientes";
+  if (source === "installations") return "Instalaciones";
 
-  return "Instalaciones";
+  return "Mantenimientos";
 }
 
 function getSourceFilename(source: ActiveReportSource) {
   if (source === "clients") return "clientes";
+  if (source === "installations") return "instalaciones";
 
-  return "instalaciones";
+  return "mantenimientos";
 }
 
 function appendParam(params: URLSearchParams, key: string, value: string) {
@@ -131,6 +142,30 @@ function buildQueryParams({
     appendParam(params, "warrantyTo", filters.warrantyTo);
   }
 
+  if (source === "follow-ups") {
+    appendParam(params, "clientId", filters.clientId);
+    appendParam(params, "installationId", filters.installationId);
+    appendParam(params, "followUpStatusId", filters.followUpStatusId);
+    appendParam(params, "technicianId", filters.technicianId);
+    appendParam(params, "billingStatus", filters.billingStatus);
+    appendParam(params, "completionStatus", filters.completionStatus);
+    appendParam(params, "contactFlow", filters.contactFlow);
+    appendParam(params, "contactAttempts", filters.contactAttempts);
+    appendParam(params, "priority", filters.priority);
+    appendParam(params, "maintenanceType", filters.maintenanceType);
+    appendParam(params, "createdFromSource", filters.createdFromSource);
+    appendParam(params, "minEstimatedAmount", filters.minEstimatedAmount);
+    appendParam(params, "maxEstimatedAmount", filters.maxEstimatedAmount);
+    appendParam(params, "targetFrom", filters.targetFrom);
+    appendParam(params, "targetTo", filters.targetTo);
+    appendParam(params, "dueFrom", filters.dueFrom);
+    appendParam(params, "dueTo", filters.dueTo);
+    appendParam(params, "scheduledFrom", filters.scheduledFrom);
+    appendParam(params, "scheduledTo", filters.scheduledTo);
+    appendParam(params, "completedFrom", filters.completedFrom);
+    appendParam(params, "completedTo", filters.completedTo);
+  }
+
   return params;
 }
 
@@ -151,6 +186,8 @@ export default function ReportsPage() {
     useState<ClientReportBuilderMetadata | null>(null);
   const [installationMetadata, setInstallationMetadata] =
     useState<InstallationReportBuilderMetadata | null>(null);
+  const [followUpMetadata, setFollowUpMetadata] =
+    useState<FollowUpReportBuilderMetadata | null>(null);
 
   const [importPreview, setImportPreview] = useState<ImportPreviewRow[]>([]);
 
@@ -178,14 +215,18 @@ export default function ReportsPage() {
     try {
       setMetadataLoading(true);
 
-      const [clientResponse, installationResponse] = await Promise.all([
-        fetch(METADATA_ENDPOINTS.clients),
-        fetch(METADATA_ENDPOINTS.installations),
-      ]);
+      const [clientResponse, installationResponse, followUpResponse] =
+        await Promise.all([
+          fetch(METADATA_ENDPOINTS.clients),
+          fetch(METADATA_ENDPOINTS.installations),
+          fetch(METADATA_ENDPOINTS["follow-ups"]),
+        ]);
 
       const clientResult: ClientMetadataResponse = await clientResponse.json();
       const installationResult: InstallationMetadataResponse =
         await installationResponse.json();
+      const followUpResult: FollowUpMetadataResponse =
+        await followUpResponse.json();
 
       if (clientResponse.ok && clientResult.success && clientResult.data) {
         setClientMetadata(clientResult.data);
@@ -197,6 +238,14 @@ export default function ReportsPage() {
         installationResult.data
       ) {
         setInstallationMetadata(installationResult.data);
+      }
+
+      if (
+        followUpResponse.ok &&
+        followUpResult.success &&
+        followUpResult.data
+      ) {
+        setFollowUpMetadata(followUpResult.data);
       }
     } catch (metadataError) {
       console.error(metadataError);
@@ -385,6 +434,7 @@ export default function ReportsPage() {
               onSourceChange={handleSourceChange}
               clientMetadata={clientMetadata}
               installationMetadata={installationMetadata}
+              followUpMetadata={followUpMetadata}
             />
 
             <ReportFiltersPanel
@@ -392,6 +442,7 @@ export default function ReportsPage() {
               filters={filters}
               clientMetadata={clientMetadata}
               installationMetadata={installationMetadata}
+              followUpMetadata={followUpMetadata}
               onFiltersChange={handleFiltersChange}
             />
 

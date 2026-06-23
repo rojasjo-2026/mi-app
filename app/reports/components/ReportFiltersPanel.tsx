@@ -3,6 +3,7 @@
 import type {
   ActiveReportSource,
   ClientReportBuilderMetadata,
+  FollowUpReportBuilderMetadata,
   InstallationReportBuilderMetadata,
   ReportFilters,
   ReportOption,
@@ -13,8 +14,11 @@ type ReportFiltersPanelProps = {
   filters: ReportFilters;
   clientMetadata: ClientReportBuilderMetadata | null;
   installationMetadata: InstallationReportBuilderMetadata | null;
+  followUpMetadata: FollowUpReportBuilderMetadata | null;
   onFiltersChange: (filters: ReportFilters) => void;
 };
+
+type MetadataRecord = Record<string, unknown>;
 
 function optionLabel(option: ReportOption) {
   if (typeof option.count === "number") {
@@ -22,6 +26,56 @@ function optionLabel(option: ReportOption) {
   }
 
   return option.label;
+}
+
+function getSearchPlaceholder(source: ActiveReportSource) {
+  if (source === "clients") return "Cliente, teléfono, correo...";
+  if (source === "installations")
+    return "Cliente, servicio, técnico, ubicación...";
+
+  return "Cliente, instalación, técnico, estado...";
+}
+
+function getMetadataOptions(
+  metadata: FollowUpReportBuilderMetadata | null,
+  keys: string[],
+): ReportOption[] {
+  if (!metadata) return [];
+
+  const record = metadata as unknown as MetadataRecord;
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (Array.isArray(value)) {
+      return value as ReportOption[];
+    }
+  }
+
+  return [];
+}
+
+function getNestedMetadataOptions(
+  metadata: FollowUpReportBuilderMetadata | null,
+  parentKey: string,
+  childKey: string,
+): ReportOption[] {
+  if (!metadata) return [];
+
+  const record = metadata as unknown as MetadataRecord;
+  const parent = record[parentKey];
+
+  if (!parent || typeof parent !== "object") {
+    return [];
+  }
+
+  const value = (parent as MetadataRecord)[childKey];
+
+  if (Array.isArray(value)) {
+    return value as ReportOption[];
+  }
+
+  return [];
 }
 
 function SelectField({
@@ -95,6 +149,7 @@ export default function ReportFiltersPanel({
   filters,
   clientMetadata,
   installationMetadata,
+  followUpMetadata,
   onFiltersChange,
 }: ReportFiltersPanelProps) {
   function updateFilter(key: keyof ReportFilters, value: string) {
@@ -103,6 +158,86 @@ export default function ReportFiltersPanel({
       [key]: value,
     });
   }
+
+  const followUpClients = getMetadataOptions(followUpMetadata, [
+    "clients",
+    "clientOptions",
+  ]);
+
+  const followUpInstallations = getMetadataOptions(followUpMetadata, [
+    "installations",
+    "installationOptions",
+  ]);
+
+  const followUpStatuses = getMetadataOptions(followUpMetadata, [
+    "followUpStatuses",
+    "statuses",
+    "statusOptions",
+  ]);
+
+  const followUpTechnicians = getMetadataOptions(followUpMetadata, [
+    "technicians",
+    "technicianOptions",
+  ]);
+
+  const followUpOperationalZones = getMetadataOptions(followUpMetadata, [
+    "operationalZones",
+    "operationalZoneOptions",
+  ]);
+
+  const followUpBillingStatuses = getMetadataOptions(followUpMetadata, [
+    "billingStatuses",
+    "billingStatusOptions",
+  ]);
+
+  const followUpCompletionStatuses = getMetadataOptions(followUpMetadata, [
+    "completionStatuses",
+    "completionStatusOptions",
+  ]);
+
+  const followUpPendingBillingOptions =
+    getNestedMetadataOptions(
+      followUpMetadata,
+      "booleanOptions",
+      "pendingBilling",
+    ).length > 0
+      ? getNestedMetadataOptions(
+          followUpMetadata,
+          "booleanOptions",
+          "pendingBilling",
+        )
+      : getMetadataOptions(followUpMetadata, ["pendingBillingOptions"]);
+
+  const followUpContactFlows = getMetadataOptions(followUpMetadata, [
+    "contactFlows",
+    "contactFlowOptions",
+  ]);
+
+  const followUpContactAttempts = getMetadataOptions(followUpMetadata, [
+    "contactAttempts",
+    "contactAttemptOptions",
+  ]);
+
+  const followUpPriorities = getMetadataOptions(followUpMetadata, [
+    "priorities",
+    "priorityOptions",
+  ]);
+
+  const followUpMaintenanceTypes = getMetadataOptions(followUpMetadata, [
+    "maintenanceTypes",
+    "maintenanceTypeOptions",
+  ]);
+
+  const followUpCreatedFromSources = getMetadataOptions(followUpMetadata, [
+    "createdFromSources",
+    "createdSourceOptions",
+    "sourceOptions",
+  ]);
+
+  const followUpCountries = getMetadataOptions(followUpMetadata, [
+    "countries",
+    "countryOptions",
+  ]);
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -120,11 +255,7 @@ export default function ReportFiltersPanel({
         <TextField
           label="Búsqueda"
           value={filters.search}
-          placeholder={
-            source === "clients"
-              ? "Cliente, teléfono, correo..."
-              : "Cliente, servicio, técnico, ubicación..."
-          }
+          placeholder={getSearchPlaceholder(source)}
           onChange={(value) => updateFilter("search", value)}
         />
 
@@ -385,6 +516,178 @@ export default function ReportFiltersPanel({
               type="date"
               value={filters.warrantyTo}
               onChange={(value) => updateFilter("warrantyTo", value)}
+            />
+          </>
+        )}
+
+        {source === "follow-ups" && (
+          <>
+            <SelectField
+              label="Cliente"
+              value={filters.clientId}
+              options={followUpClients}
+              onChange={(value) => updateFilter("clientId", value)}
+            />
+
+            <SelectField
+              label="Instalación"
+              value={filters.installationId}
+              options={followUpInstallations}
+              onChange={(value) => updateFilter("installationId", value)}
+            />
+
+            <SelectField
+              label="Estado mantenimiento"
+              value={filters.followUpStatusId}
+              options={followUpStatuses}
+              onChange={(value) => updateFilter("followUpStatusId", value)}
+            />
+
+            <SelectField
+              label="Técnico"
+              value={filters.technicianId}
+              options={followUpTechnicians}
+              onChange={(value) => updateFilter("technicianId", value)}
+            />
+
+            <SelectField
+              label="Zona operativa"
+              value={filters.operationalZoneId}
+              options={followUpOperationalZones}
+              onChange={(value) => updateFilter("operationalZoneId", value)}
+            />
+
+            <SelectField
+              label="Estado facturación"
+              value={filters.billingStatus}
+              options={followUpBillingStatuses}
+              onChange={(value) => updateFilter("billingStatus", value)}
+            />
+
+            <SelectField
+              label="Estado de cierre"
+              value={filters.completionStatus}
+              options={followUpCompletionStatuses}
+              onChange={(value) => updateFilter("completionStatus", value)}
+            />
+
+            <SelectField
+              label="Facturación pendiente"
+              value={filters.pendingBilling}
+              options={followUpPendingBillingOptions}
+              onChange={(value) => updateFilter("pendingBilling", value)}
+            />
+
+            <SelectField
+              label="Flujo de contacto"
+              value={filters.contactFlow}
+              options={followUpContactFlows}
+              onChange={(value) => updateFilter("contactFlow", value)}
+            />
+
+            <SelectField
+              label="Intentos de contacto"
+              value={filters.contactAttempts}
+              options={followUpContactAttempts}
+              onChange={(value) => updateFilter("contactAttempts", value)}
+            />
+
+            <SelectField
+              label="Prioridad"
+              value={filters.priority}
+              options={followUpPriorities}
+              onChange={(value) => updateFilter("priority", value)}
+            />
+
+            <SelectField
+              label="Tipo de mantenimiento"
+              value={filters.maintenanceType}
+              options={followUpMaintenanceTypes}
+              onChange={(value) => updateFilter("maintenanceType", value)}
+            />
+
+            <SelectField
+              label="Origen"
+              value={filters.createdFromSource}
+              options={followUpCreatedFromSources}
+              onChange={(value) => updateFilter("createdFromSource", value)}
+            />
+
+            <SelectField
+              label="País"
+              value={filters.countryCode}
+              options={followUpCountries}
+              onChange={(value) => updateFilter("countryCode", value)}
+            />
+
+            <TextField
+              label="Monto estimado mínimo"
+              type="number"
+              value={filters.minEstimatedAmount}
+              onChange={(value) => updateFilter("minEstimatedAmount", value)}
+            />
+
+            <TextField
+              label="Monto estimado máximo"
+              type="number"
+              value={filters.maxEstimatedAmount}
+              onChange={(value) => updateFilter("maxEstimatedAmount", value)}
+            />
+
+            <TextField
+              label="Objetivo desde"
+              type="date"
+              value={filters.targetFrom}
+              onChange={(value) => updateFilter("targetFrom", value)}
+            />
+
+            <TextField
+              label="Objetivo hasta"
+              type="date"
+              value={filters.targetTo}
+              onChange={(value) => updateFilter("targetTo", value)}
+            />
+
+            <TextField
+              label="Vence desde"
+              type="date"
+              value={filters.dueFrom}
+              onChange={(value) => updateFilter("dueFrom", value)}
+            />
+
+            <TextField
+              label="Vence hasta"
+              type="date"
+              value={filters.dueTo}
+              onChange={(value) => updateFilter("dueTo", value)}
+            />
+
+            <TextField
+              label="Programado desde"
+              type="date"
+              value={filters.scheduledFrom}
+              onChange={(value) => updateFilter("scheduledFrom", value)}
+            />
+
+            <TextField
+              label="Programado hasta"
+              type="date"
+              value={filters.scheduledTo}
+              onChange={(value) => updateFilter("scheduledTo", value)}
+            />
+
+            <TextField
+              label="Completado desde"
+              type="date"
+              value={filters.completedFrom}
+              onChange={(value) => updateFilter("completedFrom", value)}
+            />
+
+            <TextField
+              label="Completado hasta"
+              type="date"
+              value={filters.completedTo}
+              onChange={(value) => updateFilter("completedTo", value)}
             />
           </>
         )}
