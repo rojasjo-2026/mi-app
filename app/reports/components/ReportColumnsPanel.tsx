@@ -1,15 +1,19 @@
 "use client";
 
-import type { ReportColumn, ReportColumnKey, ReportSource } from "../types";
+import type {
+  ActiveReportSource,
+  ReportColumn,
+  ReportColumnKey,
+} from "../types";
 
 type ReportColumnsPanelProps = {
-  source: ReportSource;
+  source: ActiveReportSource;
   columns: ReportColumn[];
   selectedColumns: ReportColumnKey[];
   onSelectedColumnsChange: (columns: ReportColumnKey[]) => void;
 };
 
-function getSourceLabel(source: ReportSource) {
+function getSourceLabel(source: ActiveReportSource) {
   if (source === "clients") return "Clientes";
 
   return "Instalaciones";

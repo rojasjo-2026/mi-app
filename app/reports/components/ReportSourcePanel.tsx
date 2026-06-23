@@ -2,14 +2,14 @@
 
 import { REPORT_SOURCES } from "../config/reportBuilderConfig";
 import type {
+  ActiveReportSource,
   ClientReportBuilderMetadata,
   InstallationReportBuilderMetadata,
-  ReportSource,
 } from "../types";
 
 type ReportSourcePanelProps = {
-  source: ReportSource;
-  onSourceChange: (source: ReportSource) => void;
+  source: ActiveReportSource;
+  onSourceChange: (source: ActiveReportSource) => void;
   clientMetadata: ClientReportBuilderMetadata | null;
   installationMetadata: InstallationReportBuilderMetadata | null;
 };
@@ -20,7 +20,7 @@ export default function ReportSourcePanel({
   clientMetadata,
   installationMetadata,
 }: ReportSourcePanelProps) {
-  function getSourceCount(sourceKey: ReportSource) {
+  function getSourceCount(sourceKey: ActiveReportSource) {
     if (sourceKey === "clients") {
       return clientMetadata
         ? `${clientMetadata.clientStatuses.reduce(

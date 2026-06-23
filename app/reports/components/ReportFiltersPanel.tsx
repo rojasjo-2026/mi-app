@@ -1,15 +1,15 @@
 "use client";
 
 import type {
+  ActiveReportSource,
   ClientReportBuilderMetadata,
   InstallationReportBuilderMetadata,
   ReportFilters,
   ReportOption,
-  ReportSource,
 } from "../types";
 
 type ReportFiltersPanelProps = {
-  source: ReportSource;
+  source: ActiveReportSource;
   filters: ReportFilters;
   clientMetadata: ClientReportBuilderMetadata | null;
   installationMetadata: InstallationReportBuilderMetadata | null;

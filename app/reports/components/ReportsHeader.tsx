@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReportSource } from "../types";
+import type { ActiveReportSource } from "../types";
 
 type ReportsHeaderProps = {
-  source: ReportSource;
+  source: ActiveReportSource;
   loading: boolean;
   exportingExcel: boolean;
   exportingPdf: boolean;
@@ -15,13 +15,13 @@ type ReportsHeaderProps = {
   onExportPdf: () => void;
 };
 
-function getSourceLabel(source: ReportSource) {
+function getSourceLabel(source: ActiveReportSource) {
   if (source === "clients") return "Clientes";
 
   return "Instalaciones";
 }
 
-function getSourceDescription(source: ReportSource) {
+function getSourceDescription(source: ActiveReportSource) {
   if (source === "clients") {
     return "Generá reportes de clientes con contacto, ubicación, actividad y facturación.";
   }

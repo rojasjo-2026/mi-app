@@ -10,6 +10,7 @@ import {
   REPORT_COLUMNS_BY_SOURCE,
 } from "./config/reportBuilderConfig";
 import type {
+  ActiveReportSource,
   ClientMetadataResponse,
   ClientReportBuilderMetadata,
   ImportPreviewRow,
@@ -21,7 +22,6 @@ import type {
   ReportFilters,
   ReportMode,
   ReportRow,
-  ReportSource,
 } from "./types";
 import ReportsHeader from "./components/ReportsHeader";
 import ReportsTabs from "./components/ReportsTabs";
@@ -36,12 +36,12 @@ import {
   downloadPdfReport,
 } from "./utils/reportExportUtils";
 
-const REPORT_ENDPOINTS: Record<ReportSource, string> = {
+const REPORT_ENDPOINTS: Record<ActiveReportSource, string> = {
   clients: "/api/reports/builder/clients",
   installations: "/api/reports/builder/installations",
 };
 
-const METADATA_ENDPOINTS: Record<ReportSource, string> = {
+const METADATA_ENDPOINTS: Record<ActiveReportSource, string> = {
   clients: "/api/reports/builder/metadata",
   installations: "/api/reports/builder/installations/metadata",
 };
@@ -53,13 +53,13 @@ const initialPagination: PaginationState = {
   totalPages: 1,
 };
 
-function getSourceTitle(source: ReportSource) {
+function getSourceTitle(source: ActiveReportSource) {
   if (source === "clients") return "Clientes";
 
   return "Instalaciones";
 }
 
-function getSourceFilename(source: ReportSource) {
+function getSourceFilename(source: ActiveReportSource) {
   if (source === "clients") return "clientes";
 
   return "instalaciones";
@@ -78,7 +78,7 @@ function buildQueryParams({
   page,
   pageSize,
 }: {
-  source: ReportSource;
+  source: ActiveReportSource;
   filters: ReportFilters;
   columns: ReportColumnKey[];
   page: number;
@@ -136,7 +136,7 @@ function buildQueryParams({
 
 export default function ReportsPage() {
   const [mode, setMode] = useState<ReportMode>("builder");
-  const [source, setSource] = useState<ReportSource>("clients");
+  const [source, setSource] = useState<ActiveReportSource>("clients");
 
   const [filters, setFilters] = useState<ReportFilters>(initialFilters);
   const [selectedColumns, setSelectedColumns] = useState<ReportColumnKey[]>([
@@ -301,7 +301,7 @@ export default function ReportsPage() {
     }
   }
 
-  function handleSourceChange(nextSource: ReportSource) {
+  function handleSourceChange(nextSource: ActiveReportSource) {
     setSource(nextSource);
     setFilters(initialFilters);
     setSelectedColumns([...DEFAULT_COLUMNS_BY_SOURCE[nextSource]]);

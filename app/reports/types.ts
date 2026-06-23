@@ -1,6 +1,11 @@
-export type ReportSource = "clients" | "installations";
+export type RegisteredReportSource = "clients" | "installations" | "follow-ups";
+
+export type ActiveReportSource = Exclude<RegisteredReportSource, "follow-ups">;
+
+export type ReportSource = RegisteredReportSource;
 
 export type ClientColumnKey =
+  | "client_id"
   | "client_name"
   | "client_type"
   | "phone_primary"
@@ -13,25 +18,18 @@ export type ClientColumnKey =
   | "admin_level_1"
   | "admin_level_2"
   | "admin_level_3"
-  | "operational_zone"
+  | "city"
   | "zone"
   | "address_line"
-  | "tax_id"
-  | "identification_type"
-  | "identification_number"
-  | "default_payment_term"
-  | "default_credit_days"
-  | "preferred_currency"
-  | "tax_exempt"
-  | "billing_name"
-  | "billing_email"
-  | "billing_phone"
-  | "billing_address"
+  | "operational_zone"
   | "installations_count"
   | "follow_ups_count"
   | "contact_attempts_count"
   | "invoices_count"
   | "pending_billing"
+  | "default_payment_term"
+  | "preferred_currency"
+  | "tax_exempt"
   | "created_at"
   | "updated_at";
 
@@ -68,7 +66,42 @@ export type InstallationColumnKey =
   | "created_at"
   | "updated_at";
 
-export type ReportColumnKey = ClientColumnKey | InstallationColumnKey;
+export type FollowUpColumnKey =
+  | "follow_up_id"
+  | "client_name"
+  | "installation_reference"
+  | "installation_service_type"
+  | "follow_up_status"
+  | "target_date"
+  | "due_date"
+  | "scheduled_date"
+  | "completed_at"
+  | "is_completed"
+  | "priority"
+  | "maintenance_type"
+  | "technician_name"
+  | "created_from"
+  | "billing_status"
+  | "estimated_amount"
+  | "final_amount"
+  | "cost_amount"
+  | "pending_billing"
+  | "contact_attempts_count"
+  | "contact_flows_count"
+  | "follow_up_notes_count"
+  | "invoices_count"
+  | "operational_zone"
+  | "reason"
+  | "notes"
+  | "billing_notes"
+  | "billing_block_reason"
+  | "created_at"
+  | "updated_at";
+
+export type ReportColumnKey =
+  | ClientColumnKey
+  | InstallationColumnKey
+  | FollowUpColumnKey;
 
 export type ReportMode = "builder" | "import" | "templates";
 
@@ -76,6 +109,7 @@ export type ReportColumn = {
   key: ReportColumnKey;
   label: string;
   description: string;
+  group: string;
 };
 
 export type ReportFilters = {
@@ -90,12 +124,23 @@ export type ReportFilters = {
   clientId: string;
   serviceTypeId: string;
   technicianId: string;
+  installationId: string;
+  followUpStatusId: string;
+
   installationStatus: string;
   billingStatus: string;
   isActive: string;
-  pendingMaintenance: string;
+  completionStatus: string;
 
   pendingBilling: string;
+  pendingMaintenance: string;
+  contactFlow: string;
+  contactAttempts: string;
+
+  priority: string;
+  maintenanceType: string;
+  createdFromSource: string;
+
   countryCode: string;
   adminLevel1: string;
   adminLevel2: string;
@@ -114,13 +159,23 @@ export type ReportFilters = {
   installationTo: string;
   warrantyFrom: string;
   warrantyTo: string;
+
+  targetFrom: string;
+  targetTo: string;
+  dueFrom: string;
+  dueTo: string;
+  scheduledFrom: string;
+  scheduledTo: string;
+  completedFrom: string;
+  completedTo: string;
+
   createdFrom: string;
   createdTo: string;
   updatedFrom: string;
   updatedTo: string;
 };
 
-export type ReportRow = Record<string, string | number>;
+export type ReportRow = Partial<Record<ReportColumnKey, string | number>>;
 
 export type PaginationState = {
   page: number;
@@ -131,9 +186,9 @@ export type PaginationState = {
 
 export type ReportBuilderResponse = {
   success: boolean;
-  message?: string;
   source?: ReportSource;
-  columns?: string[];
+  message?: string;
+  columns?: ReportColumnKey[];
   data?: ReportRow[];
   pagination?: PaginationState;
 };
@@ -155,8 +210,8 @@ export type ImportPreviewRow = {
 
 export type ClientImportCommitDetail = {
   rowNumber: number;
-  status: "created" | "skipped" | "error";
   clientName: string;
+  status: "created" | "skipped" | "error";
   message: string;
 };
 
@@ -182,15 +237,16 @@ export type ClientReportBuilderMetadata = {
   adminLevel1Options: ReportOption[];
   adminLevel2Options: ReportOption[];
   adminLevel3Options: ReportOption[];
+  operationalZones: ReportOption[];
   paymentTerms: ReportOption[];
   currencies: ReportOption[];
-  operationalZones: ReportOption[];
   booleanOptions: {
     whatsapp: ReportOption[];
     autoContact: ReportOption[];
     taxExempt: ReportOption[];
   };
   counters: {
+    totalClients?: number;
     withoutOperationalZoneCount: number;
   };
 };
@@ -222,6 +278,37 @@ export type InstallationReportBuilderMetadata = {
   };
 };
 
+export type FollowUpReportBuilderMetadata = {
+  followUpStatuses: ReportOption[];
+  billingStatuses: ReportOption[];
+  priorityOptions: ReportOption[];
+  maintenanceTypes: ReportOption[];
+  createdFromOptions: ReportOption[];
+  clients: ReportOption[];
+  installations: ReportOption[];
+  technicians: ReportOption[];
+  operationalZones: ReportOption[];
+  countries: ReportOption[];
+  booleanOptions: {
+    completionStatus: ReportOption[];
+    pendingBilling: ReportOption[];
+    contactFlow: ReportOption[];
+    contactAttempts: ReportOption[];
+  };
+  counters: {
+    totalFollowUps: number;
+    completedCount: number;
+    pendingCount: number;
+    overdueCount: number;
+    withoutInstallationCount: number;
+    withoutTechnicianCount: number;
+    withoutOperationalZoneCount: number;
+    pendingBillingCount: number;
+    contactFlowCount: number;
+    contactAttemptsCount: number;
+  };
+};
+
 export type ClientMetadataResponse = {
   success: boolean;
   message?: string;
@@ -232,4 +319,10 @@ export type InstallationMetadataResponse = {
   success: boolean;
   message?: string;
   data?: InstallationReportBuilderMetadata;
+};
+
+export type FollowUpMetadataResponse = {
+  success: boolean;
+  message?: string;
+  data?: FollowUpReportBuilderMetadata;
 };

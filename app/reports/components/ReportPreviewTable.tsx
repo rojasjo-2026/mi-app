@@ -2,15 +2,15 @@
 
 import { PAGE_SIZE_OPTIONS } from "../config/reportBuilderConfig";
 import type {
+  ActiveReportSource,
   PaginationState,
   ReportColumn,
   ReportRow,
-  ReportSource,
 } from "../types";
 import { formatCellValue } from "../utils/reportFormatUtils";
 
 type ReportPreviewTableProps = {
-  source: ReportSource;
+  source: ActiveReportSource;
   columns: ReportColumn[];
   rows: ReportRow[];
   loading: boolean;
@@ -19,7 +19,7 @@ type ReportPreviewTableProps = {
   onPageSizeChange: (pageSize: number) => void;
 };
 
-function getSourceEmptyLabel(source: ReportSource) {
+function getSourceEmptyLabel(source: ActiveReportSource) {
   if (source === "clients") {
     return "No hay clientes para mostrar con los filtros actuales.";
   }
