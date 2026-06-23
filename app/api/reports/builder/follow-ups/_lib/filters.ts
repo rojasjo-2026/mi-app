@@ -155,20 +155,30 @@ export function parseFollowUpReportRequest(
   }
 
   if (completionStatus === "completed") {
-    where.completed_at = {
-      not: null,
-    };
+    andFilters.push({
+      completed_at: {
+        not: null,
+      },
+    });
   }
 
   if (completionStatus === "pending") {
-    where.completed_at = null;
+    andFilters.push({
+      completed_at: null,
+    });
   }
 
   if (completionStatus === "overdue") {
-    where.completed_at = null;
-    where.due_date = {
-      lt: new Date(),
-    };
+    andFilters.push(
+      {
+        completed_at: null,
+      },
+      {
+        due_date: {
+          lt: new Date(),
+        },
+      },
+    );
   }
 
   if (pendingBilling === "with") {
