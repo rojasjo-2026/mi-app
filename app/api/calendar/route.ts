@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+
 import { getCalendarEventsService } from "@/lib/services/calendarService";
+import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -17,12 +19,26 @@ function formatDateOnly(date: Date) {
 }
 
 function isValidDateOnly(dateValue: string) {
-  if (!DATE_ONLY_PATTERN.test(dateValue)) {
-    return false;
-  }
+  if (!DATE_ONLY_PATTERN.test(dateValue)) return false;
 
   const parsedDate = parseDateOnly(dateValue);
+
   return formatDateOnly(parsedDate) === dateValue;
+}
+
+function normalizeCountryCode(
+  value: string | null | undefined,
+  fallbackCountryCode: string,
+) {
+  const countryCode = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  const fallback = String(fallbackCountryCode || "")
+    .trim()
+    .toUpperCase();
+
+  return countryCode || fallback;
 }
 
 export async function GET(request: Request) {
@@ -34,20 +50,14 @@ export async function GET(request: Request) {
 
     if (startDateParam && !isValidDateOnly(startDateParam)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "startDate must use YYYY-MM-DD format.",
-        },
+        { success: false, message: "startDate must use YYYY-MM-DD format." },
         { status: 400 },
       );
     }
 
     if (endDateParam && !isValidDateOnly(endDateParam)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "endDate must use YYYY-MM-DD format.",
-        },
+        { success: false, message: "endDate must use YYYY-MM-DD format." },
         { status: 400 },
       );
     }
@@ -69,26 +79,25 @@ export async function GET(request: Request) {
       );
     }
 
+    const settings = await getOrCreateAppSettingsService();
+
+    const countryCode = normalizeCountryCode(
+      searchParams.get("country_code"),
+      settings.country_code,
+    );
+
     const events = await getCalendarEventsService({
       startDate,
       endDate,
+      countryCode,
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: events,
-      },
-      { status: 200 },
-    );
+    return NextResponse.json({ success: true, data: events }, { status: 200 });
   } catch (error) {
     console.error("GET /api/calendar error:", error);
 
     return NextResponse.json(
-      {
-        success: false,
-        message: "Internal error",
-      },
+      { success: false, message: "Internal error" },
       { status: 500 },
     );
   }

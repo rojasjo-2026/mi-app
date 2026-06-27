@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { OperationsAvailabilityPanel } from "./components/OperationsAvailabilityPanel";
 import { OperationsHeader } from "./components/OperationsHeader";
@@ -12,11 +12,30 @@ import { OperationsZoneGroups } from "./components/OperationsZoneGroups";
 import { useOperationsCenterData } from "./hooks/useOperationsCenterData";
 import type { OperationsViewMode } from "./types";
 
-const OPERATIONS_COUNTRY_CODE = "CR";
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+  } | null;
+  message?: string;
+};
+
+const OPERATIONS_FALLBACK_COUNTRY_CODE = "CR";
+
+function normalizeCountryCode(value?: string | null) {
+  const countryCode = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return countryCode || OPERATIONS_FALLBACK_COUNTRY_CODE;
+}
 
 export default function OperationsCenterPage() {
   const [routeStopsText, setRouteStopsText] = useState("");
   const [viewMode, setViewMode] = useState<OperationsViewMode>("day");
+  const [operationsCountryCode, setOperationsCountryCode] = useState(
+    OPERATIONS_FALLBACK_COUNTRY_CODE,
+  );
 
   const {
     selectedDate,
@@ -34,7 +53,39 @@ export default function OperationsCenterPage() {
     error,
 
     loadCalendarEvents,
-  } = useOperationsCenterData(OPERATIONS_COUNTRY_CODE, viewMode);
+  } = useOperationsCenterData(operationsCountryCode, viewMode);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSettings() {
+      try {
+        const response = await fetch("/api/settings");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setOperationsCountryCode(
+          normalizeCountryCode(result.data?.country_code),
+        );
+      } catch (error) {
+        console.error("Error loading operations settings:", error);
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function handleUseGroupAsRoute(routeStops: string[]) {
     setRouteStopsText(routeStops.join("\n"));
@@ -83,7 +134,7 @@ export default function OperationsCenterPage() {
                 <OperationsRoutePanel
                   routeStopsText={routeStopsText}
                   onRouteStopsTextChange={setRouteStopsText}
-                  countryCode={OPERATIONS_COUNTRY_CODE}
+                  countryCode={operationsCountryCode}
                 />
 
                 <OperationsAvailabilityPanel
@@ -108,7 +159,7 @@ export default function OperationsCenterPage() {
               <OperationsRoutePanel
                 routeStopsText={routeStopsText}
                 onRouteStopsTextChange={setRouteStopsText}
-                countryCode={OPERATIONS_COUNTRY_CODE}
+                countryCode={operationsCountryCode}
               />
 
               <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-500 shadow-sm">

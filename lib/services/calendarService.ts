@@ -15,6 +15,7 @@ type DecimalLike = {
 type CalendarEventsServiceParams = {
   startDate?: string;
   endDate?: string;
+  countryCode?: string;
 };
 
 type DateRangeFilter = {
@@ -54,6 +55,14 @@ function buildDateRangeFilter(
     gte,
     lt,
   };
+}
+
+function normalizeCountryCode(value: string | undefined) {
+  const countryCode = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return countryCode || null;
 }
 
 function getClientFullName(client: {
@@ -105,42 +114,69 @@ function buildCoordinateRouteAddress(params: {
   return `${params.latitude},${params.longitude}`;
 }
 
+function buildFollowUpWhere(params?: CalendarEventsServiceParams) {
+  const dateRangeFilter = buildDateRangeFilter(params);
+  const countryCode = normalizeCountryCode(params?.countryCode);
+
+  const where: Prisma.FollowUpWhereInput = {};
+
+  if (countryCode) {
+    where.client = {
+      country_code: countryCode,
+    };
+  }
+
+  if (dateRangeFilter) {
+    where.OR = [
+      {
+        scheduled_date: {
+          not: null,
+          gte: dateRangeFilter.gte,
+          lt: dateRangeFilter.lt,
+        },
+      },
+      {
+        scheduled_date: null,
+        target_date: {
+          gte: dateRangeFilter.gte,
+          lt: dateRangeFilter.lt,
+        },
+      },
+    ];
+  }
+
+  return Object.keys(where).length ? where : undefined;
+}
+
+function buildInstallationWhere(params?: CalendarEventsServiceParams) {
+  const dateRangeFilter = buildDateRangeFilter(params);
+  const countryCode = normalizeCountryCode(params?.countryCode);
+
+  const where: Prisma.InstallationWhereInput = {};
+
+  if (countryCode) {
+    where.client = {
+      country_code: countryCode,
+    };
+  }
+
+  if (dateRangeFilter) {
+    where.installation_date = {
+      gte: dateRangeFilter.gte,
+      lt: dateRangeFilter.lt,
+    };
+  }
+
+  return Object.keys(where).length ? where : undefined;
+}
+
 export async function getCalendarEventsService(
   params?: CalendarEventsServiceParams,
 ) {
   const today = new Date();
-  const dateRangeFilter = buildDateRangeFilter(params);
 
-  const followUpWhere: Prisma.FollowUpWhereInput | undefined = dateRangeFilter
-    ? {
-        OR: [
-          {
-            scheduled_date: {
-              not: null,
-              gte: dateRangeFilter.gte,
-              lt: dateRangeFilter.lt,
-            },
-          },
-          {
-            scheduled_date: null,
-            target_date: {
-              gte: dateRangeFilter.gte,
-              lt: dateRangeFilter.lt,
-            },
-          },
-        ],
-      }
-    : undefined;
-
-  const installationWhere: Prisma.InstallationWhereInput | undefined =
-    dateRangeFilter
-      ? {
-          installation_date: {
-            gte: dateRangeFilter.gte,
-            lt: dateRangeFilter.lt,
-          },
-        }
-      : undefined;
+  const followUpWhere = buildFollowUpWhere(params);
+  const installationWhere = buildInstallationWhere(params);
 
   const followUps = await prisma.followUp.findMany({
     where: followUpWhere,
