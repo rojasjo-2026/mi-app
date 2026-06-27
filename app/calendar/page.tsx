@@ -36,6 +36,24 @@ import {
   mapAvailabilityByDate,
 } from "./utils/calendarAvailabilityUtils";
 
+type AppSettingsResponse = {
+  success: boolean;
+  data?: {
+    country_code?: string | null;
+  } | null;
+  message?: string;
+};
+
+const CALENDAR_FALLBACK_COUNTRY_CODE = "CR";
+
+function normalizeCountryCode(value?: string | null) {
+  const countryCode = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return countryCode || CALENDAR_FALLBACK_COUNTRY_CODE;
+}
+
 export default function CalendarPage() {
   const today = new Date();
   const todayKey = formatDateKey(today);
@@ -43,6 +61,9 @@ export default function CalendarPage() {
   const sidePanelRef = useRef<HTMLElement | null>(null);
   const noteTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  const [calendarCountryCode, setCalendarCountryCode] = useState(
+    CALENDAR_FALLBACK_COUNTRY_CODE,
+  );
   const [calendarView, setCalendarView] = useState<CalendarViewMode>("month");
   const [currentMonth, setCurrentMonth] = useState<Date>(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -72,18 +93,32 @@ export default function CalendarPage() {
     try {
       setIsLoadingEvents(true);
 
+      const calendarSearchParams = new URLSearchParams({
+        country_code: calendarCountryCode,
+      });
+
+      const nonWorkingDaysSearchParams = new URLSearchParams({
+        active_only: "true",
+        country_code: calendarCountryCode,
+      });
+
       const [
         calendarResponse,
         notesResponse,
         blockedResponse,
         nonWorkingDaysResponse,
       ] = await Promise.all([
-        fetch("/api/calendar", { cache: "no-store" }),
-        fetch("/api/calendar-notes", { cache: "no-store" }),
-        fetch("/api/calendar-blocked", { cache: "no-store" }),
-        fetch("/api/calendar-non-working-days?active_only=true", {
+        fetch(`/api/calendar?${calendarSearchParams.toString()}`, {
           cache: "no-store",
         }),
+        fetch("/api/calendar-notes", { cache: "no-store" }),
+        fetch("/api/calendar-blocked", { cache: "no-store" }),
+        fetch(
+          `/api/calendar-non-working-days?${nonWorkingDaysSearchParams.toString()}`,
+          {
+            cache: "no-store",
+          },
+        ),
       ]);
 
       const calendarResult = await calendarResponse.json();
@@ -141,8 +176,14 @@ export default function CalendarPage() {
     try {
       setIsLoadingAvailability(true);
 
+      const availabilitySearchParams = new URLSearchParams({
+        country_code: calendarCountryCode,
+        date: startDateKey,
+        days: String(days),
+      });
+
       const response = await fetch(
-        `/api/availability/daily?country_code=CR&date=${startDateKey}&days=${days}`,
+        `/api/availability/daily?${availabilitySearchParams.toString()}`,
         { cache: "no-store" },
       );
 
@@ -174,12 +215,42 @@ export default function CalendarPage() {
   }
 
   useEffect(() => {
-    void loadCalendarEvents();
+    let isMounted = true;
+
+    async function loadCalendarSettings() {
+      try {
+        const response = await fetch("/api/settings", { cache: "no-store" });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const result: AppSettingsResponse = await response.json();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCalendarCountryCode(normalizeCountryCode(result.data?.country_code));
+      } catch (error) {
+        console.error("Error loading calendar settings:", error);
+      }
+    }
+
+    void loadCalendarSettings();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
+    void loadCalendarEvents();
+  }, [calendarCountryCode]);
+
+  useEffect(() => {
     void loadAvailabilityForVisibleMonth(currentMonth);
-  }, [currentMonth]);
+  }, [currentMonth, calendarCountryCode]);
 
   useEffect(() => {
     const closeContextMenu = () => setContextMenu(null);
@@ -805,4 +876,3 @@ export default function CalendarPage() {
     </main>
   );
 }
-
