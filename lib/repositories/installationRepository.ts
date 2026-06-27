@@ -11,6 +11,7 @@ const clientNameSelect = {
   last_name_2: true,
   phone_primary: true,
   email: true,
+  country_code: true,
 } as const;
 
 const installationBaseInclude = {
@@ -442,7 +443,10 @@ export async function findInstallations(params: FindInstallationsParams) {
 export async function findClientById(client_id: string) {
   return prisma.client.findUnique({
     where: { client_id },
-    select: { client_id: true },
+    select: {
+      client_id: true,
+      country_code: true,
+    },
   });
 }
 

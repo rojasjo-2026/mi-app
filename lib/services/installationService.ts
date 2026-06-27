@@ -12,6 +12,7 @@ import {
   createActivityLog,
   createManyActivityLogs,
 } from "@/lib/repositories/activityLogRepository";
+import { getBusinessCountryMeta } from "@/lib/settings/appSettingsUtils";
 import {
   findInstallationById,
   updateInstallation,
@@ -28,6 +29,7 @@ import { decimalToNumber, toNumberOrFallback } from "../utils/number.utils";
 import { toDateOrFallback } from "../utils/date.utils";
 import { toTrimmedStringOrFallback } from "../utils/string.utils";
 import { getCoordinatesFromAddress } from "./geocodingService";
+import { getOrCreateAppSettingsService } from "./settingsService";
 
 type UpdateInstallationInput = {
   client_id?: string;
@@ -577,6 +579,17 @@ async function recordInstallationActivityChangesSafely(params: {
   }
 }
 
+async function getInstallationCountryName(clientCountryCode?: string | null) {
+  const settings = await getOrCreateAppSettingsService();
+
+  const businessMeta = getBusinessCountryMeta({
+    ...settings,
+    country_code: clientCountryCode || settings.country_code,
+  });
+
+  return businessMeta.countryName;
+}
+
 export async function getInstallationByIdService(id: string) {
   return findInstallationById(id);
 }
@@ -680,6 +693,10 @@ export async function createInstallationService(body: CreateInstallationInput) {
     return { success: false, code: "service_type_not_found" };
   }
 
+  const installationCountryName = await getInstallationCountryName(
+    clientExists.country_code,
+  );
+
   const addressLine = toTrimmedStringOrFallback(body.address_line, null);
   const zone = toTrimmedStringOrFallback(body.zone, null);
   const operationalZoneId = toTrimmedStringOrFallback(
@@ -699,7 +716,7 @@ export async function createInstallationService(body: CreateInstallationInput) {
   if (adminLevel2) fullAddress += `${fullAddress ? ", " : ""}${adminLevel2}`;
   if (adminLevel1) fullAddress += `${fullAddress ? ", " : ""}${adminLevel1}`;
   if (zone) fullAddress += `${fullAddress ? ", " : ""}${zone}`;
-  fullAddress += `${fullAddress ? ", " : ""}Costa Rica`;
+  fullAddress += `${fullAddress ? ", " : ""}${installationCountryName}`;
 
   let finalLatitude = parsedLatitude;
   let finalLongitude = parsedLongitude;
