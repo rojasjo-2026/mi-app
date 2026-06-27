@@ -753,6 +753,9 @@ export default function NewInstallationPage() {
                   setAdminLevel3={setAdminLevel3}
                   setAddressLine={setAddressLine}
                   setReferencePoint={setReferencePoint}
+                  adminLevel1Label={businessCountryMeta.adminLevel1Label}
+                  adminLevel2Label={businessCountryMeta.adminLevel2Label}
+                  adminLevel3Label={businessCountryMeta.adminLevel3Label}
                 />
 
                 <OperationalZoneSelect
