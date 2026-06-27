@@ -1,8 +1,10 @@
 "use client";
 
+import type { Dispatch, SetStateAction } from "react";
+
 type NotesSectionProps = {
   locationNotes: string;
-  setLocationNotes: React.Dispatch<React.SetStateAction<string>>;
+  setLocationNotes: Dispatch<SetStateAction<string>>;
   isListening: boolean;
   startVoiceRecognition: () => void;
   stopVoiceRecognition: () => void;
@@ -25,17 +27,18 @@ export default function NotesSection({
   maxNotesLength,
 }: NotesSectionProps) {
   const remaining = maxNotesLength - locationNotes.length;
+  const hasNotes = locationNotes.trim() !== "";
+  const isNearLimit = remaining < 30;
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 md:p-6">
-      {/* HEADER */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-lg font-semibold tracking-tight text-slate-900">
             Notas técnicas
           </p>
           <p className="mt-1 text-sm text-slate-500">
-            Registrá observaciones del técnico, accesos o condiciones del sitio.
+            Registra observaciones del técnico, accesos o condiciones del sitio.
           </p>
         </div>
 
@@ -44,13 +47,13 @@ export default function NotesSection({
         </span>
       </div>
 
-      {/* BOTONES */}
       <div className="mb-4 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={startVoiceRecognition}
+          disabled={isListening}
           className={`${buttonBase} ${
-            isListening ? "bg-red-50 border-red-300 text-red-700" : ""
+            isListening ? "border-red-300 bg-red-50 text-red-700" : ""
           }`}
         >
           {isListening ? "🎤 Escuchando..." : "🎤 Dictar"}
@@ -72,13 +75,13 @@ export default function NotesSection({
         <button
           type="button"
           onClick={clearNotes}
-          className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 shadow-sm transition hover:bg-red-50"
+          disabled={!hasNotes}
+          className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           🗑 Limpiar
         </button>
       </div>
 
-      {/* TEXTAREA */}
       <div className="relative">
         <textarea
           value={locationNotes}
@@ -88,15 +91,14 @@ export default function NotesSection({
             }
           }}
           className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-          placeholder="Ej: casa esquinera, portón negro, cliente pidió llamar antes..."
+          placeholder="Ejemplo: acceso complicado, portón cerrado, cliente pidió llamar antes..."
           rows={5}
         />
 
-        {/* CONTADOR */}
         <div className="mt-2 flex items-center justify-between text-xs">
           <span
             className={`font-medium ${
-              remaining < 30 ? "text-red-500" : "text-slate-400"
+              isNearLimit ? "text-red-500" : "text-slate-400"
             }`}
           >
             {remaining} caracteres restantes
