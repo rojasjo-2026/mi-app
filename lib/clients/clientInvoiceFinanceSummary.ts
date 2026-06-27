@@ -18,7 +18,7 @@ export type ClientInvoice = {
   invoice_date?: string | null;
   due_date?: string | null;
 
-  currency?: "CRC" | "USD" | string | null;
+  currency?: string | null;
 
   subtotal_amount?: number | string | null;
   discount_amount?: number | string | null;

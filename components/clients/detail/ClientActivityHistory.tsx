@@ -19,6 +19,7 @@ type ClientActivityHistoryProps = {
   error: string;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  locale?: string;
 };
 
 type ActivityMetadata = Record<string, unknown>;
@@ -67,24 +68,34 @@ function getContactStatusLabel(status?: string | null) {
   switch (status) {
     case "PENDING":
       return "Pendiente";
+
     case "MESSAGE_SENT":
       return "Mensaje enviado";
+
     case "WAITING_RESPONSE":
       return "Esperando respuesta";
+
     case "OPTIONS_SENT":
       return "Opciones enviadas";
+
     case "DATE_SELECTED":
       return "Fecha seleccionada";
+
     case "CONFIRMED":
       return "Confirmado";
+
     case "MANUAL_REQUIRED":
       return "Requiere gestión manual";
+
     case "NO_RESPONSE":
       return "Sin respuesta";
+
     case "REJECTED":
       return "Rechazado";
+
     case "CLOSED":
       return "Cerrado";
+
     default:
       return status || "Sin estado";
   }
@@ -189,6 +200,7 @@ export function ClientActivityHistory({
   error,
   hasMore,
   onLoadMore,
+  locale,
 }: ClientActivityHistoryProps) {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
 
@@ -315,26 +327,26 @@ export function ClientActivityHistory({
                           {getDisplayActionLabel(activity)}
                         </span>
 
-                        {isWhatsAppActivity(activity) && (
+                        {isWhatsAppActivity(activity) ? (
                           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
                             WhatsApp
                           </span>
-                        )}
+                        ) : null}
                       </div>
 
                       <p className="mt-2 text-sm font-black text-slate-900">
                         {getDisplayTitle(activity)}
                       </p>
 
-                      {description && (
+                      {description ? (
                         <p className="mt-1 text-sm leading-5 text-slate-600">
                           {description}
                         </p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="shrink-0 text-xs font-bold text-slate-500">
-                      {formatDateTimeLabel(activity.created_at)}
+                      {formatDateTimeLabel(activity.created_at, locale)}
                     </div>
                   </div>
 
@@ -354,7 +366,7 @@ export function ClientActivityHistory({
                     </span>
                   </div>
 
-                  {whatsAppDetails && (
+                  {whatsAppDetails ? (
                     <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 px-3 py-3">
                       <div className="grid gap-2 text-xs font-semibold text-emerald-800 sm:grid-cols-3">
                         <span>
@@ -375,9 +387,9 @@ export function ClientActivityHistory({
                         </span>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
-                  {whatsAppDetails?.followUpId && (
+                  {whatsAppDetails?.followUpId ? (
                     <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
                       <summary className="cursor-pointer text-sm font-bold text-slate-700">
                         Ver contexto operativo
@@ -405,9 +417,9 @@ export function ClientActivityHistory({
                         </div>
                       </div>
                     </details>
-                  )}
+                  ) : null}
 
-                  {(activity.old_value || activity.new_value) && (
+                  {activity.old_value || activity.new_value ? (
                     <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
                       <summary className="cursor-pointer text-sm font-bold text-slate-700">
                         Ver cambios
@@ -441,7 +453,7 @@ export function ClientActivityHistory({
                         </div>
                       </div>
                     </details>
-                  )}
+                  ) : null}
                 </div>
               </article>
             );
@@ -449,7 +461,7 @@ export function ClientActivityHistory({
         </div>
       )}
 
-      {hasMore && onLoadMore && (
+      {hasMore && onLoadMore ? (
         <div className="pt-2">
           <button
             type="button"
@@ -460,7 +472,7 @@ export function ClientActivityHistory({
             Mostrar más
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

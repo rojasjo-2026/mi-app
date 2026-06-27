@@ -28,7 +28,14 @@ export function formatRole(role?: string | null) {
   return role;
 }
 
-export function formatDate(value?: string | null) {
+export function formatDate(value?: string | null, locale = "es") {
   if (!value) return "-";
-  return new Date(value).toLocaleDateString("es-CR");
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "-";
+  }
+
+  return parsed.toLocaleDateString(locale);
 }

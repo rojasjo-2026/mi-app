@@ -22,11 +22,7 @@ import {
   getIdentificationTypeLabel,
   getPaymentTermLabel,
 } from "@/lib/clients/clientDetail.utils";
-import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-  type CountryPreset,
-} from "@/lib/settings/countryPresets";
+import { getBusinessCountryPreset } from "@/lib/settings/appSettingsUtils";
 import { CollapsibleCard } from "@/components/clients/detail/CollapsibleCard";
 import { InfoRow } from "@/components/clients/detail/InfoRow";
 
@@ -36,19 +32,12 @@ type ClientInformationSectionsProps = {
   onToggle: (section: DetailSectionKey) => void;
 };
 
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
 function getClientDisplayName(client: ClientDetail) {
-  return client.display_name || getFullName(client);
-}
-
-function getClientCountryPreset(client: ClientDetail): CountryPreset {
   return (
-    getCountryPreset(client.country_code ?? client.identification_country) ??
-    fallbackCountryPreset
+    client.display_name?.trim() ||
+    client.commercial_name?.trim() ||
+    client.company_name?.trim() ||
+    getFullName(client)
   );
 }
 
@@ -70,10 +59,16 @@ export function ClientInformationSections({
   openSections,
   onToggle,
 }: ClientInformationSectionsProps) {
-  const countryPreset = getClientCountryPreset(client);
+  const countryPreset = getBusinessCountryPreset(
+    client.country_code ?? client.identification_country,
+  );
+
   const currency = client.preferred_currency || countryPreset.primaryCurrency;
   const locale = countryPreset.locale;
-  const taxLabel = countryPreset.taxLabel || "IVA";
+  const taxLabel = countryPreset.taxLabel || "Impuesto";
+  const adminLevel3Label =
+    countryPreset.adminLevel3Label || "Nivel administrativo 3";
+
   const businessDataAvailable = hasBusinessData(client);
   const billingSameAsClient = Boolean(client.billing_same_as_client);
 
@@ -106,7 +101,7 @@ export function ClientInformationSections({
             />
 
             <div className="sm:col-span-2">
-              <InfoRow label="Email" value={client.email || "-"} />
+              <InfoRow label="Correo electrónico" value={client.email || "-"} />
             </div>
           </div>
         </CollapsibleCard>
@@ -119,6 +114,8 @@ export function ClientInformationSections({
           onToggle={() => onToggle("location")}
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <InfoRow label="País" value={countryPreset.countryName} />
+
             <InfoRow
               label={countryPreset.adminLevel1Label}
               value={client.admin_level_1 || "-"}
@@ -130,7 +127,7 @@ export function ClientInformationSections({
             />
 
             <InfoRow
-              label={countryPreset.adminLevel3Label ?? "Nivel administrativo 3"}
+              label={adminLevel3Label}
               value={client.admin_level_3 || "-"}
             />
 
@@ -151,18 +148,27 @@ export function ClientInformationSections({
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <InfoRow
+              label="País de identificación"
+              value={
+                client.identification_country || client.country_code || "-"
+              }
+            />
+
+            <InfoRow
               label="Tipo de identificación"
               value={getIdentificationTypeLabel(client.identification_type)}
             />
 
-            <InfoRow
-              label="Número de identificación"
-              value={getIdentificationValue(client)}
-            />
+            <div className="sm:col-span-2">
+              <InfoRow
+                label="Número de identificación"
+                value={getIdentificationValue(client)}
+              />
+            </div>
           </div>
         </CollapsibleCard>
 
-        {businessDataAvailable && (
+        {businessDataAvailable ? (
           <CollapsibleCard
             title="Datos empresariales"
             description="Información comercial adicional."
@@ -192,7 +198,7 @@ export function ClientInformationSections({
               />
             </div>
           </CollapsibleCard>
-        )}
+        ) : null}
 
         <CollapsibleCard
           title="Configuración financiera"
@@ -245,7 +251,7 @@ export function ClientInformationSections({
               </p>
 
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Las facturas utilizarán el nombre, teléfono, email y dirección
+                Las facturas utilizarán el nombre, teléfono, correo y dirección
                 principal registrados en el cliente.
               </p>
             </div>
@@ -257,7 +263,7 @@ export function ClientInformationSections({
               />
 
               <InfoRow
-                label="Email de facturación"
+                label="Correo de facturación"
                 value={client.billing_email || "-"}
               />
 

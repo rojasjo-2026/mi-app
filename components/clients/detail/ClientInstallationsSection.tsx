@@ -31,7 +31,17 @@ type ClientInstallationsSectionProps = {
   onFilterChange: (value: InstallationFilter) => void;
   onInstallationClick: (installationId: string) => void;
   onCreateInstallation: () => void;
+  currency?: string | null;
+  locale?: string;
 };
+
+function getInstallationLocation(item: ClientInstallation) {
+  return (
+    [item.city, item.zone].filter(Boolean).join(" · ") ||
+    item.address_line ||
+    "-"
+  );
+}
 
 export function ClientInstallationsSection({
   filteredInstallations,
@@ -44,6 +54,8 @@ export function ClientInstallationsSection({
   onFilterChange,
   onInstallationClick,
   onCreateInstallation,
+  currency,
+  locale,
 }: ClientInstallationsSectionProps) {
   const hasInstallations = totalInstallationsCount > 0;
   const hasFilteredResults = filteredInstallations.length > 0;
@@ -70,14 +82,14 @@ export function ClientInstallationsSection({
       isOpen={isOpen}
       onToggle={onToggle}
     >
-      {hasInstallations && (
+      {hasInstallations ? (
         <div className="mb-5 space-y-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
             <input
               value={installationSearch}
-              onChange={(e) => onSearchChange(e.target.value)}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Buscar por descripción, servicio, ubicación o estado..."
               className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
             />
@@ -121,7 +133,7 @@ export function ClientInstallationsSection({
             </p>
           </div>
         </div>
-      )}
+      ) : null}
 
       {!hasInstallations ? (
         <div className="rounded-3xl border border-dashed border-blue-200 bg-blue-50/40 px-6 py-8">
@@ -200,7 +212,7 @@ export function ClientInstallationsSection({
                         {getInstallationActiveLabel(item.is_active)}
                       </span>
 
-                      {item.billing_status && (
+                      {item.billing_status ? (
                         <span
                           className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${getBillingStatusClass(
                             item.billing_status,
@@ -208,7 +220,7 @@ export function ClientInstallationsSection({
                         >
                           {getBillingStatusLabel(item.billing_status)}
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -219,28 +231,30 @@ export function ClientInstallationsSection({
 
                       <MiniInfoCard
                         label="Fecha de instalación"
-                        value={formatDateLabel(item.installation_date)}
+                        value={formatDateLabel(item.installation_date, locale)}
                       />
 
                       <MiniInfoCard
                         label="Monto"
-                        value={formatCurrency(item.estimated_amount)}
+                        value={formatCurrency(
+                          item.estimated_amount,
+                          currency,
+                          locale,
+                        )}
                       />
 
                       <MiniInfoCard
                         label="Costo"
-                        value={formatCurrency(item.cost_amount)}
+                        value={formatCurrency(
+                          item.cost_amount,
+                          currency,
+                          locale,
+                        )}
                       />
 
                       <MiniInfoCard
                         label="Ubicación"
-                        value={
-                          item.city
-                            ? `${item.city}${
-                                item.zone ? ` · ${item.zone}` : ""
-                              }`
-                            : item.zone || item.address_line || "-"
-                        }
+                        value={getInstallationLocation(item)}
                       />
 
                       <MiniInfoCard
@@ -257,7 +271,10 @@ export function ClientInstallationsSection({
                         label="Próximo mantenimiento"
                         value={
                           nextPendingFollowUp
-                            ? formatDateLabel(nextPendingFollowUp.target_date)
+                            ? formatDateLabel(
+                                nextPendingFollowUp.target_date,
+                                locale,
+                              )
                             : "-"
                         }
                       />

@@ -1,11 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams } from "next/navigation";
-import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import MetricCard from "./components/MetricCard";
 import StaffMetricCard from "./components/StaffMetricCard";
 import InstallationStatusAlerts from "./components/InstallationStatusAlerts";
@@ -45,30 +42,7 @@ type InstallationCommercialInfo = {
   warranty_months?: number | string | null;
 };
 
-type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
-
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
-function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
-  const countryPreset =
-    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
-
-  return {
-    currency: settings?.default_currency || countryPreset.primaryCurrency,
-    locale: countryPreset.locale,
-  };
-}
-
-function formatBusinessDate(value?: string | null, locale = "es-CR") {
+function formatBusinessDate(value?: string | null, locale = "es") {
   if (!value) return "-";
 
   const parsed = new Date(value);
@@ -126,8 +100,8 @@ function getInstallationStatusBadge(status?: string | null) {
 
 function formatCurrencyLabel(
   value?: number | string | null,
-  currency = "CRC",
-  locale = "es-CR",
+  currency?: string | null,
+  locale = "es",
 ) {
   if (value === null || value === undefined || value === "") {
     return "-";
@@ -137,6 +111,12 @@ function formatCurrencyLabel(
 
   if (!Number.isFinite(numericValue)) {
     return "-";
+  }
+
+  if (!currency) {
+    return numericValue.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    });
   }
 
   try {
@@ -154,8 +134,8 @@ function formatCurrencyLabel(
 
 function formatOptionalCurrencyLabel(
   value?: number | string | null,
-  currency = "CRC",
-  locale = "es-CR",
+  currency?: string | null,
+  locale = "es",
 ) {
   const formattedValue = formatCurrencyLabel(value, currency, locale);
 
@@ -185,6 +165,7 @@ function formatWarrantyMonths(value?: number | string | null) {
 export default function InstallationDetailPage() {
   const params = useParams();
   const id = params?.id as string;
+  const { businessCountryMeta } = useAppSettings();
 
   const {
     installation,
@@ -199,46 +180,8 @@ export default function InstallationDetailPage() {
     handleDeactivateInstallation,
   } = useInstallationDetail({ id });
 
-  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
-  const [businessCurrency, setBusinessCurrency] = useState(
-    defaultBusinessMeta.currency,
-  );
-  const [businessLocale, setBusinessLocale] = useState(
-    defaultBusinessMeta.locale,
-  );
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadBusinessSettings() {
-      try {
-        const response = await fetch("/api/settings", {
-          cache: "no-store",
-        });
-
-        const result: AppSettingsResponse = await response.json();
-
-        if (!response.ok || !result.success) {
-          return;
-        }
-
-        const businessMeta = getBusinessCountryMeta(result.data);
-
-        if (!isMounted) return;
-
-        setBusinessCurrency(businessMeta.currency);
-        setBusinessLocale(businessMeta.locale);
-      } catch {
-        // Keep default business metadata if settings cannot be loaded.
-      }
-    }
-
-    void loadBusinessSettings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const businessCurrency = businessCountryMeta.currency;
+  const businessLocale = businessCountryMeta.locale;
 
   const latitude = useMemo(() => getLatitude(installation), [installation]);
   const longitude = useMemo(() => getLongitude(installation), [installation]);
@@ -278,6 +221,7 @@ export default function InstallationDetailPage() {
 
   function handleEditInstallation() {
     if (!installation?.installation_id) return;
+
     window.location.href = `/installations/${installation.installation_id}/edit`;
   }
 
@@ -300,24 +244,29 @@ export default function InstallationDetailPage() {
     businessCurrency,
     businessLocale,
   );
+
   const costAmount = formatOptionalCurrencyLabel(
     commercialInfo.cost_amount,
     businessCurrency,
     businessLocale,
   );
+
   const finalAmount = formatOptionalCurrencyLabel(
     commercialInfo.final_amount,
     businessCurrency,
     businessLocale,
   );
+
   const billingStatusLabel = getBillingStatusLabel(
     commercialInfo.billing_status,
   );
+
   const billingNotes = commercialInfo.billing_notes || undefined;
 
-  const locationLabel = `${installation.city || "-"}${
-    installation.zone ? ` · ${installation.zone}` : ""
-  }`;
+  const locationLabel =
+    [installation.city, installation.zone].filter(Boolean).join(" · ") ||
+    installation.address_line ||
+    "-";
 
   const warrantyMonths =
     installation.warranty_months !== null &&

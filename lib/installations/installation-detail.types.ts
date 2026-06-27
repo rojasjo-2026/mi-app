@@ -6,6 +6,11 @@ export type InstallationFollowUp = {
   priority?: number | null;
   notes?: string | null;
   created_from?: string | null;
+  estimated_amount?: number | string | null;
+  final_amount?: number | string | null;
+  cost_amount?: number | string | null;
+  billing_status?: string | null;
+  billing_notes?: string | null;
   follow_up_status_id?: number | null;
   follow_up_status?: {
     follow_up_status_id?: number | null;
@@ -37,7 +42,13 @@ export type InstallationDetail = {
   installation_date: string;
   description?: string | null;
   technical_observations?: string | null;
+
   estimated_amount?: number | string | null;
+  final_amount?: number | string | null;
+  cost_amount?: number | string | null;
+  billing_status?: string | null;
+  billing_notes?: string | null;
+
   warranty_months?: number | null;
   warranty_end_date?: string | null;
   technician_name?: string | null;
@@ -60,6 +71,8 @@ export type InstallationDetail = {
     last_name_2?: string | null;
     phone_primary?: string | null;
     email?: string | null;
+    country_code?: string | null;
+    preferred_currency?: string | null;
   } | null;
   service_type?: {
     service_type_id: number;
