@@ -8,6 +8,7 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import {
   normalizeClientStatus,
   type ClientStatus,
@@ -42,6 +43,9 @@ import { ResizableHeaderCell } from "./components/ResizableHeaderCell";
 import { ColumnPicker } from "./components/ColumnPicker";
 
 export default function ClientsPage() {
+  const { businessCountryMeta, countryCode, isLoadingSettings, settingsError } =
+    useAppSettings();
+
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -95,6 +99,11 @@ export default function ClientsPage() {
   }, [isColumnPickerOpen]);
 
   useEffect(() => {
+    if (isLoadingSettings) {
+      setLoading(true);
+      return;
+    }
+
     const controller = new AbortController();
 
     async function loadClients() {
@@ -104,6 +113,7 @@ export default function ClientsPage() {
 
         const params = new URLSearchParams();
 
+        params.set("country_code", countryCode);
         params.set("page", String(currentPage));
         params.set("pageSize", String(pageSize));
         params.set("sortKey", sortKey);
@@ -188,6 +198,7 @@ export default function ClientsPage() {
 
     return () => controller.abort();
   }, [
+    countryCode,
     currentPage,
     pageSize,
     search,
@@ -195,6 +206,7 @@ export default function ClientsPage() {
     whatsFilter,
     sortKey,
     sortDirection,
+    isLoadingSettings,
   ]);
 
   useEffect(() => {
@@ -210,6 +222,7 @@ export default function ClientsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [
+    countryCode,
     search,
     statusFilter,
     whatsFilter,
@@ -396,9 +409,16 @@ export default function ClientsPage() {
             </h1>
 
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-              Administra tus clientes, contactos, ubicaciones y actividad
-              operativa.
+              Administra clientes, contactos, ubicaciones y actividad operativa
+              para {businessCountryMeta.countryName}.
             </p>
+
+            {settingsError ? (
+              <p className="mt-2 text-xs font-medium text-amber-700">
+                No se pudo cargar la configuración. Se está usando el país por
+                defecto.
+              </p>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
@@ -415,7 +435,7 @@ export default function ClientsPage() {
           <ClientMetricCard
             title="Clientes totales"
             value={metrics.total}
-            detail="Todos los registros"
+            detail={`Registros de ${businessCountryMeta.countryName}`}
             icon="👥"
             accentClass="text-slate-950"
             bgClass="bg-blue-50"
@@ -454,7 +474,7 @@ export default function ClientsPage() {
           statusFilter={statusFilter}
           whatsFilter={whatsFilter}
           sort={sort}
-          resultText={`${visibleTotal} resultado${visibleTotal === 1 ? "" : "s"}`}
+          resultText={`${visibleTotal} resultado${visibleTotal === 1 ? "" : "s"} · ${businessCountryMeta.countryName}`}
           onSearchChange={setSearch}
           onStatusFilterChange={setStatusFilter}
           onWhatsFilterChange={setWhatsFilter}
