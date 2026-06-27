@@ -1,15 +1,10 @@
 ﻿import { provincias } from "@/lib/data/costa-rica-locations";
-import { getCountryPreset } from "@/lib/settings/countryPresets";
-import {
-  fallbackCountryPreset,
-  type Client,
-  type CountryPreset,
-  type NominatimResponse,
-} from "../config/newInstallationPageConfig";
 
-export function getBusinessCountryPreset(countryCode?: string | null): CountryPreset {
-  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
-}
+import type {
+  Client,
+  CountryPreset,
+  NominatimResponse,
+} from "../config/newInstallationPageConfig";
 
 export function getSpeechRecognitionLocale(countryPreset: CountryPreset) {
   if (countryPreset.countryCode === "BR") return "pt-BR";
@@ -33,12 +28,39 @@ export function getClientDisplayName(client: Client) {
     .join(" ");
 }
 
-export function normalizeText(value: string) {
+function normalizeText(value: string) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function getLocationName(value: unknown) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (value && typeof value === "object" && "nombre" in value) {
+    return String((value as { nombre?: unknown }).nombre || "").trim();
+  }
+
+  return "";
+}
+
+function matchesLocationName(value: string, locationName: string) {
+  const normalizedValue = normalizeText(value);
+  const normalizedLocationName = normalizeText(locationName);
+
+  if (!normalizedValue || !normalizedLocationName) {
+    return false;
+  }
+
+  return (
+    normalizedValue === normalizedLocationName ||
+    normalizedValue.includes(normalizedLocationName) ||
+    normalizedLocationName.includes(normalizedValue)
+  );
 }
 
 export function findBestLocationMatch(address: NominatimResponse["address"]) {
@@ -54,136 +76,52 @@ export function findBestLocationMatch(address: NominatimResponse["address"]) {
     address.state,
     address.county,
     address.state_district,
-  ]
-    .filter(Boolean)
-    .map((value) => normalizeText(String(value)));
+  ].filter(Boolean) as string[];
 
   const possibleCantonValues = [
+    address.county,
     address.city,
     address.town,
     address.municipality,
-    address.county,
-    address.city_district,
-  ]
-    .filter(Boolean)
-    .map((value) => normalizeText(String(value)));
+    address.state_district,
+  ].filter(Boolean) as string[];
 
   const possibleDistrictValues = [
-    address.village,
     address.suburb,
     address.neighbourhood,
-    address.hamlet,
     address.city_district,
-  ]
-    .filter(Boolean)
-    .map((value) => normalizeText(String(value)));
+    address.village,
+    address.hamlet,
+    address.town,
+    address.city,
+  ].filter(Boolean) as string[];
 
-  let matchedProvince = "";
-  let matchedCanton = "";
-  let matchedDistrict = "";
+  const matchedProvince =
+    provincias.find((provincia) =>
+      possibleProvinceValues.some((value) =>
+        matchesLocationName(value, provincia.nombre),
+      ),
+    ) ?? null;
 
-  for (const provincia of provincias) {
-    const provinciaNombre = normalizeText(provincia.nombre);
+  const matchedCanton =
+    matchedProvince?.cantones.find((canton) =>
+      possibleCantonValues.some((value) =>
+        matchesLocationName(value, canton.nombre),
+      ),
+    ) ?? null;
 
-    const provinceMatched = possibleProvinceValues.some(
-      (value) =>
-        value === provinciaNombre ||
-        value.includes(provinciaNombre) ||
-        provinciaNombre.includes(value),
-    );
+  const matchedDistrict =
+    matchedCanton?.distritos.find((district) => {
+      const districtName = getLocationName(district);
 
-    if (!provinceMatched) {
-      continue;
-    }
-
-    matchedProvince = provincia.nombre;
-
-    for (const canton of provincia.cantones) {
-      const cantonNombre = normalizeText(canton.nombre);
-
-      const cantonMatched = possibleCantonValues.some(
-        (value) =>
-          value === cantonNombre ||
-          value.includes(cantonNombre) ||
-          cantonNombre.includes(value),
+      return possibleDistrictValues.some((value) =>
+        matchesLocationName(value, districtName),
       );
-
-      if (!cantonMatched) {
-        continue;
-      }
-
-      matchedCanton = canton.nombre;
-
-      for (const distrito of canton.distritos) {
-        const distritoNombre = normalizeText(distrito.nombre);
-
-        const districtMatched = possibleDistrictValues.some(
-          (value) =>
-            value === distritoNombre ||
-            value.includes(distritoNombre) ||
-            distritoNombre.includes(value),
-        );
-
-        if (districtMatched) {
-          matchedDistrict = distrito.nombre;
-          break;
-        }
-      }
-
-      break;
-    }
-
-    break;
-  }
-
-  if (!matchedProvince) {
-    for (const provincia of provincias) {
-      for (const canton of provincia.cantones) {
-        const cantonNombre = normalizeText(canton.nombre);
-
-        const cantonMatched = possibleCantonValues.some(
-          (value) =>
-            value === cantonNombre ||
-            value.includes(cantonNombre) ||
-            cantonNombre.includes(value),
-        );
-
-        if (!cantonMatched) {
-          continue;
-        }
-
-        matchedProvince = provincia.nombre;
-        matchedCanton = canton.nombre;
-
-        for (const distrito of canton.distritos) {
-          const distritoNombre = normalizeText(distrito.nombre);
-
-          const districtMatched = possibleDistrictValues.some(
-            (value) =>
-              value === distritoNombre ||
-              value.includes(distritoNombre) ||
-              distritoNombre.includes(value),
-          );
-
-          if (districtMatched) {
-            matchedDistrict = distrito.nombre;
-            break;
-          }
-        }
-
-        return {
-          province: matchedProvince,
-          canton: matchedCanton,
-          district: matchedDistrict,
-        };
-      }
-    }
-  }
+    }) ?? null;
 
   return {
-    province: matchedProvince,
-    canton: matchedCanton,
-    district: matchedDistrict,
+    province: matchedProvince?.nombre ?? "",
+    canton: matchedCanton?.nombre ?? "",
+    district: getLocationName(matchedDistrict),
   };
 }
-
