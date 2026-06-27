@@ -62,7 +62,9 @@ export default function ClientBillingSection({
                 id="billing_same_as_client"
                 type="checkbox"
                 checked={billingSameAsClient}
-                onChange={(e) => setBillingSameAsClient(e.target.checked)}
+                onChange={(event) =>
+                  setBillingSameAsClient(event.target.checked)
+                }
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
 
@@ -87,8 +89,8 @@ export default function ClientBillingSection({
                 </div>
 
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Si está marcado, se usará nombre, teléfono, email y dirección
-                  principal para generar facturas.
+                  Si está marcado, se usará el nombre, teléfono, correo y
+                  dirección principal del cliente para generar facturas.
                 </p>
               </div>
             </label>
@@ -105,12 +107,12 @@ export default function ClientBillingSection({
               />
 
               <FormInput
-                label="Email de facturación"
+                label="Correo de facturación"
                 value={billingEmail}
                 onChange={setBillingEmail}
                 inputClass={inputClass}
                 type="email"
-                placeholder="facturacion@empresa.com"
+                placeholder="facturacion@dominio.com"
               />
 
               <FormInput

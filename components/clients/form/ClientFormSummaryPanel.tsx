@@ -103,7 +103,7 @@ export default function ClientFormSummaryPanel({
 
           <SummaryRow label="Tipo de cliente" value={clientTypeLabel} />
 
-          <SummaryRow label="País operativo" value={countryLabel} />
+          <SummaryRow label="País del cliente" value={countryLabel} />
 
           <SummaryRow label="Perfil aplicado" value={complianceLabel} />
 
@@ -208,7 +208,7 @@ export default function ClientFormSummaryPanel({
         </div>
 
         <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-700">
-          Consejo: mientras más completo esté el cliente, más útil será el
+          Consejo: mientras más completo esté el cliente, más útil será su
           historial operativo y la automatización de contacto.
         </div>
       </section>

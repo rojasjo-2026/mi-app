@@ -75,6 +75,11 @@ export default function ClientBasicInfoSection({
   const profileLabel =
     complianceProfile === "COSTA_RICA" ? "Costa Rica" : "Global";
 
+  const identificationPlaceholder =
+    complianceProfile === "COSTA_RICA"
+      ? "Sin guiones ni espacios"
+      : "Número de identificación fiscal o legal";
+
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <ClientFormSectionHeader
@@ -95,9 +100,9 @@ export default function ClientBasicInfoSection({
 
               <select
                 value={clientType}
-                onChange={(e) =>
+                onChange={(event) =>
                   handleClientTypeChange(
-                    e.target.value as "PERSON" | "COMPANY" | "OTHER",
+                    event.target.value as "PERSON" | "COMPANY" | "OTHER",
                   )
                 }
                 className={selectClass}
@@ -125,8 +130,7 @@ export default function ClientBasicInfoSection({
 
                   <p className="mt-1 text-xs leading-5 text-slate-500">
                     Este perfil se aplica automáticamente según el país
-                    configurado para el negocio. Para cambiarlo, actualice la
-                    Configuración del sistema.
+                    seleccionado para el cliente.
                   </p>
                 </div>
               </div>
@@ -220,7 +224,7 @@ export default function ClientBasicInfoSection({
 
               <select
                 value={identificationType}
-                onChange={(e) => setIdentificationType(e.target.value)}
+                onChange={(event) => setIdentificationType(event.target.value)}
                 className={selectClass}
                 required
               >
@@ -234,16 +238,12 @@ export default function ClientBasicInfoSection({
 
             <div>
               <FormInput
-                label="Cédula / identificación *"
+                label="Identificación fiscal / legal *"
                 value={taxId}
                 onChange={setTaxId}
                 required
                 inputClass={inputClass}
-                placeholder={
-                  complianceProfile === "COSTA_RICA"
-                    ? "Sin guiones ni espacios"
-                    : "Número de identificación"
-                }
+                placeholder={identificationPlaceholder}
               />
 
               <p className="mt-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">

@@ -50,6 +50,11 @@ export default function ClientFinanceSection({
   selectClass,
   inputClass,
 }: ClientFinanceSectionProps) {
+  const activeCurrency = preferredCurrency || countryPreset.primaryCurrency;
+  const selectedCurrencyOption = currencyOptions.find(
+    (currency) => currency.value === activeCurrency,
+  );
+
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <ClientFormSectionHeader
@@ -70,8 +75,8 @@ export default function ClientFinanceSection({
 
               <select
                 value={paymentTerm}
-                onChange={(e) =>
-                  setPaymentTerm(e.target.value as "CASH" | "CREDIT")
+                onChange={(event) =>
+                  setPaymentTerm(event.target.value as "CASH" | "CREDIT")
                 }
                 className={selectClass}
               >
@@ -93,7 +98,7 @@ export default function ClientFinanceSection({
 
               <p className="mt-1 text-xs leading-5 text-slate-500">
                 {paymentTerm === "CREDIT"
-                  ? "Se habilitan días y límite de crédito para futuras facturas."
+                  ? `Se habilitan días y límite de crédito en ${activeCurrency}.`
                   : "No se requieren días ni límite de crédito."}
               </p>
             </div>
@@ -111,12 +116,12 @@ export default function ClientFinanceSection({
                 />
 
                 <FormInput
-                  label="Límite de crédito"
+                  label={`Límite de crédito (${activeCurrency})`}
                   value={creditLimit}
                   onChange={setCreditLimit}
                   inputClass={inputClass}
                   type="number"
-                  placeholder={`Ejemplo: ${countryPreset.currencySymbol} 500000`}
+                  placeholder={`Monto máximo en ${activeCurrency}`}
                 />
               </>
             )}
@@ -137,7 +142,7 @@ export default function ClientFinanceSection({
 
               <select
                 value={preferredCurrency}
-                onChange={(e) => setPreferredCurrency(e.target.value)}
+                onChange={(event) => setPreferredCurrency(event.target.value)}
                 className={selectClass}
               >
                 {currencyOptions.map((currency) => (
@@ -146,6 +151,12 @@ export default function ClientFinanceSection({
                   </option>
                 ))}
               </select>
+
+              <p className="mt-1 text-xs text-slate-500">
+                {selectedCurrencyOption
+                  ? `Moneda seleccionada: ${selectedCurrencyOption.label}.`
+                  : `Moneda seleccionada: ${activeCurrency}.`}
+              </p>
             </div>
 
             <div
@@ -164,7 +175,7 @@ export default function ClientFinanceSection({
                   id="tax_exempt"
                   type="checkbox"
                   checked={taxExempt}
-                  onChange={(e) => setTaxExempt(e.target.checked)}
+                  onChange={(event) => setTaxExempt(event.target.checked)}
                   className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
 
