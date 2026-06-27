@@ -23,7 +23,7 @@ function formatActivityDate(value: string) {
     return "";
   }
 
-  return new Intl.DateTimeFormat("es-CR", {
+  return new Intl.DateTimeFormat("es", {
     day: "2-digit",
     month: "short",
   }).format(date);
@@ -33,16 +33,22 @@ function getActivityIcon(category: string) {
   switch (category) {
     case "INSTALLATION":
       return "🛠️";
+
     case "FOLLOW_UP":
       return "✅";
+
     case "CONTACT":
       return "💬";
+
     case "FINANCE":
-      return "₡";
+      return "💳";
+
     case "FILE":
       return "📎";
+
     case "SYSTEM":
       return "⚙️";
+
     default:
       return "•";
   }
@@ -116,62 +122,64 @@ export function ClientActivityPreview({
       </div>
 
       <div className="mt-3 max-h-[180px] space-y-2 overflow-hidden">
-        {loading && (
+        {loading ? (
           <div className="rounded-md bg-white px-3 py-2">
             <p className="text-xs font-medium text-slate-500">
               Cargando actividad...
             </p>
           </div>
-        )}
+        ) : null}
 
-        {!loading && items.length === 0 && (
+        {!loading && items.length === 0 ? (
           <div className="rounded-md bg-white px-3 py-2">
             <p className="text-xs font-semibold text-slate-800">
               Sin actividad reciente
             </p>
+
             <p className="mt-0.5 text-xs font-medium text-slate-500">
               Todavía no hay eventos registrados para este cliente.
             </p>
           </div>
-        )}
+        ) : null}
 
-        {!loading &&
-          items.map((item) => (
-            <div
-              key={item.activity_id}
-              className="rounded-md bg-white px-3 py-2"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-start gap-2">
-                  <span className="mt-0.5 shrink-0 text-xs">
-                    {getActivityIcon(item.category)}
-                  </span>
+        {!loading
+          ? items.map((item) => (
+              <div
+                key={item.activity_id}
+                className="rounded-md bg-white px-3 py-2"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-2">
+                    <span className="mt-0.5 shrink-0 text-xs">
+                      {getActivityIcon(item.category)}
+                    </span>
 
-                  <div className="min-w-0">
-                    <p
-                      title={item.title}
-                      className="truncate text-xs font-semibold text-slate-800"
-                    >
-                      {item.title}
-                    </p>
-
-                    {item.description && (
+                    <div className="min-w-0">
                       <p
-                        title={item.description}
-                        className="mt-0.5 truncate text-xs font-medium text-slate-500"
+                        title={item.title}
+                        className="truncate text-xs font-semibold text-slate-800"
                       >
-                        {item.description}
+                        {item.title}
                       </p>
-                    )}
-                  </div>
-                </div>
 
-                <p className="shrink-0 text-xs font-semibold text-slate-500">
-                  {formatActivityDate(item.created_at)}
-                </p>
+                      {item.description ? (
+                        <p
+                          title={item.description}
+                          className="mt-0.5 truncate text-xs font-medium text-slate-500"
+                        >
+                          {item.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <p className="shrink-0 text-xs font-semibold text-slate-500">
+                    {formatActivityDate(item.created_at)}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          : null}
       </div>
     </section>
   );
