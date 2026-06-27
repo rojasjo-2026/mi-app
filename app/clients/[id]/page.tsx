@@ -274,6 +274,8 @@ export default function ClientDetailPage() {
           onCreateInstallation={() =>
             router.push(`/installations/new?client_id=${client.client_id}`)
           }
+          currency={clientCurrency}
+          locale={clientLocale}
         />
 
         <CollapsibleCard
@@ -326,6 +328,7 @@ export default function ClientDetailPage() {
             error={activityLogsError}
             hasMore={hasMoreActivityLogs}
             onLoadMore={() => void loadMoreActivityLogs()}
+            locale={clientLocale}
           />
         </CollapsibleCard>
       </div>
