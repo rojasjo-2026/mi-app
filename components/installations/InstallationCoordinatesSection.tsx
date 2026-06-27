@@ -22,14 +22,25 @@ export default function InstallationCoordinatesSection({
   setLatitude,
   setLongitude,
 }: Props) {
+  const hasLatitudeValue = latitude.trim() !== "";
+  const hasLongitudeValue = longitude.trim() !== "";
+
   const latValue = Number(latitude);
   const lngValue = Number(longitude);
 
+  const hasInvalidLatitude =
+    hasLatitudeValue &&
+    (Number.isNaN(latValue) || latValue < -90 || latValue > 90);
+
+  const hasInvalidLongitude =
+    hasLongitudeValue &&
+    (Number.isNaN(lngValue) || lngValue < -180 || lngValue > 180);
+
   const hasCoordinates =
-    latitude.trim() !== "" &&
-    longitude.trim() !== "" &&
-    !Number.isNaN(latValue) &&
-    !Number.isNaN(lngValue);
+    hasLatitudeValue &&
+    hasLongitudeValue &&
+    !hasInvalidLatitude &&
+    !hasInvalidLongitude;
 
   const openStreetMapEmbedUrl = useMemo(() => {
     if (!hasCoordinates) return null;
@@ -45,6 +56,7 @@ export default function InstallationCoordinatesSection({
 
   const googleMapsUrl = useMemo(() => {
     if (!hasCoordinates) return null;
+
     return `https://www.google.com/maps?q=${latValue},${lngValue}`;
   }, [hasCoordinates, latValue, lngValue]);
 
@@ -56,7 +68,7 @@ export default function InstallationCoordinatesSection({
             Coordenadas GPS
           </p>
           <p className="mt-1 text-sm text-slate-500">
-            Puede capturar automáticamente la ubicación o ingresarla
+            Captura automáticamente la ubicación o ingresa las coordenadas
             manualmente.
           </p>
         </div>
@@ -106,8 +118,14 @@ export default function InstallationCoordinatesSection({
             value={latitude}
             onChange={(e) => setLatitude(e.target.value)}
             className={inputClassName}
-            placeholder="Ejemplo: 9.372"
+            placeholder="Ingrese la latitud"
           />
+
+          {hasInvalidLatitude && (
+            <p className="mt-1 text-xs font-medium text-red-600">
+              La latitud debe estar entre -90 y 90.
+            </p>
+          )}
         </div>
 
         <div>
@@ -120,8 +138,14 @@ export default function InstallationCoordinatesSection({
             value={longitude}
             onChange={(e) => setLongitude(e.target.value)}
             className={inputClassName}
-            placeholder="Ejemplo: -83.705"
+            placeholder="Ingrese la longitud"
           />
+
+          {hasInvalidLongitude && (
+            <p className="mt-1 text-xs font-medium text-red-600">
+              La longitud debe estar entre -180 y 180.
+            </p>
+          )}
         </div>
       </div>
 
@@ -137,8 +161,8 @@ export default function InstallationCoordinatesSection({
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-8 text-sm text-slate-500">
-            Ingrese las coordenadas o use su ubicación actual para ver una vista
-            previa del mapa.
+            Ingrese coordenadas válidas o use su ubicación actual para ver una
+            vista previa del mapa.
           </div>
         )}
       </div>
