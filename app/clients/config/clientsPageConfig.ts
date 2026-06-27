@@ -30,6 +30,7 @@ export type Client = {
   identification_country?: string | null;
   identification_type?: string | null;
   identification_number?: string | null;
+  tax_id?: string | null;
 
   client_status?: ClientStatus | null;
   whatsapp_opt_in?: boolean | null;

@@ -18,6 +18,29 @@ type ClientPreviewPanelProps = {
   onToggleStatus: (client: Client) => void | Promise<void>;
 };
 
+function getClientDisplayName(client: Client) {
+  return (
+    client.display_name?.trim() ||
+    client.commercial_name?.trim() ||
+    client.company_name?.trim() ||
+    getClientFullName(client)
+  );
+}
+
+function getClientSubtitle(client: Client) {
+  if (client.client_type === "COMPANY") {
+    return (
+      client.main_contact_name?.trim() || client.legal_name?.trim() || "Empresa"
+    );
+  }
+
+  if (client.client_type === "PERSON") {
+    return "Persona";
+  }
+
+  return "Cliente";
+}
+
 function getInitials(name: string) {
   const parts = name.trim().split(" ").filter(Boolean);
 
@@ -29,6 +52,21 @@ function getInitials(name: string) {
   const second = parts[1]?.charAt(0) ?? "";
 
   return `${first}${second}`.toUpperCase();
+}
+
+function getIdentificationLabel(client: Client) {
+  const identificationNumber =
+    client.identification_number?.trim() || client.tax_id?.trim();
+
+  if (!identificationNumber) {
+    return "-";
+  }
+
+  if (client.identification_type) {
+    return `${client.identification_type} · ${identificationNumber}`;
+  }
+
+  return identificationNumber;
 }
 
 function OperationalStat({
@@ -53,11 +91,11 @@ function OperationalStat({
         {value}
       </p>
 
-      {helper && (
+      {helper ? (
         <p className="mt-1 truncate text-xs font-medium text-slate-500">
           {helper}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -135,8 +173,9 @@ export function ClientPreviewPanel({
     );
   }
 
-  const fullName = getClientFullName(client);
-  const initials = getInitials(fullName);
+  const displayName = getClientDisplayName(client);
+  const subtitle = getClientSubtitle(client);
+  const initials = getInitials(displayName);
   const location = getLocationLabel(client) || "Sin ubicación";
   const status = normalizeClientStatus(client.client_status) ?? "ACTIVE";
 
@@ -177,16 +216,35 @@ export function ClientPreviewPanel({
             </p>
 
             <h2
-              title={fullName}
+              title={displayName}
               className="mt-1 truncate text-base font-semibold tracking-tight text-slate-950"
             >
-              {fullName}
+              {displayName}
             </h2>
+
+            <p
+              title={subtitle}
+              className="mt-1 truncate text-xs font-medium text-slate-500"
+            >
+              {subtitle}
+            </p>
 
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
                 {getClientStatusLabel(status)}
               </span>
+
+              {client.country_code ? (
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                  {client.country_code}
+                </span>
+              ) : null}
+
+              {client.preferred_currency ? (
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                  {client.preferred_currency}
+                </span>
+              ) : null}
 
               <span
                 className={[
@@ -271,6 +329,16 @@ export function ClientPreviewPanel({
             <DetailField label="Ubicación" value={location} />
 
             <DetailField label="Último contacto" value={lastContact} />
+
+            <DetailField
+              label="Identificación"
+              value={getIdentificationLabel(client)}
+            />
+
+            <DetailField
+              label="Moneda"
+              value={client.preferred_currency || "-"}
+            />
           </div>
         </section>
 

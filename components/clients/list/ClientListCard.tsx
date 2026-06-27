@@ -13,23 +13,7 @@ import {
   getLocationLabel,
   formatDateLabel,
 } from "@/lib/clients/clientList.utils";
-
-type Client = {
-  client_id: string;
-  first_name: string;
-  last_name_1: string;
-  last_name_2?: string | null;
-  phone_primary: string;
-  email?: string | null;
-  client_status?: ClientStatus | null;
-  whatsapp_opt_in?: boolean | null;
-  admin_level_1?: string | null;
-  admin_level_2?: string | null;
-  maintenance_count?: number;
-  installation_count?: number;
-  last_maintenance?: string | null;
-  last_contact?: string | null;
-};
+import type { Client } from "@/app/clients/config/clientsPageConfig";
 
 type VisibleClientColumns = {
   contact: boolean;
@@ -46,6 +30,29 @@ type ClientListCardProps = {
   gridTemplateColumns: string;
   visibleColumns: VisibleClientColumns;
 };
+
+function getClientDisplayName(client: Client) {
+  return (
+    client.display_name?.trim() ||
+    client.commercial_name?.trim() ||
+    client.company_name?.trim() ||
+    getClientFullName(client)
+  );
+}
+
+function getClientHelperLabel(client: Client) {
+  if (client.client_type === "COMPANY") {
+    return (
+      client.main_contact_name?.trim() || client.legal_name?.trim() || "Empresa"
+    );
+  }
+
+  if (client.client_type === "PERSON") {
+    return "Persona";
+  }
+
+  return "Cliente";
+}
 
 function getInitials(name: string) {
   const parts = name.trim().split(" ").filter(Boolean);
@@ -158,8 +165,9 @@ export function ClientListCard({
   gridTemplateColumns,
   visibleColumns,
 }: ClientListCardProps) {
-  const fullName = getClientFullName(client);
-  const initials = getInitials(fullName);
+  const displayName = getClientDisplayName(client);
+  const helperLabel = getClientHelperLabel(client);
+  const initials = getInitials(displayName);
   const locationLabel = getLocationLabel(client);
   const status: ClientStatus =
     normalizeClientStatus(client.client_status) ?? "ACTIVE";
@@ -209,22 +217,31 @@ export function ClientListCard({
 
           <div className="min-w-0">
             <h2
-              title={fullName}
+              title={displayName}
               className="truncate text-sm font-semibold tracking-tight text-slate-950"
             >
-              {fullName}
+              {displayName}
             </h2>
 
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-slate-500">
-                Cliente
+              <span
+                title={helperLabel}
+                className="max-w-[170px] truncate text-xs font-medium text-slate-500"
+              >
+                {helperLabel}
               </span>
 
-              {client.whatsapp_opt_in && (
+              {client.country_code ? (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                  {client.country_code}
+                </span>
+              ) : null}
+
+              {client.whatsapp_opt_in ? (
                 <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                   WhatsApp
                 </span>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -241,7 +258,7 @@ export function ClientListCard({
 
             <ClientMetaItem
               icon={<Mail className="h-3.5 w-3.5" />}
-              value={client.email || "Sin email"}
+              value={client.email || "Sin correo"}
               muted={!client.email}
             />
           </div>
