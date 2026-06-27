@@ -4,9 +4,11 @@ import FormInput from "@/components/clients/form/FormInput";
 import ClientFormSectionHeader from "@/components/clients/form/ClientFormSectionHeader";
 import type { CountryPreset } from "@/lib/settings/countryPresets";
 
-type LocationOption = {
-  nombre: string;
-};
+type LocationOption =
+  | string
+  | {
+      nombre: string;
+    };
 
 type CountryOption = {
   value: string;
@@ -37,11 +39,20 @@ type ClientLocationSectionProps = {
   inputClass: string;
 };
 
+function getLocationOptionName(option: LocationOption) {
+  if (typeof option === "string") {
+    return option;
+  }
+
+  return option.nombre;
+}
+
 export default function ClientLocationSection({
   isOpen,
   onToggle,
   countryCode,
   countryPreset,
+  countryOptions,
   adminLevel1,
   adminLevel2,
   adminLevel3,
@@ -49,6 +60,7 @@ export default function ClientLocationSection({
   provinciaOptions,
   cantonOptions,
   distritoOptions,
+  handleCountryChange,
   handleProvinceChange,
   handleCantonChange,
   setAdminLevel1,
@@ -67,7 +79,7 @@ export default function ClientLocationSection({
       <ClientFormSectionHeader
         icon="📍"
         title="Ubicación"
-        description="Define la zona administrativa y dirección principal del cliente."
+        description="Define el país, zona administrativa y dirección principal del cliente."
         isOpen={isOpen}
         onToggle={onToggle}
       />
@@ -75,6 +87,29 @@ export default function ClientLocationSection({
       {isOpen && (
         <div className="p-5 md:p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-sm font-semibold text-slate-700">
+                País
+              </label>
+
+              <select
+                value={countryCode}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className={selectClass}
+              >
+                {countryOptions.map((country) => (
+                  <option key={country.value} value={country.value}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
+
+              <p className="mt-1 text-xs text-slate-500">
+                El país define los campos administrativos, formato de contacto y
+                moneda sugerida para el cliente.
+              </p>
+            </div>
+
             {isCostaRica ? (
               <>
                 <div>
@@ -114,11 +149,15 @@ export default function ClientLocationSection({
                       Seleccione {countryPreset.adminLevel2Label.toLowerCase()}
                     </option>
 
-                    {cantonOptions.map((canton) => (
-                      <option key={canton.nombre} value={canton.nombre}>
-                        {canton.nombre}
-                      </option>
-                    ))}
+                    {cantonOptions.map((canton) => {
+                      const cantonName = getLocationOptionName(canton);
+
+                      return (
+                        <option key={cantonName} value={cantonName}>
+                          {cantonName}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -137,11 +176,15 @@ export default function ClientLocationSection({
                       Seleccione {adminLevel3Label.toLowerCase()}
                     </option>
 
-                    {distritoOptions.map((distrito) => (
-                      <option key={distrito.nombre} value={distrito.nombre}>
-                        {distrito.nombre}
-                      </option>
-                    ))}
+                    {distritoOptions.map((distrito) => {
+                      const distritoName = getLocationOptionName(distrito);
+
+                      return (
+                        <option key={distritoName} value={distritoName}>
+                          {distritoName}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </>
@@ -152,7 +195,7 @@ export default function ClientLocationSection({
                   value={adminLevel1}
                   onChange={setAdminLevel1}
                   inputClass={inputClass}
-                  placeholder={countryPreset.adminLevel1Label}
+                  placeholder={`Ingrese ${countryPreset.adminLevel1Label.toLowerCase()}`}
                 />
 
                 <FormInput
@@ -160,7 +203,7 @@ export default function ClientLocationSection({
                   value={adminLevel2}
                   onChange={setAdminLevel2}
                   inputClass={inputClass}
-                  placeholder={countryPreset.adminLevel2Label}
+                  placeholder={`Ingrese ${countryPreset.adminLevel2Label.toLowerCase()}`}
                 />
 
                 <FormInput
@@ -168,7 +211,7 @@ export default function ClientLocationSection({
                   value={adminLevel3}
                   onChange={setAdminLevel3}
                   inputClass={inputClass}
-                  placeholder={adminLevel3Label}
+                  placeholder={`Ingrese ${adminLevel3Label.toLowerCase()}`}
                   full
                 />
               </>
