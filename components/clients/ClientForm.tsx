@@ -1,7 +1,9 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import { provincias } from "@/lib/data/costa-rica-locations";
 import {
   normalizeClientStatus,
@@ -20,6 +22,10 @@ import {
   COUNTRY_PRESET_OPTIONS,
   COUNTRY_PRESETS,
 } from "@/lib/settings/countryPresets";
+import {
+  DEFAULT_COUNTRY_CODE,
+  DEFAULT_CURRENCY_CODE,
+} from "@/lib/settings/appSettingsUtils";
 import AlertMessage from "@/components/clients/form/AlertMessage";
 import ClientBasicInfoSection from "@/components/clients/form/ClientBasicInfoSection";
 import ClientContactSection from "@/components/clients/form/ClientContactSection";
@@ -33,10 +39,8 @@ import ClientFormSummaryPanel, {
 import ClientFormStickyActions from "@/components/clients/form/ClientFormStickyActions";
 import {
   COSTA_RICA_IDENTIFICATION_OPTIONS,
-  DEFAULT_COUNTRY_CODE,
   GLOBAL_IDENTIFICATION_OPTIONS,
   currencyNames,
-  type AppSettingsResponse,
   type ClientComplianceProfile,
   type ClientFormData,
   type ClientFormProps,
@@ -56,6 +60,9 @@ export default function ClientForm({
   initialData = null,
 }: ClientFormProps) {
   const router = useRouter();
+  const { businessCountryMeta, isLoadingSettings } = useAppSettings();
+
+  const hasAppliedSettingsDefaults = useRef(false);
 
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>(
     {
@@ -102,7 +109,9 @@ export default function ClientForm({
   const [discountRate, setDiscountRate] = useState("");
   const [creditLimit, setCreditLimit] = useState("");
   const [taxExempt, setTaxExempt] = useState(false);
-  const [preferredCurrency, setPreferredCurrency] = useState("CRC");
+  const [preferredCurrency, setPreferredCurrency] = useState(
+    DEFAULT_CURRENCY_CODE,
+  );
 
   const [billingSameAsClient, setBillingSameAsClient] = useState(true);
   const [billingName, setBillingName] = useState("");
@@ -118,6 +127,9 @@ export default function ClientForm({
     () => getCountryByCode(countryCode),
     [countryCode],
   );
+
+  const shouldUseCostaRicaLocationCatalog =
+    selectedCountryPreset.countryCode === "CR";
 
   const currencyOptions = useMemo(
     () =>
@@ -223,50 +235,38 @@ export default function ClientForm({
   }, [initialData]);
 
   useEffect(() => {
-    let isMounted = true;
+    if (mode !== "create") return;
+    if (initialData) return;
+    if (isLoadingSettings) return;
+    if (hasAppliedSettingsDefaults.current) return;
 
-    async function loadBusinessCountryFromSettings() {
-      try {
-        const response = await fetch("/api/settings", {
-          cache: "no-store",
-        });
+    const nextCountryPreset = getCountryByCode(
+      businessCountryMeta.countryCode || DEFAULT_COUNTRY_CODE,
+    );
 
-        const result: AppSettingsResponse = await response.json();
+    const nextComplianceProfile =
+      nextCountryPreset.countryCode === "CR" ? "COSTA_RICA" : "GLOBAL";
 
-        if (!response.ok || !result.success || !result.data) {
-          return;
-        }
+    hasAppliedSettingsDefaults.current = true;
 
-        const nextCountryPreset = getCountryByCode(
-          result.data.country_code ?? DEFAULT_COUNTRY_CODE,
-        );
-
-        const nextComplianceProfile =
-          nextCountryPreset.countryCode === "CR" ? "COSTA_RICA" : "GLOBAL";
-
-        const nextClientType = initialData?.client_type ?? clientType;
-
-        if (!isMounted) return;
-
-        setCountryCode(nextCountryPreset.countryCode);
-        setComplianceProfile(nextComplianceProfile);
-        setIdentificationType(
-          getDefaultIdentificationType(nextClientType, nextComplianceProfile),
-        );
-        setPreferredCurrency(
-          result.data.default_currency ?? nextCountryPreset.primaryCurrency,
-        );
-      } catch {
-        // Keep the current form values if system settings cannot be loaded.
-      }
-    }
-
-    void loadBusinessCountryFromSettings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [clientType, initialData, mode]);
+    setCountryCode(nextCountryPreset.countryCode);
+    setComplianceProfile(nextComplianceProfile);
+    setIdentificationType(
+      getDefaultIdentificationType(clientType, nextComplianceProfile),
+    );
+    setPreferredCurrency(
+      businessCountryMeta.currency ||
+        nextCountryPreset.primaryCurrency ||
+        DEFAULT_CURRENCY_CODE,
+    );
+  }, [
+    businessCountryMeta.countryCode,
+    businessCountryMeta.currency,
+    clientType,
+    initialData,
+    isLoadingSettings,
+    mode,
+  ]);
 
   useEffect(() => {
     if (paymentTerm === "CASH") {
@@ -276,25 +276,32 @@ export default function ClientForm({
   }, [paymentTerm]);
 
   const provinciaOptions = useMemo(
-    () => provincias.map((provincia) => provincia.nombre),
-    [],
+    () =>
+      shouldUseCostaRicaLocationCatalog
+        ? provincias.map((provincia) => provincia.nombre)
+        : [],
+    [shouldUseCostaRicaLocationCatalog],
   );
 
   const cantonOptions = useMemo(() => {
+    if (!shouldUseCostaRicaLocationCatalog) return [];
+
     const provinciaSeleccionada = provincias.find(
       (provincia) => provincia.nombre === adminLevel1,
     );
 
     return provinciaSeleccionada?.cantones ?? [];
-  }, [adminLevel1]);
+  }, [adminLevel1, shouldUseCostaRicaLocationCatalog]);
 
   const distritoOptions = useMemo(() => {
+    if (!shouldUseCostaRicaLocationCatalog) return [];
+
     const cantonSeleccionado = cantonOptions.find(
       (canton) => canton.nombre === adminLevel2,
     );
 
     return cantonSeleccionado?.distritos ?? [];
-  }, [adminLevel2, cantonOptions]);
+  }, [adminLevel2, cantonOptions, shouldUseCostaRicaLocationCatalog]);
 
   function toggleSection(section: SectionKey) {
     setOpenSections((prev) => ({
@@ -741,4 +748,3 @@ export default function ClientForm({
     </main>
   );
 }
-
