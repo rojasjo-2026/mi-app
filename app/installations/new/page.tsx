@@ -1,21 +1,21 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { provincias } from "@/lib/data/costa-rica-locations";
+
+import { useAppSettings } from "@/app/hooks/useAppSettings";
+import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
 import NotesSection from "@/components/installations/NotesSection";
 import ClientSearchSection from "@/components/installations/ClientSearchSection";
 import InstallationLocationSection from "@/components/installations/InstallationLocationSection";
 import InstallationCoordinatesSection from "@/components/installations/InstallationCoordinatesSection";
 import InstallationCommercialSection from "@/components/installations/InstallationCommercialSection";
-import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
+import { provincias } from "@/lib/data/costa-rica-locations";
+
 import {
-  fallbackCountryPreset,
   MAX_NOTES_LENGTH,
-  type AppSettingsResponse,
   type BrowserWindowWithGoogle,
   type BrowserWindowWithSpeech,
   type Client,
-  type CountryPreset,
   type NominatimResponse,
   type SpeechRecognitionErrorEventLike,
   type SpeechRecognitionLike,
@@ -23,7 +23,6 @@ import {
 } from "./config/newInstallationPageConfig";
 import {
   findBestLocationMatch,
-  getBusinessCountryPreset,
   getClientDisplayName,
   getMapsCountryRestriction,
   getSpeechRecognitionLocale,
@@ -35,8 +34,11 @@ export default function NewInstallationPage() {
   const addressRef = useRef<HTMLInputElement | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  const [businessCountryPreset, setBusinessCountryPreset] =
-    useState<CountryPreset>(fallbackCountryPreset);
+  const { businessCountryMeta, settingsError } = useAppSettings();
+
+  const businessCountryPreset = businessCountryMeta.countryPreset;
+  const businessLocale = businessCountryMeta.locale;
+  const countryCode = businessCountryMeta.countryCode;
 
   const [clientSearch, setClientSearch] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
@@ -78,7 +80,6 @@ export default function NewInstallationPage() {
     notes: false,
   });
 
-  const businessLocale = businessCountryPreset.locale || "es-CR";
   const speechRecognitionLocale = getSpeechRecognitionLocale(
     businessCountryPreset,
   );
@@ -239,40 +240,6 @@ export default function NewInstallationPage() {
   }
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadBusinessSettings() {
-      try {
-        const response = await fetch("/api/settings", {
-          cache: "no-store",
-        });
-
-        const result: AppSettingsResponse = await response.json();
-
-        if (!response.ok || !result.success) {
-          return;
-        }
-
-        const countryPreset = getBusinessCountryPreset(
-          result.data?.country_code,
-        );
-
-        if (!isMounted) return;
-
-        setBusinessCountryPreset(countryPreset);
-      } catch {
-        // Keep Costa Rica defaults if system settings cannot be loaded.
-      }
-    }
-
-    void loadBusinessSettings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
     const interval = setInterval(() => {
       const browserWindow = window as BrowserWindowWithGoogle;
       const GoogleAutocomplete =
@@ -333,12 +300,15 @@ export default function NewInstallationPage() {
       try {
         setLoadingClients(true);
 
-        const res = await fetch(
-          `/api/clients?search=${encodeURIComponent(clientSearch.trim())}&status=active`,
-          {
-            cache: "no-store",
-          },
-        );
+        const params = new URLSearchParams();
+
+        params.set("search", clientSearch.trim());
+        params.set("status", "active");
+        params.set("country_code", countryCode);
+
+        const res = await fetch(`/api/clients?${params.toString()}`, {
+          cache: "no-store",
+        });
 
         const result = await res.json();
 
@@ -356,7 +326,7 @@ export default function NewInstallationPage() {
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [clientSearch, selectedClient]);
+  }, [clientSearch, selectedClient, countryCode]);
 
   useEffect(() => {
     if (selectedClient && useClientAddress) {
@@ -616,9 +586,25 @@ export default function NewInstallationPage() {
           </button>
         </div>
 
+        {settingsError ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+            No se pudo cargar la configuración de la app. Se está usando la
+            configuración base.
+          </div>
+        ) : null}
+
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white md:px-8">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
+                  País
+                </p>
+                <p className="mt-2 text-sm font-medium text-white">
+                  {businessCountryMeta.countryName}
+                </p>
+              </div>
+
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
                   Cliente
@@ -771,7 +757,7 @@ export default function NewInstallationPage() {
 
                 <OperationalZoneSelect
                   value={operationalZoneId}
-                  countryCode={businessCountryPreset.countryCode}
+                  countryCode={countryCode}
                   label="Zona operativa"
                   helperText="Seleccione una zona creada por el usuario. Esta zona ayudará al motor de disponibilidad a agrupar instalaciones, mantenimientos y rutas."
                   onChange={setOperationalZoneId}
@@ -848,5 +834,3 @@ export default function NewInstallationPage() {
     </main>
   );
 }
-
-
