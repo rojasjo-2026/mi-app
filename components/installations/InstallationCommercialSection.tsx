@@ -14,9 +14,11 @@ const inputClassName =
   "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200";
 
 function normalizeCurrencyCode(value?: string | null) {
-  return String(value || "CRC")
+  const normalizedValue = String(value ?? "")
     .trim()
     .toUpperCase();
+
+  return normalizedValue || "moneda configurada";
 }
 
 export default function InstallationCommercialSection({

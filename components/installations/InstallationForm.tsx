@@ -81,7 +81,7 @@ export default function InstallationForm({
 
         setBusinessCountryPreset(countryPreset);
       } catch {
-        // Keep Costa Rica defaults if system settings cannot be loaded.
+        // Keep the configured country preset defaults if system settings cannot be loaded.
       }
     }
 
@@ -435,6 +435,7 @@ export default function InstallationForm({
               setBillingStatus={setBillingStatus}
               billingNotes={billingNotes}
               setBillingNotes={setBillingNotes}
+              currencyCode={businessCountryPreset.primaryCurrency}
             />
 
             <FormSection
@@ -730,5 +731,3 @@ export default function InstallationForm({
     </main>
   );
 }
-
-
