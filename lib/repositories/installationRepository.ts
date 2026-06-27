@@ -1,6 +1,8 @@
 import { InstallationStatus, WorkBillingStatus } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
+import { normalizeCountryCode } from "@/lib/settings/appSettingsUtils";
 
 const clientNameSelect = {
   client_id: true,
@@ -108,6 +110,7 @@ export type InstallationSortKey =
 export type SortDirection = "asc" | "desc";
 
 export type FindInstallationsParams = {
+  country_code?: string;
   search?: string;
   client_id?: string;
   status?: string;
@@ -184,6 +187,7 @@ function buildInstallationWhere(
   options?: { includeStatus?: boolean },
 ): Prisma.InstallationWhereInput {
   const {
+    country_code,
     search,
     client_id,
     status,
@@ -196,9 +200,22 @@ function buildInstallationWhere(
 
   const includeStatus = options?.includeStatus ?? true;
 
+  const countryCode = country_code
+    ? normalizeCountryCode(country_code)
+    : undefined;
+
   const where: Prisma.InstallationWhereInput = {
     is_active: true,
 
+    ...(countryCode
+      ? {
+          client: {
+            is: {
+              country_code: countryCode,
+            },
+          },
+        }
+      : {}),
     ...(client_id ? { client_id } : {}),
     ...(includeStatus && isInstallationStatus(status)
       ? { installation_status: status }

@@ -8,12 +8,14 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
+
+import { useAppSettings } from "@/app/hooks/useAppSettings";
+
 import {
   INITIAL_COLUMN_WIDTHS,
   INITIAL_VISIBLE_COLUMNS,
   MIN_COLUMN_WIDTHS,
   OPTIONAL_COLUMNS,
-  type AppSettingsResponse,
   type ColumnKey,
   type ColumnWidths,
   type FilterType,
@@ -26,7 +28,6 @@ import {
   type SortType,
   type VisibleColumns,
 } from "./config/installationsPageConfig";
-import { getBusinessCountryMeta } from "./utils/installationsPageUtils";
 import { InstallationPreviewPanel } from "./components/InstallationPreviewPanel";
 import { InstallationFiltersPanel } from "./components/InstallationFiltersPanel";
 import { InstallationTable } from "./components/InstallationTable";
@@ -34,6 +35,11 @@ import { InstallationTable } from "./components/InstallationTable";
 const DEFAULT_INSTALLATION_PAGE_SIZE = 15;
 
 export default function InstallationsPage() {
+  const { businessCountryMeta, settingsError } = useAppSettings();
+
+  const businessCurrency = businessCountryMeta.currency;
+  const businessLocale = businessCountryMeta.locale;
+
   const [installations, setInstallations] = useState<InstallationItem[]>([]);
   const [selectedInstallationId, setSelectedInstallationId] = useState<
     string | null
@@ -69,14 +75,6 @@ export default function InstallationsPage() {
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
 
   const columnMenuRef = useRef<HTMLDivElement | null>(null);
-
-  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
-  const [businessCurrency, setBusinessCurrency] = useState(
-    defaultBusinessMeta.currency,
-  );
-  const [businessLocale, setBusinessLocale] = useState(
-    defaultBusinessMeta.locale,
-  );
 
   const displayedColumns = useMemo<ColumnKey[]>(() => {
     const middleColumns = OPTIONAL_COLUMNS.filter(
@@ -124,33 +122,10 @@ export default function InstallationsPage() {
   }, [isColumnMenuOpen]);
 
   useEffect(() => {
-    async function loadBusinessSettings() {
-      try {
-        const response = await fetch("/api/settings", {
-          cache: "no-store",
-        });
-
-        const result: AppSettingsResponse = await response.json();
-
-        if (!response.ok || !result.success) {
-          return;
-        }
-
-        const businessMeta = getBusinessCountryMeta(result.data);
-
-        setBusinessCurrency(businessMeta.currency);
-        setBusinessLocale(businessMeta.locale);
-      } catch {
-        // Keep default business metadata if settings cannot be loaded.
-      }
-    }
-
     async function loadInstallations() {
       try {
         setLoading(true);
         setError("");
-
-        await loadBusinessSettings();
 
         const params = new URLSearchParams();
 
@@ -392,6 +367,13 @@ export default function InstallationsPage() {
             + Nueva instalación
           </Link>
         </div>
+
+        {settingsError ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            No se pudo cargar la configuración de la app. Se está usando la
+            configuración base.
+          </div>
+        ) : null}
 
         <InstallationFiltersPanel
           search={search}

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+
 import {
   createInstallationService,
   getInstallationsService,
 } from "@/lib/services/installationService";
+import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
+import { normalizeCountryCode } from "@/lib/settings/appSettingsUtils";
 
 function parsePositiveInteger(value: string | null, fallback: number) {
   const parsedValue = Number(value);
@@ -98,7 +101,15 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
+    const settings = await getOrCreateAppSettingsService();
+
+    const countryCode = normalizeCountryCode(
+      searchParams.get("country_code"),
+      settings.country_code,
+    );
+
     const result = await getInstallationsService({
+      country_code: countryCode,
       search: searchParams.get("search")?.trim() || undefined,
       client_id: searchParams.get("client_id") || undefined,
       status: searchParams.get("status") || undefined,
