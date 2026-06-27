@@ -727,6 +727,7 @@ export default function NewInstallationPage() {
                 setBillingStatus={setBillingStatus}
                 billingNotes={billingNotes}
                 setBillingNotes={setBillingNotes}
+                currencyCode={businessCountryMeta.currency}
               />
             </CollapsibleSection>
 
