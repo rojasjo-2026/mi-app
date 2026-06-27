@@ -24,6 +24,14 @@ function getPageSize(value: string | null) {
   return Math.min(getNumberParam(value, DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
 }
 
+function getCountryCodeParam(value: string | null) {
+  const countryCode = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return countryCode || undefined;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -31,6 +39,7 @@ export async function GET(req: Request) {
     const search = searchParams.get("search")?.trim() || undefined;
     const status = normalizeClientStatusFilter(searchParams.get("status"));
     const whatsapp = searchParams.get("whatsapp") || "all";
+    const countryCode = getCountryCodeParam(searchParams.get("country_code"));
 
     const page = getNumberParam(searchParams.get("page"), DEFAULT_PAGE);
     const pageSize = getPageSize(searchParams.get("pageSize"));
@@ -43,6 +52,7 @@ export async function GET(req: Request) {
       search,
       status,
       whatsapp,
+      countryCode,
       page,
       pageSize,
       sortKey,

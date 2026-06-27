@@ -33,6 +33,8 @@ import {
   recordClientActivityChangesSafely,
   recordClientCreatedActivitySafely,
 } from "@/lib/clients/clientActivityLog.service";
+import { getBusinessCountryMeta } from "@/lib/settings/appSettingsUtils";
+import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
 
 type ClientStatusInput = PrismaClientStatus | string | null;
 
@@ -83,7 +85,7 @@ type CreateClientInput = {
   billing_address?: string | null;
   tax_id?: string | null;
   tax_exempt?: boolean;
-  preferred_currency?: CurrencyCode;
+  preferred_currency?: CurrencyCode | string | null;
 
   credit_limit?: number | string | null;
 
@@ -93,10 +95,29 @@ type CreateClientInput = {
 
 type UpdateClientInput = CreateClientInput;
 
+function normalizeCountryCodeValue(value?: string | null) {
+  const countryCode = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return countryCode || null;
+}
+
+async function resolveBusinessCountryMeta(countryCode?: string | null) {
+  const settings = await getOrCreateAppSettingsService();
+
+  return getBusinessCountryMeta({
+    ...settings,
+    country_code:
+      normalizeCountryCodeValue(countryCode) ?? settings.country_code,
+  });
+}
+
 export async function getClientsService({
   search,
   status,
   whatsapp = "all",
+  countryCode,
   page = 1,
   pageSize = 25,
   sortKey = "client",
@@ -105,15 +126,19 @@ export async function getClientsService({
   search?: string;
   status?: ClientStatusInput;
   whatsapp?: FindClientsWhatsAppFilter | string | null;
+  countryCode?: string | null;
   page?: number;
   pageSize?: number;
   sortKey?: FindClientsSortKey | string | null;
   sortDirection?: FindClientsSortDirection | string | null;
 }) {
+  const businessCountryMeta = await resolveBusinessCountryMeta(countryCode);
+
   return findClients({
     search,
     status,
     whatsapp,
+    countryCode: businessCountryMeta.countryCode,
     page,
     pageSize,
     sortKey,
@@ -132,8 +157,10 @@ export async function createClientService(body: CreateClientInput) {
     return { success: false, errors };
   }
 
-  const countryCode =
-    toTrimmedStringOrFallback(body.country_code, "CR") ?? "CR";
+  const businessCountryMeta = await resolveBusinessCountryMeta(
+    body.country_code,
+  );
+  const countryCode = businessCountryMeta.countryCode;
 
   const complianceProfile = normalizeComplianceProfile(
     body.compliance_profile,
@@ -245,7 +272,7 @@ export async function createClientService(body: CreateClientInput) {
     tax_id: identificationNumber,
     tax_exempt: Boolean(body.tax_exempt),
     preferred_currency: (body.preferred_currency ??
-      "CRC") as CreateClientData["preferred_currency"],
+      businessCountryMeta.currency) as CreateClientData["preferred_currency"],
 
     credit_limit:
       paymentTerm === "CREDIT"
@@ -276,9 +303,13 @@ export async function updateClientByIdService(
     return null;
   }
 
+  const businessCountryMeta = await resolveBusinessCountryMeta(
+    body.country_code ?? existing.country_code,
+  );
+
   const countryCode =
     body.country_code !== undefined
-      ? body.country_code?.trim() || existing.country_code
+      ? (normalizeCountryCodeValue(body.country_code) ?? existing.country_code)
       : existing.country_code;
 
   const paymentTerm =
@@ -503,7 +534,7 @@ export async function updateClientByIdService(
 
     preferred_currency: (body.preferred_currency ??
       existing.preferred_currency ??
-      "CRC") as UpdateClientData["preferred_currency"],
+      businessCountryMeta.currency) as UpdateClientData["preferred_currency"],
 
     credit_limit:
       paymentTerm === "CREDIT"

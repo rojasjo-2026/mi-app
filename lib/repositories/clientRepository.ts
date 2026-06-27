@@ -2,6 +2,7 @@ import {
   ClientStatus as PrismaClientStatus,
   InvoiceStatus as PrismaInvoiceStatus,
   Prisma,
+  type CurrencyCode,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
@@ -28,6 +29,7 @@ type FindClientsParams = {
   search?: string;
   status?: ClientStatusInput;
   whatsapp?: FindClientsWhatsAppFilter | string | null;
+  countryCode?: string | null;
   page?: number;
   pageSize?: number;
   sortKey?: FindClientsSortKey | string | null;
@@ -58,6 +60,14 @@ function getSortDirection(
   value?: FindClientsSortDirection | string | null,
 ): FindClientsSortDirection {
   return value === "desc" ? "desc" : "asc";
+}
+
+function normalizeCountryCodeParam(value?: string | null) {
+  const countryCode = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return countryCode || null;
 }
 
 function getClientOrderBy(
@@ -157,7 +167,7 @@ export type CreateClientData = {
 
   tax_id?: string | null;
   tax_exempt?: boolean;
-  preferred_currency?: "CRC" | "USD";
+  preferred_currency?: CurrencyCode;
 
   data_consent_at?: Date | string | null;
   data_consent_source?: string | null;
@@ -218,7 +228,7 @@ export type UpdateClientData = Partial<{
 
   tax_id: string | null;
   tax_exempt: boolean;
-  preferred_currency: "CRC" | "USD";
+  preferred_currency: CurrencyCode;
 
   data_consent_at: Date | string | null;
   data_consent_source: string | null;
@@ -400,12 +410,14 @@ export async function findClients({
   search,
   status,
   whatsapp = "all",
+  countryCode,
   page,
   pageSize,
   sortKey = "client",
   sortDirection = "asc",
 }: FindClientsParams) {
   const normalizedStatus = normalizeClientStatus(status);
+  const normalizedCountryCode = normalizeCountryCodeParam(countryCode);
   const safePage = getSafePage(page);
   const safePageSize = getSafePageSize(pageSize);
   const skip = (safePage - 1) * safePageSize;
@@ -416,6 +428,12 @@ export async function findClients({
       : {
           client_status: normalizedStatus ?? PrismaClientStatus.ACTIVE,
         }),
+
+    ...(normalizedCountryCode
+      ? {
+          country_code: normalizedCountryCode,
+        }
+      : {}),
 
     ...(whatsapp === "with"
       ? { whatsapp_opt_in: true }
