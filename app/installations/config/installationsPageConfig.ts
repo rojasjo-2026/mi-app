@@ -1,7 +1,8 @@
-﻿import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
+﻿export type { AppSettingsResponse } from "@/lib/settings/appSettingsUtils";
+export {
+  DEFAULT_COUNTRY_CODE,
+  fallbackCountryPreset,
+} from "@/lib/settings/appSettingsUtils";
 
 export type InstallationItem = {
   installation_id: string;
@@ -25,18 +26,15 @@ export type InstallationItem = {
   } | null;
 };
 
-export type FilterType = "all" | "OPEN" | "IN_PROGRESS" | "CLOSED" | "CANCELLED";
+export type FilterType =
+  | "all"
+  | "OPEN"
+  | "IN_PROGRESS"
+  | "CLOSED"
+  | "CANCELLED";
 export type SortType = "recent" | "oldest";
 export type SortDirection = "asc" | "desc";
 export type SortKey = Exclude<ColumnKey, "actions">;
-
-export type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
 
 export type ColumnKey =
   | "installation"
@@ -53,11 +51,6 @@ export type OptionalColumnKey = Exclude<ColumnKey, "installation" | "actions">;
 
 export type ColumnWidths = Record<ColumnKey, number>;
 export type VisibleColumns = Record<OptionalColumnKey, boolean>;
-
-export const DEFAULT_COUNTRY_CODE = "CR";
-
-export const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
 
 export const STATUS_FILTERS: { label: string; value: FilterType }[] = [
   { label: "Todas", value: "all" },
@@ -139,4 +132,3 @@ export type InstallationMetrics = {
   closed: number;
   cancelled: number;
 };
-

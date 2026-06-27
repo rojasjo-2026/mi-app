@@ -5,7 +5,7 @@ import type {
   VisibleColumns,
 } from "../types/followUpsPageTypes";
 
-export const DEFAULT_COUNTRY_CODE = "CR";
+export { DEFAULT_COUNTRY_CODE } from "@/lib/settings/appSettingsUtils";
 
 export const PAGE_SIZE_OPTIONS = [25, 50, 100];
 

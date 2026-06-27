@@ -1,16 +1,10 @@
-﻿import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
-import type { PendingBillable, PendingBillablesResponse } from "../../types";
+﻿export type { AppSettingsResponse } from "@/lib/settings/appSettingsUtils";
+export {
+  DEFAULT_COUNTRY_CODE,
+  fallbackCountryPreset,
+} from "@/lib/settings/appSettingsUtils";
 
-export type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
+import type { PendingBillable, PendingBillablesResponse } from "../../types";
 
 export type PaginationState = {
   page: number;
@@ -72,11 +66,7 @@ export type PendingBillablesSectionProps = {
   onSortChange?: (key: PendingSortKey) => void;
 };
 
-export const DEFAULT_COUNTRY_CODE = "CR";
 export const PAGE_SIZE_OPTIONS = [15, 25, 50, 100];
-
-export const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
 
 export const OPTIONAL_COLUMNS: { key: OptionalColumnKey; label: string }[] = [
   { key: "type", label: "Tipo" },
