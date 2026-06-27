@@ -45,7 +45,8 @@ export default function CalendarPage() {
   const sidePanelRef = useRef<HTMLElement | null>(null);
   const noteTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const { countryCode, settingsError } = useAppSettings();
+  const { countryCode, settingsError, businessCountryMeta } = useAppSettings();
+  const calendarLocale = businessCountryMeta.locale;
 
   const [calendarView, setCalendarView] = useState<CalendarViewMode>("month");
   const [currentMonth, setCurrentMonth] = useState<Date>(
@@ -748,12 +749,12 @@ export default function CalendarPage() {
                 : calendarView === "week"
                   ? `Semana de ${getStartOfWeek(
                       selectedDate,
-                    ).toLocaleDateString("es-CR", {
+                    ).toLocaleDateString(calendarLocale, {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
                     })}`
-                  : selectedDate.toLocaleDateString("es-CR", {
+                  : selectedDate.toLocaleDateString(calendarLocale, {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
