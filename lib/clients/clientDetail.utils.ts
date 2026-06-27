@@ -48,8 +48,7 @@ export function getPaymentTermLabel(term?: string | null) {
    Formatters
 ========================= */
 
-const DEFAULT_LOCALE = "es-CR";
-const DEFAULT_CURRENCY = "CRC";
+const DEFAULT_LOCALE = "es";
 
 const currencyLocaleMap: Record<string, string> = {
   ARS: "es-AR",
@@ -74,15 +73,19 @@ const currencyLocaleMap: Record<string, string> = {
 };
 
 function normalizeCurrencyCode(currency?: string | null) {
-  const normalizedCurrency = String(currency || DEFAULT_CURRENCY)
+  const normalizedCurrency = String(currency || "")
     .trim()
     .toUpperCase();
 
-  return normalizedCurrency || DEFAULT_CURRENCY;
+  return normalizedCurrency || null;
 }
 
 function getLocaleForCurrency(currency?: string | null) {
   const normalizedCurrency = normalizeCurrencyCode(currency);
+
+  if (!normalizedCurrency) {
+    return DEFAULT_LOCALE;
+  }
 
   return currencyLocaleMap[normalizedCurrency] ?? DEFAULT_LOCALE;
 }
@@ -162,7 +165,14 @@ export function formatCurrency(
 ) {
   const amount = toSafeNumber(value);
   const normalizedCurrency = normalizeCurrencyCode(currency);
-  const resolvedLocale = locale || getLocaleForCurrency(normalizedCurrency);
+  const resolvedLocale =
+    locale || getLocaleForCurrency(normalizedCurrency) || DEFAULT_LOCALE;
+
+  if (!normalizedCurrency) {
+    return amount.toLocaleString(resolvedLocale, {
+      maximumFractionDigits: 0,
+    });
+  }
 
   try {
     return new Intl.NumberFormat(resolvedLocale, {
@@ -403,7 +413,7 @@ export function getActivityFieldLabel(fieldName?: string | null) {
     billing_phone: "Teléfono de facturación",
     billing_address: "Dirección de facturación",
     tax_id: "Identificación tributaria",
-    tax_exempt: "Exento de IVA",
+    tax_exempt: "Exento de impuesto",
     preferred_currency: "Moneda preferida",
   };
 
@@ -413,6 +423,7 @@ export function getActivityFieldLabel(fieldName?: string | null) {
 export function formatActivityValue(
   value?: string | null,
   fieldName?: string | null,
+  locale = DEFAULT_LOCALE,
 ) {
   if (!value) return "—";
 
@@ -436,7 +447,7 @@ export function formatActivityValue(
   const parsedDate = new Date(value);
 
   if (!Number.isNaN(parsedDate.getTime()) && value.includes("T")) {
-    return formatDateLabel(value);
+    return formatDateLabel(value, locale);
   }
 
   return value;
