@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
+
 import CalendarHeader from "@/app/calendar/components/calendar/CalendarHeader";
 import CalendarStats from "@/app/calendar/components/calendar/CalendarStats";
 import CalendarMonthView from "@/app/calendar/components/calendar/CalendarMonthView";
@@ -36,24 +38,6 @@ import {
   mapAvailabilityByDate,
 } from "./utils/calendarAvailabilityUtils";
 
-type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-  } | null;
-  message?: string;
-};
-
-const CALENDAR_FALLBACK_COUNTRY_CODE = "CR";
-
-function normalizeCountryCode(value?: string | null) {
-  const countryCode = String(value || "")
-    .trim()
-    .toUpperCase();
-
-  return countryCode || CALENDAR_FALLBACK_COUNTRY_CODE;
-}
-
 export default function CalendarPage() {
   const today = new Date();
   const todayKey = formatDateKey(today);
@@ -61,9 +45,8 @@ export default function CalendarPage() {
   const sidePanelRef = useRef<HTMLElement | null>(null);
   const noteTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const [calendarCountryCode, setCalendarCountryCode] = useState(
-    CALENDAR_FALLBACK_COUNTRY_CODE,
-  );
+  const { countryCode, settingsError } = useAppSettings();
+
   const [calendarView, setCalendarView] = useState<CalendarViewMode>("month");
   const [currentMonth, setCurrentMonth] = useState<Date>(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -94,12 +77,12 @@ export default function CalendarPage() {
       setIsLoadingEvents(true);
 
       const calendarSearchParams = new URLSearchParams({
-        country_code: calendarCountryCode,
+        country_code: countryCode,
       });
 
       const nonWorkingDaysSearchParams = new URLSearchParams({
         active_only: "true",
-        country_code: calendarCountryCode,
+        country_code: countryCode,
       });
 
       const [
@@ -177,7 +160,7 @@ export default function CalendarPage() {
       setIsLoadingAvailability(true);
 
       const availabilitySearchParams = new URLSearchParams({
-        country_code: calendarCountryCode,
+        country_code: countryCode,
         date: startDateKey,
         days: String(days),
       });
@@ -215,42 +198,12 @@ export default function CalendarPage() {
   }
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadCalendarSettings() {
-      try {
-        const response = await fetch("/api/settings", { cache: "no-store" });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const result: AppSettingsResponse = await response.json();
-
-        if (!isMounted) {
-          return;
-        }
-
-        setCalendarCountryCode(normalizeCountryCode(result.data?.country_code));
-      } catch (error) {
-        console.error("Error loading calendar settings:", error);
-      }
-    }
-
-    void loadCalendarSettings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
     void loadCalendarEvents();
-  }, [calendarCountryCode]);
+  }, [countryCode]);
 
   useEffect(() => {
     void loadAvailabilityForVisibleMonth(currentMonth);
-  }, [currentMonth, calendarCountryCode]);
+  }, [currentMonth, countryCode]);
 
   useEffect(() => {
     const closeContextMenu = () => setContextMenu(null);
@@ -770,6 +723,13 @@ export default function CalendarPage() {
         upcomingEventsCount={upcomingEventsCount}
         installationEventsCount={installationEventsCount}
       />
+
+      {settingsError ? (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          No se pudo cargar la configuración de la app. Se está usando la
+          configuración base.
+        </div>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
