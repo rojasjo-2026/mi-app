@@ -1,10 +1,4 @@
-﻿import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-  type CountryPreset,
-} from "@/lib/settings/countryPresets";
-
-export type { CountryPreset };
+﻿export type { CountryPreset } from "@/lib/settings/countryPresets";
 
 export type GooglePlaceAutocompleteResult = {
   formatted_address?: string;
@@ -95,6 +89,7 @@ export type Client = {
   location_notes?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
+  country_code?: string | null;
 };
 
 export type NominatimResponse = {
@@ -114,17 +109,4 @@ export type NominatimResponse = {
   };
 };
 
-export type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
-
 export const MAX_NOTES_LENGTH = 300;
-export const DEFAULT_COUNTRY_CODE = "CR";
-
-export const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
