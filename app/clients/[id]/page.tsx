@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { History } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import type {
   DetailSectionKey,
   InstallationFilter,
@@ -14,10 +15,7 @@ import {
   filterClientInstallations,
   getNextClientMaintenance,
 } from "@/lib/clients/clientInstallations.utils";
-import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
+import { getBusinessCountryPreset } from "@/lib/settings/appSettingsUtils";
 import { useClientActivityLogs } from "@/hooks/clients/useClientActivityLogs";
 import { useClientDetail } from "@/hooks/clients/useClientDetail";
 import { useClientInvoices } from "@/hooks/clients/useClientInvoices";
@@ -38,15 +36,7 @@ type InstallationHistoryOption = {
   zone?: string | null;
 };
 
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
-function formatInstallationHistoryDate(
-  value?: string | null,
-  locale = "es-CR",
-) {
+function formatInstallationHistoryDate(value?: string | null, locale = "es") {
   if (!value) return "";
 
   const parsed = new Date(value);
@@ -75,6 +65,7 @@ function getInstallationHistoryLabel(
   );
 
   const location = [installation.city, installation.zone]
+    .map((value) => value?.trim())
     .filter(Boolean)
     .join(" · ");
 
@@ -84,6 +75,7 @@ function getInstallationHistoryLabel(
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { businessCountryMeta } = useAppSettings();
 
   const clientId = typeof params?.id === "string" ? params.id : undefined;
 
@@ -93,17 +85,21 @@ export default function ClientDetailPage() {
   const { client, loading, error } = useClientDetail(clientId);
 
   const clientCountryPreset = useMemo(() => {
-    return (
-      getCountryPreset(
-        client?.country_code ?? client?.identification_country,
-      ) ?? fallbackCountryPreset
+    return getBusinessCountryPreset(
+      client?.country_code ??
+        client?.identification_country ??
+        businessCountryMeta.countryCode,
     );
-  }, [client?.country_code, client?.identification_country]);
+  }, [
+    businessCountryMeta.countryCode,
+    client?.country_code,
+    client?.identification_country,
+  ]);
 
   const clientCurrency =
     client?.preferred_currency || clientCountryPreset.primaryCurrency;
 
-  const clientLocale = clientCountryPreset.locale;
+  const clientLocale = clientCountryPreset.locale || businessCountryMeta.locale;
 
   const activityLogFilters =
     selectedHistoryInstallationId !== "all"
