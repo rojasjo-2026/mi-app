@@ -1,11 +1,10 @@
 ﻿import type { ClientStatus } from "@/lib/clients/clientStatus";
-import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-  type CountryPreset,
-} from "@/lib/settings/countryPresets";
+import type { CountryPreset } from "@/lib/settings/countryPresets";
+import { DEFAULT_COUNTRY_CODE } from "@/lib/settings/appSettingsUtils";
 
 export type { CountryPreset };
+
+export { DEFAULT_COUNTRY_CODE };
 
 export type ClientType = "PERSON" | "COMPANY" | "OTHER";
 export type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
@@ -38,18 +37,21 @@ export type ClientFormData = {
   admin_level_3?: string | null;
   client_status?: ClientStatus | string | null;
   whatsapp_opt_in?: boolean | null;
+
   default_payment_term?: "CASH" | "CREDIT" | null;
   default_credit_days?: number | string | null;
   default_discount_rate?: number | string | null;
   credit_limit?: number | string | null;
+  tax_exempt?: boolean | null;
+  preferred_currency?: string | null;
+
   billing_same_as_client?: boolean | null;
   billing_name?: string | null;
   billing_email?: string | null;
   billing_phone?: string | null;
   billing_address?: string | null;
+
   tax_id?: string | null;
-  tax_exempt?: boolean | null;
-  preferred_currency?: string | null;
 };
 
 export type ClientFormProps = {
@@ -57,21 +59,12 @@ export type ClientFormProps = {
   initialData?: ClientFormData | null;
 };
 
-export type AppSettingsResponse = {
-  success: boolean;
-  data: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-  message?: string;
-};
-
-export type SectionKey = "personal" | "contact" | "location" | "finance" | "billing";
-
-export const DEFAULT_COUNTRY_CODE = "CR";
-
-export const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
+export type SectionKey =
+  | "personal"
+  | "contact"
+  | "location"
+  | "finance"
+  | "billing";
 
 export const currencyNames: Record<string, string> = {
   ARS: "Peso argentino",
@@ -112,4 +105,3 @@ export const GLOBAL_IDENTIFICATION_OPTIONS = [
   { value: "BUSINESS_REGISTRATION", label: "Registro empresarial" },
   { value: "OTHER", label: "Otro" },
 ];
-

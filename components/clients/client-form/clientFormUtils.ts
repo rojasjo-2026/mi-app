@@ -1,31 +1,47 @@
-﻿import { getCountryPreset } from "@/lib/settings/countryPresets";
-import {
-  fallbackCountryPreset,
-  type ClientComplianceProfile,
-  type ClientType,
-  type CountryPreset,
+﻿import { getBusinessCountryPreset } from "@/lib/settings/appSettingsUtils";
+
+import type {
+  ClientComplianceProfile,
+  ClientType,
+  CountryPreset,
 } from "./clientFormConfig";
 
 export function getCountryByCode(countryCode?: string | null): CountryPreset {
-  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
+  return getBusinessCountryPreset(countryCode);
+}
+
+export function getCountryDisplayName(countryCode?: string | null) {
+  const countryPreset = getCountryByCode(countryCode);
+
+  return countryPreset.countryName;
 }
 
 export function getClientTypeLabel(clientType: ClientType) {
-  if (clientType === "COMPANY") return "Empresa";
-  if (clientType === "OTHER") return "Otro";
-  return "Persona física";
+  if (clientType === "PERSON") {
+    return "Persona física";
+  }
+
+  if (clientType === "COMPANY") {
+    return "Empresa / Persona jurídica";
+  }
+
+  return "Otro";
 }
 
-export function getComplianceProfileLabel(profile: ClientComplianceProfile) {
-  return profile === "COSTA_RICA" ? "Costa Rica" : "Global";
+export function getComplianceProfileLabel(
+  complianceProfile: ClientComplianceProfile,
+) {
+  if (complianceProfile === "COSTA_RICA") {
+    return "Costa Rica";
+  }
+
+  return "Global";
 }
 
 export function getPaymentTermLabel(paymentTerm: "CASH" | "CREDIT") {
-  return paymentTerm === "CREDIT" ? "Crédito" : "Contado";
-}
+  if (paymentTerm === "CREDIT") {
+    return "Crédito";
+  }
 
-export function getCountryDisplayName(countryCode: string) {
-  if (countryCode === "CR") return "Costa Rica";
-  return countryCode || "Sin país definido";
+  return "Contado";
 }
-
