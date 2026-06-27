@@ -44,6 +44,10 @@ export default function ClientContactSection({
   setClientStatus,
   setWhatsappOptIn,
 }: ClientContactSectionProps) {
+  const phonePlaceholder = phoneExample.trim()
+    ? `Ej. ${phoneExample}`
+    : "Ingrese el número de teléfono";
+
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <ClientFormSectionHeader
@@ -63,7 +67,7 @@ export default function ClientContactSection({
               onChange={setPhonePrimary}
               required
               inputClass={inputClass}
-              placeholder={`Ej. ${phoneExample}`}
+              placeholder={phonePlaceholder}
             />
 
             <FormInput
@@ -71,16 +75,16 @@ export default function ClientContactSection({
               value={phoneSecondary}
               onChange={setPhoneSecondary}
               inputClass={inputClass}
-              placeholder={`Ej. ${phoneExample}`}
+              placeholder={phonePlaceholder}
             />
 
             <FormInput
-              label="Email"
+              label="Correo electrónico"
               value={email}
               onChange={setEmail}
               inputClass={inputClass}
               type="email"
-              placeholder="correo@empresa.com"
+              placeholder="correo@dominio.com"
             />
 
             {mode === "edit" && (
@@ -91,8 +95,8 @@ export default function ClientContactSection({
 
                 <select
                   value={clientStatus}
-                  onChange={(e) =>
-                    setClientStatus(e.target.value as ClientStatus)
+                  onChange={(event) =>
+                    setClientStatus(event.target.value as ClientStatus)
                   }
                   className={selectClass}
                 >
@@ -122,7 +126,7 @@ export default function ClientContactSection({
                 id="whatsapp_opt_in"
                 type="checkbox"
                 checked={whatsappOptIn}
-                onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                onChange={(event) => setWhatsappOptIn(event.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
 
