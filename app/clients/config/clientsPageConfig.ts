@@ -2,15 +2,48 @@
 
 export type Client = {
   client_id: string;
+
+  client_type?: "PERSON" | "COMPANY" | "OTHER" | null;
+  compliance_profile?: "GLOBAL" | "COSTA_RICA" | null;
+
+  display_name?: string | null;
+  legal_name?: string | null;
+  company_name?: string | null;
+  commercial_name?: string | null;
+  main_contact_name?: string | null;
+
   first_name: string;
   last_name_1: string;
   last_name_2?: string | null;
+
   phone_primary: string;
+  phone_secondary?: string | null;
   email?: string | null;
-  client_status?: ClientStatus | null;
-  whatsapp_opt_in?: boolean | null;
+
+  country_code?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
+  admin_level_3?: string | null;
+  address_line?: string | null;
+  zone?: string | null;
+
+  identification_country?: string | null;
+  identification_type?: string | null;
+  identification_number?: string | null;
+
+  client_status?: ClientStatus | null;
+  whatsapp_opt_in?: boolean | null;
+
+  default_payment_term?: "CASH" | "CREDIT" | null;
+  default_credit_days?: number | null;
+  default_discount_rate?: number | string | null;
+  credit_limit?: number | string | null;
+  preferred_currency?: string | null;
+
+  billing_name?: string | null;
+  billing_email?: string | null;
+  billing_phone?: string | null;
+  billing_address?: string | null;
 
   maintenance_count?: number;
   installation_count?: number;
@@ -19,6 +52,9 @@ export type Client = {
 
   last_maintenance?: string | null;
   last_contact?: string | null;
+
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type PaginationState = {
