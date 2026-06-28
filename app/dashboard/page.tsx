@@ -3,15 +3,75 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import {
   buildGoogleMapsRouteLink as buildOperationalGoogleMapsRouteLink,
   getValidOperationalMapPoints,
   parseOperationalCoordinate,
 } from "@/lib/operational-location/operationalLocation.utils";
 
+type GoogleMapPosition = {
+  lat: number;
+  lng: number;
+};
+
+type GoogleMapOptions = {
+  center: GoogleMapPosition;
+  zoom: number;
+  mapTypeControl?: boolean;
+  streetViewControl?: boolean;
+  fullscreenControl?: boolean;
+};
+
+type GoogleMap = {
+  setCenter: (position: GoogleMapPosition) => void;
+  setZoom: (zoom: number) => void;
+  fitBounds: (bounds: GoogleLatLngBounds) => void;
+};
+
+type GoogleLatLngBounds = {
+  extend: (position: GoogleMapPosition) => void;
+};
+
+type GoogleMarker = {
+  setMap: (map: GoogleMap | null) => void;
+  addListener: (eventName: string, handler: () => void) => unknown;
+};
+
+type GoogleMarkerOptions = {
+  position: GoogleMapPosition;
+  map: GoogleMap;
+  title: string;
+  icon: {
+    path: string | number;
+    fillColor: string;
+    fillOpacity: number;
+    strokeColor: string;
+    strokeWeight: number;
+    scale: number;
+  };
+};
+
+type GoogleInfoWindow = {
+  setContent: (content: string) => void;
+  open: (options: { anchor: GoogleMarker; map: GoogleMap }) => void;
+};
+
+type GoogleMapsApi = {
+  maps: {
+    Map: new (element: HTMLElement, options: GoogleMapOptions) => GoogleMap;
+    InfoWindow: new () => GoogleInfoWindow;
+    LatLngBounds: new () => GoogleLatLngBounds;
+    Marker: new (options: GoogleMarkerOptions) => GoogleMarker;
+    SymbolPath: {
+      CIRCLE: string | number;
+    };
+  };
+};
+
 declare global {
   interface Window {
-    google?: any;
+    google?: GoogleMapsApi;
   }
 }
 
@@ -61,6 +121,82 @@ type MapPoint = FollowUpByZoneItem & {
   lng: number;
 };
 
+function getRecordValue(source: unknown, key: string) {
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return undefined;
+  }
+
+  return (source as Record<string, unknown>)[key];
+}
+
+function getObjectValue(source: unknown, key: string) {
+  const value = getRecordValue(source, key);
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value;
+}
+
+function getStringValue(source: unknown, keys: string[]) {
+  for (const key of keys) {
+    const value = getRecordValue(source, key);
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+
+  return "";
+}
+
+function getCountryCallingCode(businessCountryMeta: unknown) {
+  const countryPreset = getObjectValue(businessCountryMeta, "countryPreset");
+
+  const rawCallingCode =
+    getStringValue(businessCountryMeta, [
+      "callingCode",
+      "calling_code",
+      "phoneCountryCode",
+      "phone_country_code",
+      "phonePrefix",
+      "phone_prefix",
+      "defaultPhoneCountryCode",
+      "default_phone_country_code",
+    ]) ||
+    getStringValue(countryPreset, [
+      "callingCode",
+      "calling_code",
+      "phoneCountryCode",
+      "phone_country_code",
+      "phonePrefix",
+      "phone_prefix",
+      "defaultPhoneCountryCode",
+      "default_phone_country_code",
+    ]);
+
+  return rawCallingCode.replace(/\D/g, "");
+}
+
+function formatDate(value: string, locale: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  try {
+    return date.toLocaleDateString(locale || "es");
+  } catch {
+    return date.toLocaleDateString("es");
+  }
+}
+
 function getClientFullName(client: FollowUpByZoneItem["client"]) {
   if (!client) return "";
 
@@ -69,17 +205,30 @@ function getClientFullName(client: FollowUpByZoneItem["client"]) {
     .join(" ");
 }
 
-function buildWhatsAppLink(phone: string, clientName?: string | null) {
+function buildWhatsAppLink(
+  phone: string,
+  clientName?: string | null,
+  countryCallingCode?: string | null,
+) {
   const cleanPhone = phone.replace(/\D/g, "");
 
   if (!cleanPhone) {
     return null;
   }
 
+  const normalizedCallingCode = String(countryCallingCode ?? "").replace(
+    /\D/g,
+    "",
+  );
+
   let formattedPhone = cleanPhone;
 
-  if (formattedPhone.length === 8) {
-    formattedPhone = `506${formattedPhone}`;
+  if (
+    normalizedCallingCode &&
+    !formattedPhone.startsWith(normalizedCallingCode) &&
+    formattedPhone.length <= 10
+  ) {
+    formattedPhone = `${normalizedCallingCode}${formattedPhone}`;
   }
 
   const message = clientName
@@ -170,6 +319,10 @@ function buildGoogleMapsRouteLink(items: FollowUpByZoneItem[]) {
 }
 
 export default function DashboardPage() {
+  const { businessCountryMeta } = useAppSettings();
+  const locale = businessCountryMeta.locale || "es";
+  const countryCallingCode = getCountryCallingCode(businessCountryMeta);
+
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [scenario, setScenario] = useState<Scenario>("all");
   const [followUpsByZone, setFollowUpsByZone] = useState<FollowUpZoneGroup[]>(
@@ -314,9 +467,18 @@ export default function DashboardPage() {
         />
       </div>
 
-      <DashboardMap items={followUpsByZone} loading={zoneLoading} />
+      <DashboardMap
+        items={followUpsByZone}
+        loading={zoneLoading}
+        locale={locale}
+      />
 
-      <FollowUpsByZone items={followUpsByZone} loading={zoneLoading} />
+      <FollowUpsByZone
+        items={followUpsByZone}
+        loading={zoneLoading}
+        locale={locale}
+        countryCallingCode={countryCallingCode}
+      />
     </main>
   );
 }
@@ -324,14 +486,16 @@ export default function DashboardPage() {
 function DashboardMap({
   items,
   loading,
+  locale,
 }: {
   items: FollowUpZoneGroup[];
   loading: boolean;
+  locale: string;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const infoWindowRef = useRef<any>(null);
+  const mapInstanceRef = useRef<GoogleMap | null>(null);
+  const markersRef = useRef<GoogleMarker[]>([]);
+  const infoWindowRef = useRef<GoogleInfoWindow | null>(null);
 
   const points = useMemo(() => getValidMapPoints(items), [items]);
 
@@ -356,15 +520,18 @@ function DashboardMap({
     if (!mapRef.current) return;
     if (!window.google?.maps) return;
 
-    if (points.length === 0) {
+    const googleMaps = window.google.maps;
+    const firstPoint = points[0];
+
+    if (!firstPoint) {
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
       return;
     }
 
     if (!mapInstanceRef.current) {
-      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-        center: { lat: points[0].lat, lng: points[0].lng },
+      mapInstanceRef.current = new googleMaps.Map(mapRef.current, {
+        center: { lat: firstPoint.lat, lng: firstPoint.lng },
         zoom: points.length === 1 ? 15 : 10,
         mapTypeControl: false,
         streetViewControl: false,
@@ -374,21 +541,29 @@ function DashboardMap({
 
     const map = mapInstanceRef.current;
 
+    if (!map) return;
+
     markersRef.current.forEach((marker) => marker.setMap(null));
     markersRef.current = [];
 
     if (!infoWindowRef.current) {
-      infoWindowRef.current = new window.google.maps.InfoWindow();
+      infoWindowRef.current = new googleMaps.InfoWindow();
     }
 
+    const infoWindow = infoWindowRef.current;
+
+    if (!infoWindow) return;
+
     if (points.length === 1) {
-      map.setCenter({ lat: points[0].lat, lng: points[0].lng });
+      map.setCenter({ lat: firstPoint.lat, lng: firstPoint.lng });
       map.setZoom(15);
     } else {
-      const bounds = new window.google.maps.LatLngBounds();
+      const bounds = new googleMaps.LatLngBounds();
+
       points.forEach((point) => {
         bounds.extend({ lat: point.lat, lng: point.lng });
       });
+
       map.fitBounds(bounds);
     }
 
@@ -398,12 +573,12 @@ function DashboardMap({
       const clientFullName =
         getClientFullName(point.client) || "Cliente sin nombre";
 
-      const marker = new window.google.maps.Marker({
+      const marker = new googleMaps.Marker({
         position: { lat: point.lat, lng: point.lng },
         map,
         title: clientFullName,
         icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
+          path: googleMaps.SymbolPath.CIRCLE,
           fillColor: markerColor,
           fillOpacity: 1,
           strokeColor: "#ffffff",
@@ -423,7 +598,7 @@ function DashboardMap({
               : ""
           }
           <div style="margin-bottom: 4px;">
-            Fecha objetivo: ${new Date(point.target_date).toLocaleDateString("es-CR")}
+            Fecha objetivo: ${formatDate(point.target_date, locale)}
           </div>
           <div style="color: #6b7280;">
             Estado: ${estadoTexto}
@@ -432,8 +607,8 @@ function DashboardMap({
       `;
 
       marker.addListener("click", () => {
-        infoWindowRef.current.setContent(infoContent);
-        infoWindowRef.current.open({
+        infoWindow.setContent(infoContent);
+        infoWindow.open({
           anchor: marker,
           map,
         });
@@ -445,7 +620,7 @@ function DashboardMap({
     return () => {
       markersRef.current.forEach((marker) => marker.setMap(null));
     };
-  }, [loading, points]);
+  }, [loading, locale, points]);
 
   return (
     <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -525,6 +700,7 @@ function Tab({
 
   return (
     <button
+      type="button"
       onClick={() => setScenario(value)}
       className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
         scenario === value
@@ -540,9 +716,13 @@ function Tab({
 function FollowUpsByZone({
   items,
   loading,
+  locale,
+  countryCallingCode,
 }: {
   items: FollowUpZoneGroup[];
   loading: boolean;
+  locale: string;
+  countryCallingCode: string;
 }) {
   const sortedGroups = items.map((group) => {
     const sortedItems = [...group.items].sort((a, b) => {
@@ -646,6 +826,7 @@ function FollowUpsByZone({
                       ? buildWhatsAppLink(
                           item.client.phone_primary,
                           clientFullName,
+                          countryCallingCode,
                         )
                       : null;
 
@@ -670,9 +851,7 @@ function FollowUpsByZone({
 
                             <p className="mt-1 text-xs text-gray-500">
                               Fecha objetivo:{" "}
-                              {new Date(item.target_date).toLocaleDateString(
-                                "es-CR",
-                              )}
+                              {formatDate(item.target_date, locale)}
                             </p>
 
                             <p className="text-xs text-gray-500">

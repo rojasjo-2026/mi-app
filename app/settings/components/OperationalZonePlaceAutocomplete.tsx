@@ -2,11 +2,41 @@
 
 import { useEffect, useRef, useState } from "react";
 
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
+type GooglePlace = {
+  formatted_address?: string;
+  name?: string;
+  place_id?: string;
+  geometry?: {
+    location?: {
+      lat: () => number;
+      lng: () => number;
+    };
+  };
+};
+
+type GoogleAutocomplete = {
+  addListener: (eventName: string, handler: () => void) => unknown;
+  getPlace: () => GooglePlace;
+};
+
+type GooglePlacesApi = {
+  Autocomplete: new (
+    input: HTMLInputElement,
+    options?: {
+      fields?: string[];
+      componentRestrictions?: {
+        country: string;
+      };
+    },
+  ) => GoogleAutocomplete;
+};
+
+type GoogleMapsRoot = {
+  maps?: {
+    places?: GooglePlacesApi;
+    importLibrary?: (libraryName: string) => Promise<unknown>;
+  };
+};
 
 type SelectedPlace = {
   reference_address: string;
@@ -27,17 +57,35 @@ type OperationalZonePlaceAutocompleteProps = {
 
 let googlePlacesLoadPromise: Promise<void> | null = null;
 
+function getGoogleMapsRoot() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const browserWindow = window as Window & {
+    google?: GoogleMapsRoot;
+  };
+
+  return browserWindow.google ?? null;
+}
+
+function getGooglePlacesApi() {
+  return getGoogleMapsRoot()?.maps?.places ?? null;
+}
+
 function loadGooglePlacesLibrary() {
   if (typeof window === "undefined") {
     return Promise.resolve();
   }
 
-  if (window.google?.maps?.places) {
+  if (getGooglePlacesApi()) {
     return Promise.resolve();
   }
 
-  if (window.google?.maps?.importLibrary) {
-    return window.google.maps.importLibrary("places").then(() => undefined);
+  const googleMapsRoot = getGoogleMapsRoot();
+
+  if (googleMapsRoot?.maps?.importLibrary) {
+    return googleMapsRoot.maps.importLibrary("places").then(() => undefined);
   }
 
   if (googlePlacesLoadPromise) {
@@ -65,6 +113,7 @@ function loadGooglePlacesLibrary() {
     }
 
     const script = document.createElement("script");
+
     script.id = "google-maps-places-script";
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
     script.async = true;
@@ -89,7 +138,7 @@ export default function OperationalZonePlaceAutocomplete({
   onPlaceSelected,
 }: OperationalZonePlaceAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const autocompleteRef = useRef<any>(null);
+  const autocompleteRef = useRef<GoogleAutocomplete | null>(null);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [placesError, setPlacesError] = useState("");
 
@@ -103,7 +152,9 @@ export default function OperationalZonePlaceAutocomplete({
 
         await loadGooglePlacesLibrary();
 
-        if (!isMounted || !inputRef.current || !window.google?.maps?.places) {
+        const googlePlaces = getGooglePlacesApi();
+
+        if (!isMounted || !inputRef.current || !googlePlaces) {
           return;
         }
 
@@ -111,7 +162,7 @@ export default function OperationalZonePlaceAutocomplete({
           return;
         }
 
-        autocompleteRef.current = new window.google.maps.places.Autocomplete(
+        autocompleteRef.current = new googlePlaces.Autocomplete(
           inputRef.current,
           {
             fields: ["formatted_address", "geometry", "name", "place_id"],
