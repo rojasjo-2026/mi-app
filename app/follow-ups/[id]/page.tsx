@@ -1,11 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import FollowUpActionsSection from "./components/FollowUpActionsSection";
 import FollowUpClientSection from "./components/FollowUpClientSection";
 import FollowUpContactFlowSection from "./components/FollowUpContactFlowSection";
@@ -23,8 +20,6 @@ import FollowUpCommercialSection, {
 import {
   type FollowUpDetail,
   type FollowUpEditForm,
-  formatDate,
-  formatDateTime,
   getClientFullName,
   getPriorityClasses,
   getStatusClasses,
@@ -41,29 +36,6 @@ type TechnicianOption = {
   email?: string | null;
 };
 
-type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
-
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
-function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
-  const countryPreset =
-    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
-
-  return {
-    currency: settings?.default_currency || countryPreset.primaryCurrency,
-    locale: countryPreset.locale,
-  };
-}
-
 function toSafeNumber(value?: number | string | null) {
   if (value === null || value === undefined || value === "") return null;
 
@@ -74,27 +46,35 @@ function toSafeNumber(value?: number | string | null) {
 
 function formatBusinessMoney(
   value?: number | string | null,
-  currency = "CRC",
-  locale = "es-CR",
+  currency?: string | null,
+  locale = "es",
 ) {
   const amount = toSafeNumber(value);
 
   if (amount === null) return "-";
 
+  const currencyCode = currency?.trim().toUpperCase();
+
+  if (!currencyCode) {
+    return amount.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    });
+  }
+
   try {
     return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency,
+      currency: currencyCode,
       maximumFractionDigits: 0,
     }).format(amount);
   } catch {
-    return `${currency} ${amount.toLocaleString(locale, {
+    return `${currencyCode} ${amount.toLocaleString(locale, {
       maximumFractionDigits: 0,
     })}`;
   }
 }
 
-function formatBusinessDate(value?: string | null, locale = "es-CR") {
+function formatBusinessDate(value?: string | null, locale = "es") {
   if (!value) return "-";
 
   const parsed = new Date(value);
@@ -108,7 +88,7 @@ function formatBusinessDate(value?: string | null, locale = "es-CR") {
   });
 }
 
-function formatBusinessDateTime(value?: string | null, locale = "es-CR") {
+function formatBusinessDateTime(value?: string | null, locale = "es") {
   if (!value) return "-";
 
   const parsed = new Date(value);
@@ -183,36 +163,15 @@ export default function FollowUpDetailPage() {
     technician_id: "",
   });
 
-  const defaultBusinessMeta = useMemo(() => getBusinessCountryMeta(), []);
-  const [businessCurrency, setBusinessCurrency] = useState(
-    defaultBusinessMeta.currency,
-  );
-  const [businessLocale, setBusinessLocale] = useState(
-    defaultBusinessMeta.locale,
-  );
+  const { businessCountryMeta } = useAppSettings();
+
+  const businessCurrency =
+    (businessCountryMeta as { currency?: string | null }).currency ||
+    businessCountryMeta.countryPreset.primaryCurrency;
+
+  const businessLocale = businessCountryMeta.locale || "es";
 
   useEffect(() => {
-    async function loadBusinessSettings() {
-      try {
-        const res = await fetch("/api/settings", {
-          cache: "no-store",
-        });
-
-        const result: AppSettingsResponse = await res.json();
-
-        if (!res.ok || !result.success) {
-          return;
-        }
-
-        const businessMeta = getBusinessCountryMeta(result.data);
-
-        setBusinessCurrency(businessMeta.currency);
-        setBusinessLocale(businessMeta.locale);
-      } catch {
-        // Keep default business metadata if settings cannot be loaded.
-      }
-    }
-
     async function loadData() {
       if (!id) {
         setError("Mantenimiento no encontrado");
@@ -221,8 +180,6 @@ export default function FollowUpDetailPage() {
       }
 
       try {
-        await loadBusinessSettings();
-
         const res = await fetch(`/api/follow-ups/${id}`, {
           cache: "no-store",
         });

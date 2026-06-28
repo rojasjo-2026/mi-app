@@ -183,7 +183,7 @@ export function toDateInputValue(value?: string | null) {
   return `${year}-${month}-${day}`;
 }
 
-export function formatDate(value?: string | null) {
+export function formatDate(value?: string | null, locale = "es") {
   if (!value) return "-";
 
   const parsed = new Date(value);
@@ -192,14 +192,14 @@ export function formatDate(value?: string | null) {
     return value;
   }
 
-  return parsed.toLocaleDateString("es-CR", {
+  return parsed.toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-export function formatDateTime(value?: string | null) {
+export function formatDateTime(value?: string | null, locale = "es") {
   if (!value) return "-";
 
   const parsed = new Date(value);
@@ -208,7 +208,7 @@ export function formatDateTime(value?: string | null) {
     return value;
   }
 
-  return parsed.toLocaleString("es-CR", {
+  return parsed.toLocaleString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",

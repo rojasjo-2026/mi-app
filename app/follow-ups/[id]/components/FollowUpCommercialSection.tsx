@@ -74,16 +74,34 @@ function toNumber(value: unknown) {
   return null;
 }
 
-export function formatMoney(value?: number | string | null) {
+export function formatMoney(
+  value?: number | string | null,
+  currency?: string | null,
+  locale = "es",
+) {
   const amount = toNumber(value);
 
   if (amount === null) return "-";
 
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const currencyCode = currency?.trim().toUpperCase();
+
+  if (!currencyCode) {
+    return amount.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    });
+  }
+
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: currencyCode,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currencyCode} ${amount.toLocaleString(locale, {
+      maximumFractionDigits: 0,
+    })}`;
+  }
 }
 
 export function formatBillingStatus(value?: string | null) {
