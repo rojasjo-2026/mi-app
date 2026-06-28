@@ -1,5 +1,7 @@
 "use client";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
+
 type TableRow = {
   report: string;
   category: string;
@@ -13,11 +15,11 @@ type ReportsTablePreviewProps = {
   rows: TableRow[];
 };
 
-function formatDate(value?: string) {
+function formatDate(value?: string, locale = "es") {
   if (!value) return "Sin actualizar";
 
   try {
-    return new Intl.DateTimeFormat("es-CR", {
+    return new Intl.DateTimeFormat(locale, {
       dateStyle: "medium",
       timeStyle: "short",
     }).format(new Date(value));
@@ -41,6 +43,9 @@ function getPriorityClass(priority: string) {
 export default function ReportsTablePreview({
   rows,
 }: ReportsTablePreviewProps) {
+  const { businessCountryMeta } = useAppSettings();
+  const locale = businessCountryMeta.locale || "es";
+
   function handleOpenReport(route: string) {
     console.log(`Vista previa preparada para futura ruta: ${route}`);
   }
@@ -107,7 +112,7 @@ export default function ReportsTablePreview({
                 </td>
 
                 <td className="border-b border-slate-100 px-4 py-3 text-sm font-medium text-slate-500">
-                  {formatDate(row.updatedAt)}
+                  {formatDate(row.updatedAt, locale)}
                 </td>
 
                 <td className="border-b border-slate-100 px-4 py-3 text-right">

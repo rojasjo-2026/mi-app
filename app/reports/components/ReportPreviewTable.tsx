@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import { PAGE_SIZE_OPTIONS } from "../config/reportBuilderConfig";
 import type {
   ActiveReportSource,
@@ -36,6 +37,10 @@ export default function ReportPreviewTable({
   onPageChange,
   onPageSizeChange,
 }: ReportPreviewTableProps) {
+  const { businessCountryMeta } = useAppSettings();
+  const locale = businessCountryMeta.locale || "es";
+  const currency = businessCountryMeta.currency;
+
   const hasColumns = columns.length > 0;
   const hasRows = rows.length > 0;
 
@@ -55,7 +60,7 @@ export default function ReportPreviewTable({
           </h2>
 
           <p className="mt-1 text-sm leading-5 text-slate-500">
-            {pagination.totalItems.toLocaleString("es-CR")} registros
+            {pagination.totalItems.toLocaleString(locale)} registros
             encontrados
           </p>
         </div>
@@ -166,8 +171,10 @@ export default function ReportPreviewTable({
                       title={String(row[column.key] ?? "")}
                     >
                       <span className="block truncate">
-                        {formatCellValue(column.key, row[column.key] ?? "") ||
-                          "-"}
+                        {formatCellValue(column.key, row[column.key] ?? "", {
+                          locale,
+                          currency,
+                        }) || "-"}
                       </span>
                     </td>
                   ))}
@@ -183,8 +190,8 @@ export default function ReportPreviewTable({
         </span>
 
         <span>
-          Mostrando {rows.length.toLocaleString("es-CR")} de{" "}
-          {pagination.totalItems.toLocaleString("es-CR")} registros
+          Mostrando {rows.length.toLocaleString(locale)} de{" "}
+          {pagination.totalItems.toLocaleString(locale)} registros
         </span>
       </div>
     </section>

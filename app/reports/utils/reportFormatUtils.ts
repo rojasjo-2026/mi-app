@@ -1,6 +1,8 @@
 import { REPORT_COLUMNS_BY_SOURCE } from "../config/reportBuilderConfig";
 import type { ReportColumnKey, ReportRow, ReportSource } from "../types";
 
+const DEFAULT_REPORT_LOCALE = "es";
+
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Activo",
   PROSPECT: "Prospecto",
@@ -52,22 +54,53 @@ export function getColumnLabel(
   );
 }
 
-export function formatCellValue(columnKey: string, value: string | number) {
+function resolveLocale(locale?: string) {
+  const normalizedLocale = String(locale || "").trim();
+
+  return normalizedLocale || DEFAULT_REPORT_LOCALE;
+}
+
+function resolveCurrency(currency?: string | null) {
+  const normalizedCurrency = String(currency || "")
+    .trim()
+    .toUpperCase();
+
+  return /^[A-Z]{3}$/.test(normalizedCurrency) ? normalizedCurrency : null;
+}
+
+export function formatCellValue(
+  columnKey: string,
+  value: string | number,
+  options?: {
+    locale?: string;
+    currency?: string | null;
+  },
+) {
+  const locale = resolveLocale(options?.locale);
+
   if (MONEY_COLUMNS.has(columnKey)) {
     const numberValue = Number(value || 0);
+    const safeNumber = Number.isFinite(numberValue) ? numberValue : 0;
+    const currency = resolveCurrency(options?.currency);
 
-    return new Intl.NumberFormat("es-CR", {
-      style: "currency",
-      currency: "CRC",
+    if (currency) {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 0,
+      }).format(safeNumber);
+    }
+
+    return new Intl.NumberFormat(locale, {
       maximumFractionDigits: 0,
-    }).format(Number.isFinite(numberValue) ? numberValue : 0);
+    }).format(safeNumber);
   }
 
   if (DATE_COLUMNS.has(columnKey)) {
     if (!value) return "-";
 
     try {
-      return new Intl.DateTimeFormat("es-CR", {
+      return new Intl.DateTimeFormat(locale, {
         dateStyle: "medium",
       }).format(new Date(String(value)));
     } catch {
@@ -80,25 +113,36 @@ export function formatCellValue(columnKey: string, value: string | number) {
   return STATUS_LABELS[rawValue] ?? rawValue;
 }
 
-export function formatExcelValue(columnKey: string, value: string | number) {
+export function formatExcelValue(
+  columnKey: string,
+  value: string | number,
+  options?: {
+    locale?: string;
+    currency?: string | null;
+  },
+) {
   if (MONEY_COLUMNS.has(columnKey)) {
     const numberValue = Number(value || 0);
     return Number.isFinite(numberValue) ? numberValue : 0;
   }
 
-  return formatCellValue(columnKey, value);
+  return formatCellValue(columnKey, value, options);
 }
 
 export function buildReportMatrix(
   source: ReportSource,
   columns: ReportColumnKey[],
   rows: ReportRow[],
+  options?: {
+    locale?: string;
+    currency?: string | null;
+  },
 ) {
   const headers = columns.map((columnKey) => getColumnLabel(source, columnKey));
 
   const body = rows.map((row) =>
     columns.map((columnKey) =>
-      formatExcelValue(columnKey, row[columnKey] ?? ""),
+      formatExcelValue(columnKey, row[columnKey] ?? "", options),
     ),
   );
 

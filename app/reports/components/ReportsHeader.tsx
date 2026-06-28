@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import type { ActiveReportSource } from "../types";
 
 type ReportsHeaderProps = {
@@ -41,6 +42,9 @@ export default function ReportsHeader({
   onExportExcel,
   onExportPdf,
 }: ReportsHeaderProps) {
+  const { businessCountryMeta } = useAppSettings();
+  const locale = businessCountryMeta.locale || "es";
+
   return (
     <header className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -70,7 +74,7 @@ export default function ReportsHeader({
               Registros
             </p>
             <p className="mt-0.5 text-sm font-semibold text-slate-900">
-              {totalItems.toLocaleString("es-CR")}
+              {totalItems.toLocaleString(locale)}
             </p>
           </div>
 

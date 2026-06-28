@@ -6,11 +6,15 @@ export async function downloadExcelReport(
   source: ReportSource,
   columns: ReportColumnKey[],
   rows: ReportRow[],
+  options?: {
+    locale?: string;
+    currency?: string | null;
+  },
 ) {
   const XLSX = await import("xlsx");
 
   const worksheet = XLSX.utils.aoa_to_sheet(
-    buildReportMatrix(source, columns, rows),
+    buildReportMatrix(source, columns, rows, options),
   );
 
   worksheet["!cols"] = columns.map((columnKey) => ({
@@ -34,6 +38,9 @@ export async function downloadPdfReport(
   source: ReportSource,
   columns: ReportColumnKey[],
   rows: ReportRow[],
+  options?: {
+    locale?: string;
+  },
 ) {
   const { default: jsPDF } = await import("jspdf");
   const { autoTable } = await import("jspdf-autotable");
@@ -47,8 +54,10 @@ export async function downloadPdfReport(
   doc.setFontSize(14);
   doc.text(title, 12, 14);
 
+  const locale = String(options?.locale || "").trim() || "es";
+
   doc.setFontSize(9);
-  doc.text(`Generado: ${new Date().toLocaleString("es-CR")}`, 12, 21);
+  doc.text(`Generado: ${new Date().toLocaleString(locale)}`, 12, 21);
 
   autoTable(doc, {
     startY: 28,
