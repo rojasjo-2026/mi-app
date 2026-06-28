@@ -79,7 +79,7 @@ function getBusinessCountryMeta(
       settings?.default_currency ||
       countryPreset.primaryCurrency,
     locale: countryPreset.locale,
-    taxLabel: countryPreset.taxLabel || "IVA",
+    taxLabel: countryPreset.taxLabel || "Impuesto",
     taxRate:
       settings?.default_tax_rate !== null &&
       settings?.default_tax_rate !== undefined

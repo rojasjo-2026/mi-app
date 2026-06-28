@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import type { FinanceInvoice } from "../types";
 import { getInvoiceCurrency, toSafeNumber } from "../utils";
 import SectionHeader from "./SectionHeader";
@@ -29,6 +30,8 @@ import { PaymentInfoNote } from "./payments/PaymentInfoNote";
 const DEFAULT_PAYMENT_PAGE_SIZE = 15;
 
 export default function PaymentsSection() {
+  const { currency: businessCurrency } = useAppSettings();
+
   const [invoices, setInvoices] = useState<FinanceInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<FinanceInvoice | null>(
     null,
@@ -86,7 +89,7 @@ export default function PaymentsSection() {
   );
 
   const summaryCurrency =
-    invoices.find((invoice) => invoice.currency)?.currency ?? "CRC";
+    invoices.find((invoice) => invoice.currency)?.currency ?? businessCurrency;
 
   async function loadInvoices() {
     setLoading(true);

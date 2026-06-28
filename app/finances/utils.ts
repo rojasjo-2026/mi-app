@@ -1,7 +1,11 @@
 import type { FinanceInvoice } from "./types";
+import {
+  DEFAULT_CURRENCY_CODE,
+  fallbackCountryPreset,
+} from "@/lib/settings/appSettingsUtils";
 
-const DEFAULT_LOCALE = "es-CR";
-const DEFAULT_CURRENCY = "CRC";
+const DEFAULT_LOCALE = fallbackCountryPreset.locale;
+const DEFAULT_CURRENCY = DEFAULT_CURRENCY_CODE;
 
 const currencyLocaleMap: Record<string, string> = {
   ARS: "es-AR",

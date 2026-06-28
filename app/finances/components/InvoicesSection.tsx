@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import type { FinanceInvoice } from "../types";
 import {
   formatCurrency,
@@ -51,6 +52,8 @@ export default function InvoicesSection({
   onPageSizeChange,
   onSortChange,
 }: InvoicesSectionProps) {
+  const { currency: businessCurrency } = useAppSettings();
+
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(
     null,
   );
@@ -123,7 +126,7 @@ export default function InvoicesSection({
   }
 
   const summaryCurrency =
-    invoices.find((invoice) => invoice.currency)?.currency ?? "CRC";
+    invoices.find((invoice) => invoice.currency)?.currency ?? businessCurrency;
 
   const selectedInvoice = useMemo(
     () =>
