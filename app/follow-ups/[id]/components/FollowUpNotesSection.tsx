@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
+
 type Note = {
   follow_up_note_id: string;
   note_text: string;
@@ -53,6 +55,28 @@ const buttonBase =
   "inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60";
 
 const maxNotesLength = 300;
+
+function getSafeLocale(locale?: string | null) {
+  const normalizedLocale = locale?.trim();
+
+  return normalizedLocale || "es";
+}
+
+function formatDateTime(value: string | null, locale = "es") {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  try {
+    return date.toLocaleString(getSafeLocale(locale));
+  } catch {
+    return date.toLocaleString("es");
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -132,6 +156,9 @@ function getTranscriptFromRecognitionEvent(
 export default function FollowUpNotesSection({
   followUpId,
 }: FollowUpNotesSectionProps) {
+  const { businessCountryMeta } = useAppSettings();
+  const locale = businessCountryMeta.locale || "es";
+
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState("");
   const [loading, setLoading] = useState(false);
@@ -281,7 +308,7 @@ export default function FollowUpNotesSection({
   }
 
   function addManualNote() {
-    const now = new Date().toLocaleString("es-CR");
+    const now = formatDateTime(new Date().toISOString(), locale);
     const stampedText = `${newNote ? `${newNote}\n` : ""}[${now}] `;
 
     if (stampedText.length <= maxNotesLength) {
@@ -315,7 +342,7 @@ export default function FollowUpNotesSection({
 
     const recognition = new SpeechRecognitionApi();
 
-    recognition.lang = "es-CR";
+    recognition.lang = "es";
     recognition.interimResults = true;
     recognition.continuous = true;
 
@@ -516,7 +543,7 @@ export default function FollowUpNotesSection({
                 </span>
 
                 <span className="text-xs font-medium text-slate-400">
-                  {new Date(note.created_at).toLocaleString("es-CR")}
+                  {formatDateTime(note.created_at, locale)}
                 </span>
               </div>
 
