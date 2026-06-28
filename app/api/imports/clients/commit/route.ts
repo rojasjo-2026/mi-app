@@ -7,6 +7,8 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
+import { getBusinessCountryMeta } from "@/lib/settings/appSettingsUtils";
 
 type RawClientImportRow = Record<string, string | number | boolean | null>;
 
@@ -17,7 +19,15 @@ type ImportDetail = {
   message: string;
 };
 
+type ClientImportDefaults = {
+  countryCode: string;
+  currencyCode: CurrencyCode;
+};
+
 const MAX_IMPORT_ROWS = 500;
+
+const SYSTEM_DEFAULT_COUNTRY_CODE = "XX";
+const SYSTEM_DEFAULT_CURRENCY_CODE = "USD" as CurrencyCode;
 
 const VALID_CLIENT_TYPES = new Set(["PERSON", "COMPANY", "OTHER"]);
 
@@ -51,6 +61,136 @@ const VALID_CURRENCIES = new Set([
   "VES",
   "XAF",
 ]);
+
+function getRecordValue(source: unknown, key: string) {
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return undefined;
+  }
+
+  return (source as Record<string, unknown>)[key];
+}
+
+function getStringValue(source: unknown, keys: string[]) {
+  for (const key of keys) {
+    const value = getRecordValue(source, key);
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return "";
+}
+
+function getObjectValue(source: unknown, key: string) {
+  const value = getRecordValue(source, key);
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value;
+}
+
+function normalizeCountryCode(value: string) {
+  const normalizedValue = value.trim().toUpperCase();
+
+  return /^[A-Z]{2}$/.test(normalizedValue) ? normalizedValue : "";
+}
+
+function normalizeCurrencyCode(value: string) {
+  const normalizedValue = value.trim().toUpperCase();
+
+  return VALID_CURRENCIES.has(normalizedValue)
+    ? (normalizedValue as CurrencyCode)
+    : "";
+}
+
+async function getClientImportDefaults(): Promise<ClientImportDefaults> {
+  try {
+    const settings = await getOrCreateAppSettingsService();
+    const businessCountryMeta = getBusinessCountryMeta(
+      settings as never,
+    ) as unknown;
+    const countryPreset = getObjectValue(businessCountryMeta, "countryPreset");
+
+    const countryCode =
+      normalizeCountryCode(
+        getStringValue(businessCountryMeta, [
+          "countryCode",
+          "country_code",
+          "businessCountryCode",
+          "business_country_code",
+        ]),
+      ) ||
+      normalizeCountryCode(
+        getStringValue(countryPreset, [
+          "countryCode",
+          "country_code",
+          "businessCountryCode",
+          "business_country_code",
+        ]),
+      ) ||
+      normalizeCountryCode(
+        getStringValue(settings, [
+          "countryCode",
+          "country_code",
+          "businessCountryCode",
+          "business_country_code",
+          "defaultCountryCode",
+          "default_country_code",
+        ]),
+      ) ||
+      SYSTEM_DEFAULT_COUNTRY_CODE;
+
+    const currencyCode =
+      normalizeCurrencyCode(
+        getStringValue(businessCountryMeta, [
+          "primaryCurrency",
+          "primary_currency",
+          "currencyCode",
+          "currency_code",
+          "defaultCurrency",
+          "default_currency",
+          "defaultCurrencyCode",
+          "default_currency_code",
+        ]),
+      ) ||
+      normalizeCurrencyCode(
+        getStringValue(countryPreset, [
+          "primaryCurrency",
+          "primary_currency",
+          "currencyCode",
+          "currency_code",
+          "defaultCurrency",
+          "default_currency",
+          "defaultCurrencyCode",
+          "default_currency_code",
+        ]),
+      ) ||
+      normalizeCurrencyCode(
+        getStringValue(settings, [
+          "defaultCurrency",
+          "default_currency",
+          "defaultCurrencyCode",
+          "default_currency_code",
+          "currencyCode",
+          "currency_code",
+        ]),
+      ) ||
+      SYSTEM_DEFAULT_CURRENCY_CODE;
+
+    return {
+      countryCode,
+      currencyCode,
+    };
+  } catch {
+    return {
+      countryCode: SYSTEM_DEFAULT_COUNTRY_CODE,
+      currencyCode: SYSTEM_DEFAULT_CURRENCY_CODE,
+    };
+  }
+}
 
 function getString(row: RawClientImportRow, key: string) {
   const value = row[key];
@@ -111,11 +251,14 @@ function getClientDisplayName(row: RawClientImportRow) {
   return [firstName, lastName1, lastName2].filter(Boolean).join(" ").trim();
 }
 
-function getIdentificationKey(row: RawClientImportRow) {
+function getIdentificationKey(
+  row: RawClientImportRow,
+  defaults: ClientImportDefaults,
+) {
   const identificationCountry =
     normalizeUpper(getString(row, "identification_country")) ||
     normalizeUpper(getString(row, "country_code")) ||
-    "CR";
+    defaults.countryCode;
 
   const identificationType = normalizeUpper(
     getString(row, "identification_type"),
@@ -128,7 +271,7 @@ function getIdentificationKey(row: RawClientImportRow) {
   return `${identificationCountry}|${identificationType}|${identificationNumber}`;
 }
 
-function validateRow(row: RawClientImportRow) {
+function validateRow(row: RawClientImportRow, defaults: ClientImportDefaults) {
   const errors: string[] = [];
 
   const clientType = normalizeUpper(getString(row, "client_type") || "PERSON");
@@ -144,7 +287,7 @@ function validateRow(row: RawClientImportRow) {
     getString(row, "default_payment_term") || "CASH",
   );
   const currency = normalizeUpper(
-    getString(row, "preferred_currency") || "CRC",
+    getString(row, "preferred_currency") || defaults.currencyCode,
   );
 
   if (!VALID_CLIENT_TYPES.has(clientType)) {
@@ -182,7 +325,10 @@ function validateRow(row: RawClientImportRow) {
   return errors;
 }
 
-function buildDuplicateMaps(rows: RawClientImportRow[]) {
+function buildDuplicateMaps(
+  rows: RawClientImportRow[],
+  defaults: ClientImportDefaults,
+) {
   const phones = new Map<string, number>();
   const emails = new Map<string, number>();
   const taxIds = new Map<string, number>();
@@ -192,7 +338,7 @@ function buildDuplicateMaps(rows: RawClientImportRow[]) {
     const phone = getString(row, "phone_primary");
     const email = normalizeEmail(getString(row, "email"));
     const taxId = getString(row, "tax_id");
-    const identificationKey = getIdentificationKey(row);
+    const identificationKey = getIdentificationKey(row, defaults);
 
     if (phone) phones.set(phone, (phones.get(phone) ?? 0) + 1);
     if (email) emails.set(email, (emails.get(email) ?? 0) + 1);
@@ -216,13 +362,14 @@ function buildDuplicateMaps(rows: RawClientImportRow[]) {
 function getInFileDuplicateErrors(
   row: RawClientImportRow,
   duplicateMaps: ReturnType<typeof buildDuplicateMaps>,
+  defaults: ClientImportDefaults,
 ) {
   const errors: string[] = [];
 
   const phone = getString(row, "phone_primary");
   const email = normalizeEmail(getString(row, "email"));
   const taxId = getString(row, "tax_id");
-  const identificationKey = getIdentificationKey(row);
+  const identificationKey = getIdentificationKey(row, defaults);
 
   if (phone && (duplicateMaps.phones.get(phone) ?? 0) > 1) {
     errors.push("phone_primary está duplicado en el archivo");
@@ -246,7 +393,10 @@ function getInFileDuplicateErrors(
   return errors;
 }
 
-async function getExistingDuplicateKeys(rows: RawClientImportRow[]) {
+async function getExistingDuplicateKeys(
+  rows: RawClientImportRow[],
+  defaults: ClientImportDefaults,
+) {
   const phones = Array.from(
     new Set(rows.map((row) => getString(row, "phone_primary")).filter(Boolean)),
   );
@@ -268,7 +418,7 @@ async function getExistingDuplicateKeys(rows: RawClientImportRow[]) {
       const identificationCountry =
         normalizeUpper(getString(row, "identification_country")) ||
         normalizeUpper(getString(row, "country_code")) ||
-        "CR";
+        defaults.countryCode;
 
       const identificationType = normalizeUpper(
         getString(row, "identification_type"),
@@ -368,13 +518,14 @@ async function getExistingDuplicateKeys(rows: RawClientImportRow[]) {
 function getDatabaseDuplicateErrors(
   row: RawClientImportRow,
   existingKeys: Awaited<ReturnType<typeof getExistingDuplicateKeys>>,
+  defaults: ClientImportDefaults,
 ) {
   const errors: string[] = [];
 
   const phone = getString(row, "phone_primary");
   const email = normalizeEmail(getString(row, "email"));
   const taxId = getString(row, "tax_id");
-  const identificationKey = getIdentificationKey(row);
+  const identificationKey = getIdentificationKey(row, defaults);
 
   if (phone && existingKeys.phones.has(phone)) {
     errors.push("Ya existe un cliente con ese teléfono");
@@ -398,7 +549,10 @@ function getDatabaseDuplicateErrors(
   return errors;
 }
 
-function buildClientData(row: RawClientImportRow): Prisma.ClientCreateInput {
+function buildClientData(
+  row: RawClientImportRow,
+  defaults: ClientImportDefaults,
+): Prisma.ClientCreateInput {
   const clientType = normalizeUpper(
     getString(row, "client_type") || "PERSON",
   ) as ClientType;
@@ -414,7 +568,9 @@ function buildClientData(row: RawClientImportRow): Prisma.ClientCreateInput {
   const phonePrimary = getString(row, "phone_primary");
   const phoneSecondary = getString(row, "phone_secondary");
   const email = normalizeEmail(getString(row, "email"));
-  const countryCode = normalizeUpper(getString(row, "country_code") || "CR");
+  const countryCode =
+    normalizeCountryCode(getString(row, "country_code")) ||
+    defaults.countryCode;
 
   const billingName = getString(row, "billing_name");
   const billingEmail = normalizeEmail(getString(row, "billing_email"));
@@ -426,7 +582,12 @@ function buildClientData(row: RawClientImportRow): Prisma.ClientCreateInput {
   );
 
   const identificationCountry =
-    normalizeUpper(getString(row, "identification_country")) || countryCode;
+    normalizeCountryCode(getString(row, "identification_country")) ||
+    countryCode;
+
+  const preferredCurrency =
+    normalizeCurrencyCode(getString(row, "preferred_currency")) ||
+    defaults.currencyCode;
 
   return {
     client_type: clientType,
@@ -495,9 +656,7 @@ function buildClientData(row: RawClientImportRow): Prisma.ClientCreateInput {
     identification_number: emptyToNull(getString(row, "identification_number")),
 
     tax_exempt: parseBoolean(getString(row, "tax_exempt"), false),
-    preferred_currency: normalizeUpper(
-      getString(row, "preferred_currency") || "CRC",
-    ) as CurrencyCode,
+    preferred_currency: preferredCurrency,
   };
 }
 
@@ -529,8 +688,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const duplicateMaps = buildDuplicateMaps(rows);
-    const existingKeys = await getExistingDuplicateKeys(rows);
+    const defaults = await getClientImportDefaults();
+    const duplicateMaps = buildDuplicateMaps(rows, defaults);
+    const existingKeys = await getExistingDuplicateKeys(rows, defaults);
 
     const details: ImportDetail[] = [];
     let createdCount = 0;
@@ -543,9 +703,9 @@ export async function POST(request: NextRequest) {
         const clientName = getClientDisplayName(row) || "Cliente sin nombre";
 
         const errors = [
-          ...validateRow(row),
-          ...getInFileDuplicateErrors(row, duplicateMaps),
-          ...getDatabaseDuplicateErrors(row, existingKeys),
+          ...validateRow(row, defaults),
+          ...getInFileDuplicateErrors(row, duplicateMaps, defaults),
+          ...getDatabaseDuplicateErrors(row, existingKeys, defaults),
         ];
 
         if (errors.length > 0) {
@@ -563,7 +723,7 @@ export async function POST(request: NextRequest) {
 
         try {
           const client = await transaction.client.create({
-            data: buildClientData(row),
+            data: buildClientData(row, defaults),
             select: {
               client_id: true,
               display_name: true,
