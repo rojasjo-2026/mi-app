@@ -5,7 +5,6 @@ type ValidationResult<T> =
 export const createInvoiceSchema = {
   sourceTypes: ["INSTALLATION", "FOLLOW_UP", "MANUAL"] as const,
   paymentTerms: ["CASH", "CREDIT"] as const,
-  currencies: ["CRC", "USD"] as const,
 };
 
 export const registerPaymentSchema = {
@@ -14,7 +13,7 @@ export const registerPaymentSchema = {
 
 export type SourceType = (typeof createInvoiceSchema.sourceTypes)[number];
 export type PaymentTerm = (typeof createInvoiceSchema.paymentTerms)[number];
-export type Currency = (typeof createInvoiceSchema.currencies)[number];
+export type Currency = string;
 export type PaymentMethod = (typeof registerPaymentSchema.methods)[number];
 
 export type CreateInvoiceInput = {
@@ -82,6 +81,10 @@ function isValidStringUnion<T extends string>(
   return isString(value) && values.includes(value as T);
 }
 
+function isIsoCurrencyCode(value: unknown): value is string {
+  return isString(value) && /^[A-Z]{3}$/.test(value);
+}
+
 export function validateCreateInvoiceInput(
   body: unknown,
 ): ValidationResult<CreateInvoiceInput> {
@@ -132,13 +135,10 @@ export function validateCreateInvoiceInput(
   }
 
   const currencyRaw = body.currency;
-  if (
-    currencyRaw !== undefined &&
-    !isValidStringUnion(currencyRaw, createInvoiceSchema.currencies)
-  ) {
+  if (currencyRaw !== undefined && !isIsoCurrencyCode(currencyRaw)) {
     return {
       success: false,
-      message: "currency must be CRC or USD",
+      message: "currency must be a 3-letter uppercase ISO code",
     };
   }
 

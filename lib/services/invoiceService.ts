@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import type { CurrencyCode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  DEFAULT_CURRENCY_CODE,
+  getBusinessCountryMeta,
+} from "@/lib/settings/appSettingsUtils";
 import {
   recordInvoiceActivityChangesSafely,
   recordInvoiceCreatedActivitySafely,
 } from "@/lib/services/activityLogService";
+import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
 
 const invoiceInclude = {
   payments: true,
@@ -68,7 +74,7 @@ type CreateInvoiceBody = {
 
   payment_term?: "CASH" | "CREDIT";
   credit_days?: number | string | null;
-  currency?: "CRC" | "USD";
+  currency?: string | null;
 
   description?: string | null;
   quantity?: number | string | null;
@@ -115,6 +121,54 @@ function generateInvoiceNumber() {
   const timestamp = Date.now();
 
   return `INV-${year}-${timestamp}`;
+}
+
+const SUPPORTED_CURRENCY_CODES: CurrencyCode[] = [
+  "ARS",
+  "BOB",
+  "BRL",
+  "CAD",
+  "CLP",
+  "COP",
+  "CRC",
+  "DOP",
+  "EUR",
+  "GTQ",
+  "HNL",
+  "MXN",
+  "NIO",
+  "PEN",
+  "PYG",
+  "USD",
+  "UYU",
+  "VES",
+  "XAF",
+];
+
+function normalizeCurrencyCode(value: unknown): CurrencyCode | null {
+  const normalizedCurrency = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return SUPPORTED_CURRENCY_CODES.includes(normalizedCurrency as CurrencyCode)
+    ? (normalizedCurrency as CurrencyCode)
+    : null;
+}
+
+async function getInvoiceFallbackCurrency() {
+  try {
+    const settings = await getOrCreateAppSettingsService();
+    const businessCountryMeta = getBusinessCountryMeta(settings);
+
+    return (
+      normalizeCurrencyCode(businessCountryMeta.currency) ||
+      normalizeCurrencyCode(settings.default_currency) ||
+      normalizeCurrencyCode(DEFAULT_CURRENCY_CODE) ||
+      "USD"
+    );
+  } catch {
+    return normalizeCurrencyCode(DEFAULT_CURRENCY_CODE) || "USD";
+  }
 }
 
 export async function GET(req: Request) {
@@ -405,6 +459,12 @@ export async function POST(req: Request) {
       toNullableString(body.description) ||
       "Servicio realizado";
 
+    const fallbackCurrency = await getInvoiceFallbackCurrency();
+    const resolvedCurrency =
+      normalizeCurrencyCode(body.currency) ||
+      normalizeCurrencyCode(client.preferred_currency) ||
+      fallbackCurrency;
+
     const invoice = await prisma.$transaction(async (tx) => {
       const createdInvoice = await tx.invoice.create({
         data: {
@@ -427,7 +487,7 @@ export async function POST(req: Request) {
           payment_term: paymentTerm,
           credit_days: creditDays,
 
-          currency: body.currency ?? client.preferred_currency ?? "CRC",
+          currency: resolvedCurrency,
 
           subtotal_amount: subtotalAmount,
 
