@@ -4,23 +4,13 @@ import type {
   ContactFlowStatus,
 } from "./contactFlowTypes";
 
-export function formatDate(value: string | null) {
-  if (!value) return "—";
+function getSafeLocale(locale?: string | null) {
+  const normalizedLocale = locale?.trim();
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("es-CR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return normalizedLocale || "es";
 }
 
-export function formatDateTime(value: string | null) {
+export function formatDate(value: string | null, locale = "es") {
   if (!value) return "—";
 
   const date = new Date(value);
@@ -29,13 +19,47 @@ export function formatDateTime(value: string | null) {
     return "—";
   }
 
-  return new Intl.DateTimeFormat("es-CR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
+  try {
+    return new Intl.DateTimeFormat(getSafeLocale(locale), {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat("es", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(date);
+  }
+}
+
+export function formatDateTime(value: string | null, locale = "es") {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  try {
+    return new Intl.DateTimeFormat(getSafeLocale(locale), {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat("es", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  }
 }
 
 export function calculateEstimatedTriggerDate(
