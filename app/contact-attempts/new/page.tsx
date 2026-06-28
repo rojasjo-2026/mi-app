@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
+
 type FollowUpOption = {
   follow_up_id: string;
   reason?: string | null;
@@ -44,18 +46,26 @@ function getClientName(client?: FollowUpOption["client"]) {
   return composedName || "Cliente sin nombre";
 }
 
-function formatDateLabel(value?: string | null) {
+function formatDateLabel(value?: string | null, locale = "es") {
   if (!value) return "-";
 
   const parsed = new Date(value);
 
   if (Number.isNaN(parsed.getTime())) return value;
 
-  return parsed.toLocaleDateString("es-CR", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  try {
+    return parsed.toLocaleDateString(locale || "es", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return parsed.toLocaleDateString("es", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
 }
 
 function getOptionName(options: CatalogOption[], selectedId: string) {
@@ -67,6 +77,9 @@ function getOptionName(options: CatalogOption[], selectedId: string) {
 }
 
 export default function NewContactAttemptPage() {
+  const { businessCountryMeta } = useAppSettings();
+  const locale = businessCountryMeta.locale || "es";
+
   const [followUpId, setFollowUpId] = useState("");
   const [channelId, setChannelId] = useState("");
   const [resultId, setResultId] = useState("");
@@ -154,7 +167,7 @@ export default function NewContactAttemptPage() {
       }
     }
 
-    loadPageData();
+    void loadPageData();
   }, []);
 
   const selectedChannelName = useMemo(() => {
@@ -442,7 +455,7 @@ export default function NewContactAttemptPage() {
                       Fecha objetivo
                     </p>
                     <p className="mt-2 text-sm font-medium text-slate-800">
-                      {formatDateLabel(followUpInfo.target_date)}
+                      {formatDateLabel(followUpInfo.target_date, locale)}
                     </p>
                   </div>
 
@@ -500,7 +513,7 @@ export default function NewContactAttemptPage() {
                     Próxima fecha
                   </p>
                   <p className="mt-2 text-sm font-medium text-slate-800">
-                    {formatDateLabel(nextTargetDate)}
+                    {formatDateLabel(nextTargetDate, locale)}
                   </p>
                 </div>
               </div>

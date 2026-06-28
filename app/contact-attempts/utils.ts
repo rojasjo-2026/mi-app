@@ -1,25 +1,61 @@
 import type { ContactFlowItem, ContactFlowMessage } from "./types";
 
-export function formatDate(value: string | null) {
-  if (!value) return "—";
+function getSafeLocale(locale?: string | null) {
+  const normalizedLocale = locale?.trim();
 
-  return new Intl.DateTimeFormat("es-CR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
+  return normalizedLocale || "es";
 }
 
-export function formatDateTime(value: string | null) {
+export function formatDate(value: string | null, locale = "es") {
   if (!value) return "—";
 
-  return new Intl.DateTimeFormat("es-CR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  try {
+    return new Intl.DateTimeFormat(getSafeLocale(locale), {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat("es", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(date);
+  }
+}
+
+export function formatDateTime(value: string | null, locale = "es") {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  try {
+    return new Intl.DateTimeFormat(getSafeLocale(locale), {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat("es", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  }
 }
 
 export function getClientFullName(client: ContactFlowItem["client"]) {
@@ -106,6 +142,31 @@ export function getMessageTypeLabel(direction?: "OUTBOUND" | "INBOUND") {
   return "Sin actividad";
 }
 
+export function getDeliveryLabel(status?: string | null) {
+  switch (status) {
+    case "queued":
+    case "QUEUED":
+      return "En cola";
+    case "sent":
+    case "SENT":
+      return "Enviado";
+    case "delivered":
+    case "DELIVERED":
+      return "Entregado";
+    case "read":
+    case "READ":
+      return "Leído";
+    case "failed":
+    case "FAILED":
+      return "Fallido";
+    case "received":
+    case "RECEIVED":
+      return "Recibido";
+    default:
+      return "Sin estado";
+  }
+}
+
 export function getLastMessagePreview(
   message: ContactFlowItem["last_message"],
 ) {
@@ -121,29 +182,66 @@ export function hasUnreadMessages(flow: ContactFlowItem) {
   return Boolean(flow.has_unread_messages && flow.unread_count);
 }
 
+function getMetadataStringValue(
+  metadata: ContactFlowMessage["metadata"],
+  keys: string[],
+) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const metadataRecord = metadata as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = metadataRecord[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
 export function getMessageMediaUrl(message: ContactFlowMessage) {
-  if (!message.metadata) return null;
-
-  const mediaUrl = message.metadata.mediaUrl;
-
-  return typeof mediaUrl === "string" && mediaUrl.trim() ? mediaUrl : null;
+  return getMetadataStringValue(message.metadata, [
+    "mediaUrl",
+    "media_url",
+    "url",
+    "fileUrl",
+    "file_url",
+  ]);
 }
 
 export function getMessageFileName(message: ContactFlowMessage) {
-  if (!message.metadata) return "Documento";
+  const fileName = getMetadataStringValue(message.metadata, [
+    "fileName",
+    "file_name",
+    "filename",
+    "documentName",
+    "document_name",
+    "name",
+  ]);
 
-  const filename = message.metadata.filename;
+  if (fileName) {
+    return fileName;
+  }
 
-  return typeof filename === "string" && filename.trim()
-    ? filename
-    : "Documento";
-}
+  const mediaUrl = getMessageMediaUrl(message);
 
-export function getDeliveryLabel(status?: string | null) {
-  if (status === "read") return "✓✓";
-  if (status === "delivered") return "✓✓";
-  if (status === "failed") return "!";
-  if (status === "sent" || status === "mock-sent") return "✓";
+  if (mediaUrl) {
+    const cleanUrl = mediaUrl.split("?")[0] || "";
+    const urlParts = cleanUrl.split("/");
+    const lastPart = urlParts.at(-1);
 
-  return "";
+    if (lastPart?.trim()) {
+      try {
+        return decodeURIComponent(lastPart);
+      } catch {
+        return lastPart;
+      }
+    }
+  }
+
+  return "Documento";
 }
