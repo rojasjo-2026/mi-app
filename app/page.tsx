@@ -1,57 +1,130 @@
+import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
+import { getBusinessCountryMeta } from "@/lib/settings/appSettingsUtils";
+
 export const dynamic = "force-dynamic";
 
-function getDashboardDateLabel() {
-  const formattedDate = new Intl.DateTimeFormat("es-CR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "America/Costa_Rica",
-  }).format(new Date());
+type HomeSettings = {
+  locale: string;
+  timeZone?: string;
+};
 
-  return formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+type CountryMeta = {
+  locale?: string | null;
+  timeZone?: string | null;
+  timezone?: string | null;
+  countryPreset?: {
+    timezones?: Array<{
+      value?: string | null;
+    }> | null;
+  } | null;
+};
+
+async function getHomeSettings(): Promise<HomeSettings> {
+  try {
+    const settings = await getOrCreateAppSettingsService();
+    const businessCountryMeta = getBusinessCountryMeta(
+      settings as never,
+    ) as CountryMeta;
+
+    const locale = businessCountryMeta.locale || "es";
+
+    const timeZone =
+      businessCountryMeta.timeZone ||
+      businessCountryMeta.timezone ||
+      businessCountryMeta.countryPreset?.timezones?.[0]?.value ||
+      undefined;
+
+    return {
+      locale,
+      timeZone: timeZone || undefined,
+    };
+  } catch {
+    return {
+      locale: "es",
+    };
+  }
 }
 
-function getAgendaDateLabel() {
-  const formattedDate = new Intl.DateTimeFormat("es-CR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "America/Costa_Rica",
-  }).format(new Date());
+function formatCapitalizedDate(
+  options: Intl.DateTimeFormatOptions,
+  locale: string,
+  timeZone?: string,
+) {
+  const dateFormatOptions: Intl.DateTimeFormatOptions = {
+    ...options,
+    ...(timeZone ? { timeZone } : {}),
+  };
 
-  return formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+  try {
+    const formattedDate = new Intl.DateTimeFormat(
+      locale || "es",
+      dateFormatOptions,
+    ).format(new Date());
+
+    return formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+  } catch {
+    const formattedDate = new Intl.DateTimeFormat("es", options).format(
+      new Date(),
+    );
+
+    return formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+  }
+}
+
+function getDashboardDateLabel(locale: string, timeZone?: string) {
+  return formatCapitalizedDate(
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    },
+    locale,
+    timeZone,
+  );
+}
+
+function getAgendaDateLabel(locale: string, timeZone?: string) {
+  return formatCapitalizedDate(
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    },
+    locale,
+    timeZone,
+  );
 }
 
 const kpis = [
   {
     title: "Mantenimientos pendientes",
-    value: "18",
-    detail: "+4 vs. ayer",
+    value: "-",
+    detail: "Sin datos reales",
     icon: "🛠️",
     accent: "text-orange-600",
     bg: "bg-orange-50",
   },
   {
     title: "Trabajos programados hoy",
-    value: "7",
-    detail: "2 en proceso",
+    value: "-",
+    detail: "Sin datos reales",
     icon: "📅",
     accent: "text-blue-600",
     bg: "bg-blue-50",
   },
   {
     title: "Clientes activos",
-    value: "128",
-    detail: "+6 este mes",
+    value: "-",
+    detail: "Sin datos reales",
     icon: "👥",
     accent: "text-emerald-600",
     bg: "bg-emerald-50",
   },
   {
     title: "Facturas pendientes",
-    value: "₡2.845.600",
-    detail: "12 facturas",
+    value: "-",
+    detail: "Sin datos reales",
     icon: "🧾",
     accent: "text-purple-600",
     bg: "bg-purple-50",
@@ -106,7 +179,7 @@ const activity = [
   },
   {
     icon: "🧾",
-    text: "Factura #F-000125 creada para",
+    text: "Factura creada para",
     strong: "Centro Comercial Norte",
     time: "Ayer, 17:30",
     bg: "bg-purple-50",
@@ -145,9 +218,11 @@ function MiniSparkline({ className = "" }: { className?: string }) {
   );
 }
 
-export default function Home() {
-  const dashboardDateLabel = getDashboardDateLabel();
-  const agendaDateLabel = getAgendaDateLabel();
+export default async function Home() {
+  const { locale, timeZone } = await getHomeSettings();
+
+  const dashboardDateLabel = getDashboardDateLabel(locale, timeZone);
+  const agendaDateLabel = getAgendaDateLabel(locale, timeZone);
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-6 text-slate-900 md:px-8 lg:px-10">
@@ -420,7 +495,7 @@ export default function Home() {
                       Técnicos en campo
                     </p>
 
-                    <p className="mt-1 text-2xl font-bold text-slate-950">6</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-950">-</p>
                   </div>
 
                   <div className="rounded-2xl bg-slate-50 p-4">
@@ -428,7 +503,7 @@ export default function Home() {
                       Trabajos en curso
                     </p>
 
-                    <p className="mt-1 text-2xl font-bold text-slate-950">4</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-950">-</p>
                   </div>
 
                   <div className="rounded-2xl bg-slate-50 p-4">
@@ -436,7 +511,7 @@ export default function Home() {
                       Rutas activas
                     </p>
 
-                    <p className="mt-1 text-2xl font-bold text-slate-950">3</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-950">-</p>
                   </div>
                 </div>
               </div>
@@ -462,12 +537,10 @@ export default function Home() {
                     Facturado este mes
                   </p>
 
-                  <p className="mt-2 text-2xl font-bold text-slate-950">
-                    ₡8.750.000
-                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-950">-</p>
 
-                  <p className="mt-1 text-sm font-semibold text-emerald-600">
-                    +18% vs. mes anterior
+                  <p className="mt-1 text-sm font-semibold text-slate-500">
+                    Sin datos reales
                   </p>
 
                   <MiniSparkline className="mt-3 text-emerald-600" />
@@ -478,12 +551,10 @@ export default function Home() {
                     Pendiente de cobro
                   </p>
 
-                  <p className="mt-2 text-2xl font-bold text-slate-950">
-                    ₡2.845.600
-                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-950">-</p>
 
-                  <p className="mt-1 text-sm font-semibold text-orange-600">
-                    12 facturas
+                  <p className="mt-1 text-sm font-semibold text-slate-500">
+                    Sin datos reales
                   </p>
 
                   <MiniSparkline className="mt-3 text-orange-600" />
