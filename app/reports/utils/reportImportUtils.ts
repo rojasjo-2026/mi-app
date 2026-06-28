@@ -22,6 +22,16 @@ const VALID_CURRENCIES = [
   "XAF",
 ];
 
+type ClientTemplateOptions = {
+  countryCode?: string | null;
+  preferredCurrency?: string | null;
+  phoneExample?: string | null;
+  adminLevel1Example?: string | null;
+  adminLevel2Example?: string | null;
+  adminLevel3Example?: string | null;
+  identificationTypeExample?: string | null;
+};
+
 const TEMPLATE_COLUMNS = [
   { key: "client_type", label: "Tipo de cliente" },
   { key: "first_name", label: "Nombre" },
@@ -220,6 +230,43 @@ function normalizeChoice(value: unknown) {
     .trim();
 }
 
+function normalizeIsoCountryCode(value?: string | null) {
+  const normalizedValue = String(value ?? "")
+    .trim()
+    .toUpperCase();
+
+  return /^[A-Z]{2}$/.test(normalizedValue) ? normalizedValue : "";
+}
+
+function normalizeIsoCurrencyCode(value?: string | null) {
+  const normalizedValue = String(value ?? "")
+    .trim()
+    .toUpperCase();
+
+  return /^[A-Z]{3}$/.test(normalizedValue) ? normalizedValue : "";
+}
+
+function isValidCurrencyCode(value: string) {
+  return /^[A-Z]{3}$/.test(value);
+}
+
+function buildCurrencyOptions(preferredCurrency?: string | null) {
+  const normalizedPreferredCurrency =
+    normalizeIsoCurrencyCode(preferredCurrency);
+
+  return Array.from(
+    new Set(
+      [normalizedPreferredCurrency, ...VALID_CURRENCIES].filter(
+        Boolean,
+      ) as string[],
+    ),
+  );
+}
+
+function toExcelListFormula(values: string[]) {
+  return `"${values.join(",")}"`;
+}
+
 function normalizeImportValue(key: string, value: unknown) {
   const rawValue = normalizeTextValue(value);
   const normalized = normalizeChoice(value);
@@ -301,8 +348,14 @@ function normalizeImportValue(key: string, value: unknown) {
   return rawValue;
 }
 
-export async function buildClientTemplateExcel() {
+export async function buildClientTemplateExcel(
+  options: ClientTemplateOptions = {},
+) {
   const ExcelJS = await import("exceljs");
+
+  const templateCountryCode = normalizeIsoCountryCode(options.countryCode);
+  const templateCurrency = normalizeIsoCurrencyCode(options.preferredCurrency);
+  const currencyOptions = buildCurrencyOptions(templateCurrency);
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "CLARIUS";
@@ -318,30 +371,30 @@ export async function buildClientTemplateExcel() {
 
   const sample = [
     "Persona",
-    "Adrian",
-    "Rojas",
-    "Segovia",
+    "Nombre",
+    "Apellido",
     "",
     "",
     "",
-    "+50612345677",
+    "",
+    options.phoneExample || "+0000000000",
     "",
     "cliente@demo.com",
     "Activo",
     "Sí",
     "Sí",
-    "CR",
-    "San José",
-    "San José",
-    "Catedral",
+    templateCountryCode,
+    options.adminLevel1Example || "",
+    options.adminLevel2Example || "",
+    options.adminLevel3Example || "",
     "Dirección de ejemplo",
     "",
     "",
-    "Zona Central",
-    "101110111",
-    "CR",
-    "CÉDULA",
-    "101110111",
+    "Zona ejemplo",
+    "",
+    templateCountryCode,
+    options.identificationTypeExample || "",
+    "",
     "No",
     "",
     "",
@@ -349,7 +402,7 @@ export async function buildClientTemplateExcel() {
     "",
     "Contado",
     "",
-    "CRC",
+    templateCurrency,
   ];
 
   clientsSheet.addRow(headers);
@@ -426,8 +479,8 @@ export async function buildClientTemplateExcel() {
 
     clientsSheet.getCell(`AG${rowNumber}`).dataValidation = {
       type: "list",
-      allowBlank: false,
-      formulae: ['"CRC,USD,EUR,CLP,PYG,MXN,COP"'],
+      allowBlank: true,
+      formulae: [toExcelListFormula(currencyOptions)],
     };
   }
 
@@ -439,7 +492,14 @@ export async function buildClientTemplateExcel() {
     ["Contacto automático", "Sí o No"],
     ["Exento de impuestos", "Sí o No"],
     ["Condición de pago", "Contado o Crédito"],
-    ["Moneda", "CRC, USD, EUR, CLP, PYG, MXN, COP, etc."],
+    [
+      "Moneda",
+      `Código ISO de 3 letras. Ej: ${currencyOptions
+        .slice(0, 8)
+        .join(
+          ", ",
+        )}. Puede dejarse vacío para usar la configuración del sistema.`,
+    ],
     [
       "Empresa",
       "Si el tipo de cliente es Empresa, completar Razón social / Empresa.",
@@ -529,7 +589,7 @@ function validateClientImportRows(rows: ClientImportRowInput[]) {
     const paymentTerm = String(
       row.default_payment_term || "CASH",
     ).toUpperCase();
-    const currency = String(row.preferred_currency || "CRC").toUpperCase();
+    const currency = String(row.preferred_currency || "").toUpperCase();
 
     const errors: string[] = [];
 
@@ -561,8 +621,8 @@ function validateClientImportRows(rows: ClientImportRowInput[]) {
       errors.push("Condición de pago no es válida");
     }
 
-    if (!VALID_CURRENCIES.includes(currency)) {
-      errors.push("Moneda no es válida");
+    if (currency && !isValidCurrencyCode(currency)) {
+      errors.push("Moneda debe ser un código ISO de 3 letras");
     }
 
     return {
