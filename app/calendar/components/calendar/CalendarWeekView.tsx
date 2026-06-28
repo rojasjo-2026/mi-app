@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import type { CalendarEvent } from "@/lib/calendar/calendar-types";
 import {
   formatDateKey,
@@ -17,6 +18,18 @@ type Props = {
   onRightClick: (event: React.MouseEvent, day: Date) => void;
 };
 
+function formatCalendarDate(
+  date: Date,
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+) {
+  try {
+    return date.toLocaleDateString(locale || "es", options);
+  } catch {
+    return date.toLocaleDateString("es", options);
+  }
+}
+
 export default function CalendarWeekView({
   weekDates,
   allEvents,
@@ -25,6 +38,9 @@ export default function CalendarWeekView({
   onSelectDate,
   onRightClick,
 }: Props) {
+  const { businessCountryMeta } = useAppSettings();
+  const locale = businessCountryMeta.locale || "es";
+
   return (
     <>
       <div className="grid grid-cols-7 border-b border-slate-200 pb-2">
@@ -77,7 +93,7 @@ export default function CalendarWeekView({
             >
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm font-bold text-slate-800">
-                  {day.toLocaleDateString("es-CR", {
+                  {formatCalendarDate(day, locale, {
                     day: "numeric",
                     month: "short",
                   })}

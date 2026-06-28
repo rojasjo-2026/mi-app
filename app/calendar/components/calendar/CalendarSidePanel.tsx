@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppSettings } from "@/app/hooks/useAppSettings";
 import type { CalendarEvent } from "@/lib/calendar/calendar-types";
 
 type CalendarAvailabilityDay = {
@@ -71,6 +72,18 @@ function getAvailabilityCardClass(
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
+function formatCalendarDate(
+  date: Date,
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+) {
+  try {
+    return date.toLocaleDateString(locale || "es", options);
+  } catch {
+    return date.toLocaleDateString("es", options);
+  }
+}
+
 export default function CalendarSidePanel({
   sidePanelRef,
   selectedDate,
@@ -89,6 +102,9 @@ export default function CalendarSidePanel({
   isUpdatingBlockedDate,
   renderEventCard,
 }: Props) {
+  const { businessCountryMeta } = useAppSettings();
+  const locale = businessCountryMeta.locale || "es";
+
   const totalJobs = selectedAvailability?.workload.total_jobs ?? 0;
   const totalInstallations =
     selectedAvailability?.workload.total_installations ?? 0;
@@ -107,7 +123,7 @@ export default function CalendarSidePanel({
       <div className="mb-5">
         <p className="text-sm text-slate-500">Día seleccionado</p>
         <h2 className="text-xl font-bold capitalize">
-          {selectedDate.toLocaleDateString("es-CR", {
+          {formatCalendarDate(selectedDate, locale, {
             weekday: "long",
             day: "numeric",
             month: "long",
