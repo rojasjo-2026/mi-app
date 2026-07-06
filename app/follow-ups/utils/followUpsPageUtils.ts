@@ -1,8 +1,4 @@
-import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
-import { DEFAULT_COUNTRY_CODE } from "../constants/followUpsPageConstants";
+import { resolveAppSettings } from "@/lib/config/app-settings";
 import type {
   AppSettingsResponse,
   ColumnKey,
@@ -11,16 +7,12 @@ import type {
   Technician,
 } from "../types/followUpsPageTypes";
 
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
 export function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
-  const countryPreset =
-    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+  const resolvedSettings = resolveAppSettings(settings);
 
   return {
-    currency: settings?.default_currency || countryPreset.primaryCurrency,
-    locale: countryPreset.locale,
+    currency: resolvedSettings.currency,
+    locale: resolvedSettings.locale,
   };
 }
 
@@ -110,7 +102,7 @@ export function getBillingStatusClasses(status?: string | null) {
   }
 }
 
-export function formatDateLabel(value?: string | null, locale = "es-CR") {
+export function formatDateLabel(value?: string | null, locale?: string) {
   if (!value) return null;
 
   const parsed = new Date(value);

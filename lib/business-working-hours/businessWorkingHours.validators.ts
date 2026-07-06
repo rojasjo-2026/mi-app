@@ -1,5 +1,9 @@
 import { BusinessWeekDay } from "@prisma/client";
 
+import {
+  DEFAULT_COUNTRY_CODE,
+  normalizeCountryCode as normalizeConfiguredCountryCode,
+} from "@/lib/config/app-settings";
 import type {
   BusinessWorkingHourCreateInput,
   BusinessWorkingHourUpdateInput,
@@ -21,11 +25,9 @@ export class BusinessWorkingHoursValidationError extends Error {
 }
 
 export function normalizeCountryCode(value: unknown) {
-  const countryCode = String(value || "CR")
-    .trim()
-    .toUpperCase();
+  const rawCountryCode = String(value || "").trim();
 
-  return countryCode || "CR";
+  return normalizeConfiguredCountryCode(rawCountryCode, DEFAULT_COUNTRY_CODE);
 }
 
 export function normalizeWeekDay(value: unknown) {

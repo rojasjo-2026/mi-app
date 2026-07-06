@@ -1,4 +1,6 @@
-﻿import { provincias } from "@/lib/data/costa-rica-locations";
+﻿import { isCostaRicaCountry } from "@/lib/config/country-features";
+import { resolveAppSettings } from "@/lib/config/app-settings";
+import { provincias } from "@/lib/data/costa-rica-locations";
 
 import type {
   Client,
@@ -11,7 +13,12 @@ export function getSpeechRecognitionLocale(countryPreset: CountryPreset) {
   if (countryPreset.countryCode === "US") return "en-US";
   if (countryPreset.countryCode === "CA") return "en-CA";
 
-  return countryPreset.locale || "es-CR";
+  return (
+    countryPreset.locale ||
+    resolveAppSettings({
+      country_code: countryPreset.countryCode,
+    }).locale
+  );
 }
 
 export function getMapsCountryRestriction(countryPreset: CountryPreset) {
@@ -19,7 +26,7 @@ export function getMapsCountryRestriction(countryPreset: CountryPreset) {
 }
 
 export function isCostaRicaPreset(countryPreset: CountryPreset) {
-  return countryPreset.countryCode === "CR";
+  return isCostaRicaCountry(countryPreset.countryCode);
 }
 
 export function getClientDisplayName(client: Client) {

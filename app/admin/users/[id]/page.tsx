@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+
+import { resolveAppSettings } from "@/lib/config/app-settings";
 
 type UserDetail = {
   user_id: string;
@@ -20,6 +22,7 @@ type UserDetail = {
 export default function UserDetailPage() {
   const params = useParams();
   const id = params?.id as string;
+  const locale = useMemo(() => resolveAppSettings().locale, []);
 
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,11 +109,11 @@ export default function UserDetailPage() {
             />
             <MetricCard
               label="Creado"
-              value={formatDateTime(user.created_at)}
+              value={formatDateTime(user.created_at, locale)}
             />
             <MetricCard
               label="Actualizado"
-              value={formatDateTime(user.updated_at)}
+              value={formatDateTime(user.updated_at, locale)}
             />
           </div>
         </section>
@@ -194,7 +197,14 @@ function formatRole(role?: string | null) {
   return role;
 }
 
-function formatDateTime(value?: string) {
+function formatDateTime(value?: string, locale?: string) {
   if (!value) return "-";
-  return new Date(value).toLocaleString("es-CR");
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleString(locale);
 }

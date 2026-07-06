@@ -4,6 +4,7 @@ import {
   evaluateAvailabilityForDate,
   evaluateAvailabilityForDateRange,
 } from "@/lib/availability/availability.service";
+import { resolveAppSettings } from "@/lib/config/app-settings";
 
 function getRequiredParam(searchParams: URLSearchParams, key: string) {
   const value = searchParams.get(key)?.trim();
@@ -35,11 +36,17 @@ function getOptionalNumberParam(
   return parsedValue;
 }
 
+function getCountryCode(searchParams: URLSearchParams) {
+  const countryCode = searchParams.get("country_code")?.trim();
+
+  return countryCode || resolveAppSettings().countryCode;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const countryCode = searchParams.get("country_code") || "CR";
+    const countryCode = getCountryCode(searchParams);
     const date = getRequiredParam(searchParams, "date");
     const days = getOptionalNumberParam(searchParams, "days", 1);
     const operationalZoneId = searchParams.get("operational_zone_id");

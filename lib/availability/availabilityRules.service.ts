@@ -1,5 +1,9 @@
 import type { AgendaRule } from "@prisma/client";
 
+import {
+  DEFAULT_COUNTRY_CODE,
+  normalizeCountryCode as normalizeConfiguredCountryCode,
+} from "@/lib/config/app-settings";
 import { prisma } from "@/lib/prisma";
 
 export type AvailabilityRuleKey =
@@ -59,10 +63,8 @@ export type DailyAvailabilityEvaluation = {
   allow_overbooking: boolean;
 };
 
-function normalizeCountryCode(value: string | null | undefined) {
-  return String(value || "CR")
-    .trim()
-    .toUpperCase();
+function normalizeAvailabilityCountryCode(value: string | null | undefined) {
+  return normalizeConfiguredCountryCode(value, DEFAULT_COUNTRY_CODE);
 }
 
 function normalizeDateOnly(value: Date | string) {
@@ -135,7 +137,7 @@ function getBooleanRuleValue(
 }
 
 export async function getActiveAgendaRulesForAvailability(countryCode: string) {
-  const normalizedCountryCode = normalizeCountryCode(countryCode);
+  const normalizedCountryCode = normalizeAvailabilityCountryCode(countryCode);
 
   return prisma.agendaRule.findMany({
     where: {
@@ -156,7 +158,7 @@ export async function getActiveAgendaRulesForAvailability(countryCode: string) {
 export async function buildAvailabilityRulesContext(
   countryCode: string,
 ): Promise<AvailabilityRulesContext> {
-  const normalizedCountryCode = normalizeCountryCode(countryCode);
+  const normalizedCountryCode = normalizeAvailabilityCountryCode(countryCode);
   const rules = await getActiveAgendaRulesForAvailability(
     normalizedCountryCode,
   );

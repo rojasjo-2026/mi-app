@@ -1,3 +1,7 @@
+import {
+  DEFAULT_COUNTRY_CODE,
+  normalizeCountryCode as normalizeConfiguredCountryCode,
+} from "@/lib/config/app-settings";
 import { prisma } from "@/lib/prisma";
 
 export type AvailabilityWorkloadQuery = {
@@ -20,10 +24,8 @@ export type AvailabilityWorkloadResult = {
   operational_zone_id: string | null;
 };
 
-function normalizeCountryCode(value: string | null | undefined) {
-  return String(value || "CR")
-    .trim()
-    .toUpperCase();
+function normalizeAvailabilityCountryCode(value: string | null | undefined) {
+  return normalizeConfiguredCountryCode(value, DEFAULT_COUNTRY_CODE);
 }
 
 function normalizeOptionalId(value: string | null | undefined) {
@@ -159,7 +161,7 @@ export async function countFollowUpsForAvailability(
 export async function getDailyAvailabilityWorkload(
   params: AvailabilityWorkloadQuery,
 ): Promise<AvailabilityWorkloadResult> {
-  const countryCode = normalizeCountryCode(params.country_code);
+  const countryCode = normalizeAvailabilityCountryCode(params.country_code);
   const operationalZoneId = normalizeOptionalId(params.operational_zone_id);
   const { date, startOfDay, endOfDay } = getDayRange(params.date);
 

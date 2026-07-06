@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
+  resolveAppSettings,
+  type AppSettingsResponse,
+} from "@/lib/config/app-settings";
 import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
 
 type InstallationOption = {
@@ -31,30 +32,6 @@ type TechnicianOption = {
   is_active?: boolean;
 };
 
-type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
-
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
-function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
-  const countryPreset =
-    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
-
-  return {
-    countryCode: countryPreset.countryCode,
-    currency: settings?.default_currency || countryPreset.primaryCurrency,
-    locale: countryPreset.locale,
-  };
-}
-
 const billingStatusOptions = [
   { value: "PENDING", label: "Pendiente por facturar" },
   { value: "INVOICED", label: "Facturado" },
@@ -73,6 +50,16 @@ const maintenanceTypeOptions = [
   { value: "INSPECTION", label: "Inspección" },
   { value: "OTHER", label: "Otro" },
 ];
+
+function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
+  const resolvedSettings = resolveAppSettings(settings);
+
+  return {
+    countryCode: resolvedSettings.countryCode,
+    currency: resolvedSettings.currency,
+    locale: resolvedSettings.locale,
+  };
+}
 
 function getClientName(client?: InstallationOption["client"]) {
   const composedName = [
@@ -100,14 +87,14 @@ function getTechnicianName(technician?: TechnicianOption | null) {
   return composedName || technician?.email || "Técnico sin nombre";
 }
 
-function formatDateLabel(value?: string | null, locale = "es-CR") {
+function formatDateLabel(value?: string | null, locale?: string | null) {
   if (!value) return "Sin fecha";
 
   const parsed = new Date(value);
 
   if (Number.isNaN(parsed.getTime())) return value;
 
-  return parsed.toLocaleDateString(locale, {
+  return parsed.toLocaleDateString(locale || resolveAppSettings().locale, {
     year: "numeric",
     month: "short",
     day: "numeric",

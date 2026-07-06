@@ -4,6 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAppSettings } from "@/app/hooks/useAppSettings";
+import {
+  DEFAULT_COUNTRY_CODE,
+  DEFAULT_CURRENCY_CODE,
+} from "@/lib/config/app-settings";
+import { resolveCountryFeatures } from "@/lib/config/country-features";
 import { provincias } from "@/lib/data/costa-rica-locations";
 import {
   normalizeClientStatus,
@@ -22,10 +27,6 @@ import {
   COUNTRY_PRESET_OPTIONS,
   COUNTRY_PRESETS,
 } from "@/lib/settings/countryPresets";
-import {
-  DEFAULT_COUNTRY_CODE,
-  DEFAULT_CURRENCY_CODE,
-} from "@/lib/settings/appSettingsUtils";
 import AlertMessage from "@/components/clients/form/AlertMessage";
 import ClientBasicInfoSection from "@/components/clients/form/ClientBasicInfoSection";
 import ClientContactSection from "@/components/clients/form/ClientContactSection";
@@ -54,6 +55,14 @@ import {
   getCountryDisplayName,
   getPaymentTermLabel,
 } from "./client-form/clientFormUtils";
+
+function getComplianceProfileForCountry(
+  countryCode?: string | null,
+): ClientComplianceProfile {
+  return resolveCountryFeatures(countryCode).usesCostaRicaComplianceProfile
+    ? "COSTA_RICA"
+    : "GLOBAL";
+}
 
 export default function ClientForm({
   mode,
@@ -128,8 +137,12 @@ export default function ClientForm({
     [countryCode],
   );
 
-  const shouldUseCostaRicaLocationCatalog =
-    selectedCountryPreset.countryCode === "CR";
+  const shouldUseCostaRicaLocationCatalog = useMemo(
+    () =>
+      resolveCountryFeatures(selectedCountryPreset.countryCode)
+        .usesCostaRicaLocations,
+    [selectedCountryPreset.countryCode],
+  );
 
   const currencyOptions = useMemo(
     () =>
@@ -166,7 +179,7 @@ export default function ClientForm({
     const nextClientType = initialData.client_type ?? "PERSON";
     const nextComplianceProfile =
       initialData.compliance_profile ??
-      (nextCountryPreset.countryCode === "CR" ? "COSTA_RICA" : "GLOBAL");
+      getComplianceProfileForCountry(nextCountryPreset.countryCode);
 
     setCountryCode(nextCountryPreset.countryCode);
     setClientType(nextClientType);
@@ -244,8 +257,9 @@ export default function ClientForm({
       businessCountryMeta.countryCode || DEFAULT_COUNTRY_CODE,
     );
 
-    const nextComplianceProfile =
-      nextCountryPreset.countryCode === "CR" ? "COSTA_RICA" : "GLOBAL";
+    const nextComplianceProfile = getComplianceProfileForCountry(
+      nextCountryPreset.countryCode,
+    );
 
     hasAppliedSettingsDefaults.current = true;
 
@@ -324,8 +338,9 @@ export default function ClientForm({
 
   function handleCountryChange(value: string) {
     const nextCountryPreset = getCountryByCode(value);
-    const nextComplianceProfile =
-      nextCountryPreset.countryCode === "CR" ? "COSTA_RICA" : "GLOBAL";
+    const nextComplianceProfile = getComplianceProfileForCountry(
+      nextCountryPreset.countryCode,
+    );
 
     setCountryCode(nextCountryPreset.countryCode);
     setComplianceProfile(nextComplianceProfile);

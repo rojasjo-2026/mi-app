@@ -1,3 +1,7 @@
+import {
+  DEFAULT_COUNTRY_CODE,
+  normalizeCountryCode as normalizeConfiguredCountryCode,
+} from "@/lib/config/app-settings";
 import type {
   OperationalZoneCreateData,
   OperationalZoneFilters,
@@ -31,17 +35,9 @@ function normalizeOptionalText(value: unknown) {
 }
 
 function normalizeCountryCode(value: unknown) {
-  const cleanValue = String(value || "CR")
-    .trim()
-    .toUpperCase();
+  const cleanValue = String(value || "").trim();
 
-  if (!cleanValue) {
-    throw new OperationalZonesValidationError(
-      "El código de país es requerido.",
-    );
-  }
-
-  return cleanValue;
+  return normalizeConfiguredCountryCode(cleanValue, DEFAULT_COUNTRY_CODE);
 }
 
 function normalizeOptionalDecimal(value: unknown, fieldName: string) {

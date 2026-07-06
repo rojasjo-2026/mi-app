@@ -1,6 +1,10 @@
 import { CalendarNonWorkingDayType } from "@prisma/client";
 import { NextResponse } from "next/server";
 
+import {
+  DEFAULT_COUNTRY_CODE,
+  normalizeCountryCode as normalizeConfiguredCountryCode,
+} from "@/lib/config/app-settings";
 import { prisma } from "@/lib/prisma";
 
 function parseDateOnly(value: string) {
@@ -24,11 +28,9 @@ function formatDate(date: Date) {
 }
 
 function normalizeCountryCode(value: unknown) {
-  const countryCode = String(value || "CR")
-    .trim()
-    .toUpperCase();
+  const cleanValue = String(value || "").trim();
 
-  return countryCode || "CR";
+  return normalizeConfiguredCountryCode(cleanValue, DEFAULT_COUNTRY_CODE);
 }
 
 function normalizeType(value: unknown) {

@@ -11,6 +11,11 @@ import {
   type AvailabilityWorkloadResult,
 } from "@/lib/availability/availabilityWorkload.repository";
 
+import {
+  DEFAULT_COUNTRY_CODE,
+  normalizeCountryCode as normalizeConfiguredCountryCode,
+} from "@/lib/config/app-settings";
+
 export type AvailabilityDateEvaluationInput = {
   country_code: string;
   date: Date | string;
@@ -51,10 +56,8 @@ export type AvailabilityDateEvaluationResult = {
   };
 };
 
-function normalizeCountryCode(value: string | null | undefined) {
-  return String(value || "CR")
-    .trim()
-    .toUpperCase();
+function normalizeAvailabilityCountryCode(value: string | null | undefined) {
+  return normalizeConfiguredCountryCode(value, DEFAULT_COUNTRY_CODE);
 }
 
 function normalizeOptionalId(value: string | null | undefined) {
@@ -147,7 +150,7 @@ function mapAvailabilityResult(params: {
 export async function evaluateAvailabilityForDate(
   input: AvailabilityDateEvaluationInput,
 ): Promise<AvailabilityDateEvaluationResult> {
-  const countryCode = normalizeCountryCode(input.country_code);
+  const countryCode = normalizeAvailabilityCountryCode(input.country_code);
   const operationalZoneId = normalizeOptionalId(input.operational_zone_id);
 
   const [rules, workload] = await Promise.all([
@@ -184,7 +187,7 @@ export async function evaluateAvailabilityForDateRange(params: {
   days: number;
   operational_zone_id?: string | null;
 }) {
-  const countryCode = normalizeCountryCode(params.country_code);
+  const countryCode = normalizeAvailabilityCountryCode(params.country_code);
   const operationalZoneId = normalizeOptionalId(params.operational_zone_id);
   const startDate = createLocalDateOnly(params.start_date);
 
@@ -226,7 +229,7 @@ export function buildAvailabilityWorkloadQuery(
   input: AvailabilityDateEvaluationInput,
 ): AvailabilityWorkloadQuery {
   return {
-    country_code: normalizeCountryCode(input.country_code),
+    country_code: normalizeAvailabilityCountryCode(input.country_code),
     date: input.date,
     operational_zone_id: normalizeOptionalId(input.operational_zone_id),
   };

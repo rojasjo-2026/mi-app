@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import OperationalZonePlaceAutocomplete from "@/app/settings/components/OperationalZonePlaceAutocomplete";
+import { resolveAppSettings } from "@/lib/config/app-settings";
 
 import {
   buildGoogleMapsUrl,
@@ -22,8 +23,13 @@ type OperationsRoutePanelProps = {
 export function OperationsRoutePanel({
   routeStopsText,
   onRouteStopsTextChange,
-  countryCode = "CR",
+  countryCode,
 }: OperationsRoutePanelProps) {
+  const defaultSettings = useMemo(() => resolveAppSettings(), []);
+  const activeCountryCode = (
+    countryCode?.trim() || defaultSettings.countryCode
+  ).toUpperCase();
+
   const [origin, setOrigin] = useState("");
   const [originCoordinate, setOriginCoordinate] =
     useState<RouteCoordinate | null>(null);
@@ -179,8 +185,8 @@ export function OperationsRoutePanel({
 
           <OperationalZonePlaceAutocomplete
             value={origin}
-            countryCode={countryCode}
-            placeholder="Busque un punto de salida. Ej. Parque Central de San José"
+            countryCode={activeCountryCode}
+            placeholder="Busque un punto de salida. Ej. oficina central o punto de referencia"
             onValueChange={handleOriginValueChange}
             onPlaceSelected={handleOriginPlaceSelected}
           />
@@ -273,7 +279,7 @@ export function OperationsRoutePanel({
             rows={7}
             value={routeStopsText}
             onChange={(event) => onRouteStopsTextChange(event.target.value)}
-            placeholder={`Seleccione una agrupación operativa o ingrese una parada por línea.\nEj.\nCliente 1, San José\nCliente 2, Heredia\nCliente 3, Alajuela`}
+            placeholder={`Seleccione una agrupación operativa o ingrese una parada por línea.\nEj.\nCliente 1, dirección o coordenadas\nCliente 2, dirección o coordenadas\nCliente 3, dirección o coordenadas`}
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
           />
         </label>

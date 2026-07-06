@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { resolveAppSettings } from "@/lib/config/app-settings";
 
 type NonWorkingDayType =
   | "HOLIDAY"
@@ -29,6 +30,11 @@ type CalendarNonWorkingDaysApiResponse = {
   message?: string;
 };
 
+type CalendarNonWorkingDaysManagerProps = {
+  locale?: string | null;
+  countryCode?: string | null;
+};
+
 const nonWorkingDayTypeLabels: Record<NonWorkingDayType, string> = {
   HOLIDAY: "Feriado",
   INTERNAL_CLOSURE: "Cierre interno",
@@ -41,22 +47,35 @@ const nonWorkingDayTypes = Object.keys(
   nonWorkingDayTypeLabels,
 ) as NonWorkingDayType[];
 
-function formatDisplayDate(dateValue: string) {
+function formatDisplayDate(dateValue: string, locale?: string | null) {
   const [year, month, day] = dateValue.split("-").map(Number);
 
   if (!year || !month || !day) {
     return dateValue;
   }
 
-  return new Date(year, month - 1, day).toLocaleDateString("es-CR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return new Date(year, month - 1, day).toLocaleDateString(
+    locale || undefined,
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    },
+  );
 }
 
-export default function CalendarNonWorkingDaysManager() {
+export default function CalendarNonWorkingDaysManager({
+  locale,
+  countryCode: businessCountryCode,
+}: CalendarNonWorkingDaysManagerProps) {
+  const defaultSettings = useMemo(() => resolveAppSettings(), []);
+
+  const displayLocale = locale || defaultSettings.locale;
+  const defaultCountryCode = (
+    businessCountryCode || defaultSettings.countryCode
+  ).toUpperCase();
+
   const [nonWorkingDays, setNonWorkingDays] = useState<CalendarNonWorkingDay[]>(
     [],
   );
@@ -65,7 +84,7 @@ export default function CalendarNonWorkingDaysManager() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<NonWorkingDayType>("HOLIDAY");
-  const [countryCode, setCountryCode] = useState("CR");
+  const [countryCode, setCountryCode] = useState(defaultCountryCode);
   const [isRecurringYearly, setIsRecurringYearly] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -141,7 +160,7 @@ export default function CalendarNonWorkingDaysManager() {
           title: title.trim(),
           description: description.trim(),
           type,
-          country_code: countryCode.trim().toUpperCase() || "CR",
+          country_code: countryCode.trim().toUpperCase() || defaultCountryCode,
           is_recurring_yearly: isRecurringYearly,
         }),
       });
@@ -158,7 +177,7 @@ export default function CalendarNonWorkingDaysManager() {
       setTitle("");
       setDescription("");
       setType("HOLIDAY");
-      setCountryCode("CR");
+      setCountryCode(defaultCountryCode);
       setIsRecurringYearly(false);
 
       setSuccessMessage("Día no laborable creado correctamente.");
@@ -262,6 +281,10 @@ export default function CalendarNonWorkingDaysManager() {
     void loadNonWorkingDays();
   }, []);
 
+  useEffect(() => {
+    setCountryCode(defaultCountryCode);
+  }, [defaultCountryCode]);
+
   function renderDayCard(item: CalendarNonWorkingDay) {
     return (
       <div
@@ -271,7 +294,7 @@ export default function CalendarNonWorkingDaysManager() {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold capitalize text-slate-900">
-              {formatDisplayDate(item.date)}
+              {formatDisplayDate(item.date, displayLocale)}
             </p>
 
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
@@ -394,7 +417,7 @@ export default function CalendarNonWorkingDaysManager() {
               setCountryCode(event.target.value.toUpperCase())
             }
             maxLength={3}
-            placeholder="CR"
+            placeholder={defaultCountryCode}
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none transition focus:border-slate-400"
           />
         </label>

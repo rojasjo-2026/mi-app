@@ -1,3 +1,5 @@
+import { resolveAppSettings } from "@/lib/config/app-settings";
+
 type ContactFlowReplyAutomationResult = {
   status: string;
   manualReason?: string | null;
@@ -7,6 +9,8 @@ type ContactFlowMessageContext = {
   clientName?: string | null;
   installationName?: string | null;
   scheduledDate?: Date | string | null;
+  locale?: string | null;
+  countryCode?: string | null;
 };
 
 export function buildInitialContactMessageTemplate(params: {
@@ -61,7 +65,11 @@ export function buildAutomaticReplyMessage(
     (manualReason.includes("confirmó disponibilidad") ||
       manualReason.includes("validar agenda"))
   ) {
-    const dateLabel = formatReplyDate(params.scheduledDate);
+    const dateLabel = formatReplyDate(
+      params.scheduledDate,
+      params.locale,
+      params.countryCode,
+    );
 
     return `Hola ${firstName}, recibimos su confirmación de disponibilidad para el mantenimiento de ${installationLabel}${
       dateLabel ? `, previsto para el ${dateLabel}` : ""
@@ -69,7 +77,11 @@ export function buildAutomaticReplyMessage(
   }
 
   if (params.automationResult.status === "CONFIRMED") {
-    const dateLabel = formatReplyDate(params.scheduledDate);
+    const dateLabel = formatReplyDate(
+      params.scheduledDate,
+      params.locale,
+      params.countryCode,
+    );
 
     return `Hola ${firstName}, su mantenimiento para ${installationLabel} quedó confirmado correctamente${
       dateLabel ? ` para el ${dateLabel}` : ""
@@ -97,7 +109,25 @@ export function buildAutomaticReplyMessage(
   return `Hola ${firstName}, recibimos su mensaje. Un miembro del equipo lo revisará y continuará con el seguimiento de ${installationLabel}.`;
 }
 
-function formatReplyDate(value?: Date | string | null) {
+function getReplyLocale(locale?: string | null, countryCode?: string | null) {
+  if (locale?.trim()) {
+    return locale.trim();
+  }
+
+  return resolveAppSettings(
+    countryCode
+      ? {
+          country_code: countryCode,
+        }
+      : undefined,
+  ).locale;
+}
+
+function formatReplyDate(
+  value?: Date | string | null,
+  locale?: string | null,
+  countryCode?: string | null,
+) {
   if (!value) return null;
 
   const date = value instanceof Date ? value : new Date(value);
@@ -106,7 +136,7 @@ function formatReplyDate(value?: Date | string | null) {
     return null;
   }
 
-  return new Intl.DateTimeFormat("es-CR", {
+  return new Intl.DateTimeFormat(getReplyLocale(locale, countryCode), {
     day: "numeric",
     month: "long",
     year: "numeric",

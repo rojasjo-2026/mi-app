@@ -2,7 +2,7 @@ import type { FinanceInvoice } from "./types";
 import {
   DEFAULT_CURRENCY_CODE,
   fallbackCountryPreset,
-} from "@/lib/settings/appSettingsUtils";
+} from "@/lib/config/app-settings";
 
 const DEFAULT_LOCALE = fallbackCountryPreset.locale;
 const DEFAULT_CURRENCY = DEFAULT_CURRENCY_CODE;

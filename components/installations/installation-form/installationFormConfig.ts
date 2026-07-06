@@ -1,10 +1,12 @@
 ﻿import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-  type CountryPreset,
-} from "@/lib/settings/countryPresets";
+  DEFAULT_COUNTRY_CODE,
+  fallbackCountryPreset,
+} from "@/lib/config/app-settings";
+import type { CountryPreset } from "@/lib/settings/countryPresets";
 
 export type { CountryPreset };
+
+export { DEFAULT_COUNTRY_CODE, fallbackCountryPreset };
 
 export type TechnicianOption = {
   user_id: string;
@@ -47,9 +49,3 @@ export type AppSettingsResponse = {
     country_code?: string | null;
   } | null;
 };
-
-export const DEFAULT_COUNTRY_CODE = "CR";
-
-export const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-

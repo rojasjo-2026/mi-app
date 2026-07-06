@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+import { resolveAppSettings } from "@/lib/config/app-settings";
 import { prisma } from "@/lib/prisma";
 import {
   confirmFollowUp,
@@ -26,8 +28,12 @@ function addDays(date: Date, days: number) {
   return result;
 }
 
-function formatDateForMessage(date: Date) {
-  return new Intl.DateTimeFormat("es-CR", {
+function getMessageLocale() {
+  return resolveAppSettings().locale;
+}
+
+function formatDateForMessage(date: Date, locale = getMessageLocale()) {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",

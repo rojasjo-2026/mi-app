@@ -1,3 +1,5 @@
+import { resolveAppSettings } from "@/lib/config/app-settings";
+
 import type {
   AvailabilityByDateMap,
   CalendarEvent,
@@ -76,6 +78,7 @@ function getMonthRange(dateValue: string) {
 function getRangeLabel(params: {
   selectedDate: string;
   viewMode: OperationsViewMode;
+  locale?: string;
 }) {
   if (params.viewMode === "week") {
     const range = getWeekRange(params.selectedDate);
@@ -84,10 +87,13 @@ function getRangeLabel(params: {
 
   if (params.viewMode === "month") {
     const date = parseDateOnly(params.selectedDate);
-    return date.toLocaleDateString("es-CR", {
-      month: "long",
-      year: "numeric",
-    });
+    return date.toLocaleDateString(
+      params.locale || resolveAppSettings().locale,
+      {
+        month: "long",
+        year: "numeric",
+      },
+    );
   }
 
   return params.selectedDate;
@@ -249,6 +255,8 @@ export function OperationsRangeGroups({
     return null;
   }
 
+  const locale = resolveAppSettings().locale;
+
   const rangeEvents = getEventsForRange({
     events,
     selectedDate,
@@ -256,7 +264,7 @@ export function OperationsRangeGroups({
   });
 
   const groups = buildRangeGroups(rangeEvents);
-  const rangeLabel = getRangeLabel({ selectedDate, viewMode });
+  const rangeLabel = getRangeLabel({ selectedDate, viewMode, locale });
   const rangeTypeLabel = viewMode === "week" ? "semana" : "mes";
 
   return (

@@ -2,6 +2,7 @@
 
 import FormInput from "@/components/clients/form/FormInput";
 import ClientFormSectionHeader from "@/components/clients/form/ClientFormSectionHeader";
+import { isCostaRicaCountry } from "@/lib/config/country-features";
 import type { CountryPreset } from "@/lib/settings/countryPresets";
 
 type LocationOption =
@@ -70,7 +71,7 @@ export default function ClientLocationSection({
   selectClass,
   inputClass,
 }: ClientLocationSectionProps) {
-  const isCostaRica = countryCode === "CR";
+  const isCostaRica = isCostaRicaCountry(countryCode);
   const adminLevel3Label =
     countryPreset.adminLevel3Label ?? "Nivel administrativo 3";
 

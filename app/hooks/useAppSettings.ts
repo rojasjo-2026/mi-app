@@ -7,7 +7,7 @@ import {
   getBusinessCountryMeta,
   type AppSettingsData,
   type AppSettingsResponse,
-} from "@/lib/settings/appSettingsUtils";
+} from "@/lib/config/app-settings";
 
 type UseAppSettingsResult = {
   settings: AppSettingsData | null;

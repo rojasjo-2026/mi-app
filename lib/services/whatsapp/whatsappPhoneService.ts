@@ -1,7 +1,53 @@
-const DEFAULT_COUNTRY_CODE =
-  process.env.DEFAULT_COUNTRY_CODE ||
-  process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE ||
-  "506";
+import { resolveAppSettings } from "@/lib/config/app-settings";
+
+const DEFAULT_PHONE_COUNTRY_CODE = resolveDefaultPhoneCountryCode();
+
+function resolveDefaultPhoneCountryCode() {
+  const configuredPhoneCountryCode =
+    process.env.DEFAULT_PHONE_COUNTRY_CODE ||
+    process.env.NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY_CODE;
+
+  if (configuredPhoneCountryCode) {
+    return configuredPhoneCountryCode.replace(/\D/g, "");
+  }
+
+  const configuredCountryCode =
+    process.env.DEFAULT_COUNTRY_CODE ||
+    process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE;
+
+  const resolvedSettings = resolveAppSettings(
+    configuredCountryCode
+      ? {
+          country_code: configuredCountryCode,
+        }
+      : undefined,
+  );
+
+  return String(resolvedSettings.phoneCountryCode || "").replace(/\D/g, "");
+}
+
+function normalizePhoneCountryCode(value?: string | null) {
+  const cleanValue = String(value || "").trim();
+
+  if (!cleanValue) {
+    return DEFAULT_PHONE_COUNTRY_CODE;
+  }
+
+  const digitsOnly = cleanValue.replace(/\D/g, "");
+
+  if (digitsOnly) {
+    return digitsOnly;
+  }
+
+  const resolvedSettings = resolveAppSettings({
+    country_code: cleanValue,
+  });
+
+  return (
+    String(resolvedSettings.phoneCountryCode || "").replace(/\D/g, "") ||
+    DEFAULT_PHONE_COUNTRY_CODE
+  );
+}
 
 export function sanitizePhoneNumber(value?: string | null) {
   const trimmedValue = value?.trim();
@@ -15,16 +61,18 @@ export function sanitizePhoneNumber(value?: string | null) {
 
 export function normalizePhoneNumber(
   value?: string | null,
-  countryCode = DEFAULT_COUNTRY_CODE,
+  phoneCountryCode = DEFAULT_PHONE_COUNTRY_CODE,
 ) {
   const digits = value?.replace(/\D/g, "") ?? "";
+  const normalizedPhoneCountryCode =
+    normalizePhoneCountryCode(phoneCountryCode);
 
   if (!digits) {
     return null;
   }
 
-  if (digits.length === 8 && countryCode) {
-    return `${countryCode}${digits}`;
+  if (digits.length === 8 && normalizedPhoneCountryCode) {
+    return `${normalizedPhoneCountryCode}${digits}`;
   }
 
   return digits;
@@ -33,7 +81,19 @@ export function normalizePhoneNumber(
 export function buildPhoneCandidates(
   ...values: Array<string | null | undefined>
 ) {
+  return buildPhoneCandidatesWithPhoneCountryCode(
+    DEFAULT_PHONE_COUNTRY_CODE,
+    ...values,
+  );
+}
+
+export function buildPhoneCandidatesWithPhoneCountryCode(
+  phoneCountryCode: string | null | undefined,
+  ...values: Array<string | null | undefined>
+) {
   const candidates = new Set<string>();
+  const normalizedPhoneCountryCode =
+    normalizePhoneCountryCode(phoneCountryCode);
 
   for (const value of values) {
     const sanitizedValue = sanitizePhoneNumber(value);
@@ -50,11 +110,11 @@ export function buildPhoneCandidates(
 
     if (
       digitsOnly &&
-      DEFAULT_COUNTRY_CODE &&
-      digitsOnly.startsWith(DEFAULT_COUNTRY_CODE) &&
-      digitsOnly.length > DEFAULT_COUNTRY_CODE.length
+      normalizedPhoneCountryCode &&
+      digitsOnly.startsWith(normalizedPhoneCountryCode) &&
+      digitsOnly.length > normalizedPhoneCountryCode.length
     ) {
-      const localNumber = digitsOnly.slice(DEFAULT_COUNTRY_CODE.length);
+      const localNumber = digitsOnly.slice(normalizedPhoneCountryCode.length);
 
       if (localNumber) {
         candidates.add(localNumber);
@@ -64,12 +124,12 @@ export function buildPhoneCandidates(
 
     if (
       digitsOnly &&
-      DEFAULT_COUNTRY_CODE &&
+      normalizedPhoneCountryCode &&
       digitsOnly.length === 8 &&
-      !digitsOnly.startsWith(DEFAULT_COUNTRY_CODE)
+      !digitsOnly.startsWith(normalizedPhoneCountryCode)
     ) {
-      candidates.add(`${DEFAULT_COUNTRY_CODE}${digitsOnly}`);
-      candidates.add(`+${DEFAULT_COUNTRY_CODE}${digitsOnly}`);
+      candidates.add(`${normalizedPhoneCountryCode}${digitsOnly}`);
+      candidates.add(`+${normalizedPhoneCountryCode}${digitsOnly}`);
     }
   }
 

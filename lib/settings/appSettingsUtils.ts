@@ -41,18 +41,6 @@ export type BusinessCountryMeta = {
   adminLevel3Label: string | null;
 };
 
-export function normalizeCountryCode(value?: string | null, fallback = "CR") {
-  const countryCode = String(value || "")
-    .trim()
-    .toUpperCase();
-
-  const fallbackCountryCode = String(fallback || "CR")
-    .trim()
-    .toUpperCase();
-
-  return countryCode || fallbackCountryCode;
-}
-
 function getFirstCountryPreset(): CountryPreset {
   const firstPreset = Object.values(COUNTRY_PRESETS)[0];
 
@@ -63,17 +51,40 @@ function getFirstCountryPreset(): CountryPreset {
   return firstPreset;
 }
 
+const firstCountryPreset = getFirstCountryPreset();
+
+function normalizeCountryCodeValue(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toUpperCase();
+}
+
+export function normalizeCountryCode(
+  value?: string | null,
+  fallback?: string | null,
+) {
+  const countryCode = normalizeCountryCodeValue(value);
+
+  const fallbackCountryCode =
+    normalizeCountryCodeValue(fallback) ||
+    normalizeCountryCodeValue(DEFAULT_APP_SETTINGS.country_code) ||
+    firstCountryPreset.countryCode;
+
+  return countryCode || fallbackCountryCode;
+}
+
 export const DEFAULT_COUNTRY_CODE = normalizeCountryCode(
   DEFAULT_APP_SETTINGS.country_code,
-  "CR",
+  firstCountryPreset.countryCode,
 );
 
-export const DEFAULT_CURRENCY_CODE = String(
-  DEFAULT_APP_SETTINGS.default_currency || "CRC",
-).toUpperCase();
-
 export const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? getFirstCountryPreset();
+  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? firstCountryPreset;
+
+export const DEFAULT_CURRENCY_CODE = String(
+  DEFAULT_APP_SETTINGS.default_currency ||
+    fallbackCountryPreset.primaryCurrency,
+).toUpperCase();
 
 export function getBusinessCountryPreset(countryCode?: string | null) {
   const normalizedCountryCode = normalizeCountryCode(

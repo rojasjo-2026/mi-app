@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 
+import { resolveAppSettings } from "@/lib/config/app-settings";
 import { prisma } from "@/lib/prisma";
 import type { AutomationResult } from "@/lib/services/contactFlowAutomationService";
 
@@ -144,7 +145,7 @@ function buildFollowUpAuditLine(params: {
   inboundText: string;
   automationResult: AutomationResult;
 }) {
-  const timestamp = new Intl.DateTimeFormat("es-CR", {
+  const timestamp = new Intl.DateTimeFormat(resolveAppSettings().locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

@@ -1,20 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
 import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
+  resolveAppSettings,
+  type AppSettingsResponse,
+} from "@/lib/config/app-settings";
 import { formatCurrency } from "../utils";
 import SectionHeader from "./SectionHeader";
-
-type AppSettingsResponse = {
-  success: boolean;
-  data?: {
-    country_code?: string | null;
-    default_currency?: string | null;
-  } | null;
-};
 
 type FinanceTrendPoint = {
   label: string;
@@ -82,18 +75,12 @@ type FinanceDashboardResponse = {
   data?: FinanceDashboardData;
 };
 
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
 function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
-  const countryPreset =
-    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
+  const resolvedSettings = resolveAppSettings(settings);
 
   return {
-    currency: settings?.default_currency || countryPreset.primaryCurrency,
-    locale: countryPreset.locale,
+    currency: resolvedSettings.currency,
+    locale: resolvedSettings.locale,
   };
 }
 

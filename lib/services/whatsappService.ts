@@ -1,3 +1,5 @@
+import { resolveAppSettings } from "@/lib/config/app-settings";
+
 const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const API_VERSION = process.env.WHATSAPP_API_VERSION || "v19.0";
@@ -15,6 +17,7 @@ const BASE_URL = hasRealWhatsAppConfig
 type SendWhatsAppTextMessageParams = {
   to: string;
   message: string;
+  phoneCountryCode?: string | null;
 };
 
 type SendWhatsAppMediaMessageParams = {
@@ -22,6 +25,7 @@ type SendWhatsAppMediaMessageParams = {
   mediaUrl: string;
   caption?: string;
   filename?: string;
+  phoneCountryCode?: string | null;
 };
 
 type SendWhatsAppMessageResult =
@@ -44,9 +48,11 @@ type SendWhatsAppMessageResult =
 export async function sendWhatsAppTextMessage({
   to,
   message,
+  phoneCountryCode,
 }: SendWhatsAppTextMessageParams): Promise<SendWhatsAppMessageResult> {
   return sendWhatsAppMessage({
     to,
+    phoneCountryCode,
     payload: {
       type: "text",
       text: {
@@ -56,6 +62,7 @@ export async function sendWhatsAppTextMessage({
     mockRaw: {
       to,
       message,
+      phoneCountryCode,
       type: "text",
     },
     logLabel: "Mensaje de texto",
@@ -70,9 +77,11 @@ export async function sendWhatsAppImageMessage({
   to,
   mediaUrl,
   caption,
+  phoneCountryCode,
 }: SendWhatsAppMediaMessageParams): Promise<SendWhatsAppMessageResult> {
   return sendWhatsAppMessage({
     to,
+    phoneCountryCode,
     payload: {
       type: "image",
       image: {
@@ -84,6 +93,7 @@ export async function sendWhatsAppImageMessage({
       to,
       mediaUrl,
       caption,
+      phoneCountryCode,
       type: "image",
     },
     logLabel: "Imagen",
@@ -99,9 +109,11 @@ export async function sendWhatsAppDocumentMessage({
   mediaUrl,
   caption,
   filename,
+  phoneCountryCode,
 }: SendWhatsAppMediaMessageParams): Promise<SendWhatsAppMessageResult> {
   return sendWhatsAppMessage({
     to,
+    phoneCountryCode,
     payload: {
       type: "document",
       document: {
@@ -115,6 +127,7 @@ export async function sendWhatsAppDocumentMessage({
       mediaUrl,
       caption,
       filename,
+      phoneCountryCode,
       type: "document",
     },
     logLabel: "Documento",
@@ -128,9 +141,11 @@ export async function sendWhatsAppDocumentMessage({
 export async function sendQuickReplyOptions({
   to,
   header,
+  phoneCountryCode,
 }: {
   to: string;
   header?: string;
+  phoneCountryCode?: string | null;
 }) {
   const message = `${header || "Por favor, elija una opción:"}
 
@@ -142,16 +157,19 @@ export async function sendQuickReplyOptions({
   return sendWhatsAppTextMessage({
     to,
     message,
+    phoneCountryCode,
   });
 }
 
 async function sendWhatsAppMessage({
   to,
+  phoneCountryCode,
   payload,
   mockRaw,
   logLabel,
 }: {
   to: string;
+  phoneCountryCode?: string | null;
   payload: Record<string, unknown>;
   mockRaw: Record<string, unknown>;
   logLabel: string;
@@ -171,7 +189,7 @@ async function sendWhatsAppMessage({
   }
 
   try {
-    const formattedPhone = formatPhoneNumber(to);
+    const formattedPhone = formatPhoneNumber(to, phoneCountryCode);
 
     const response = await fetch(BASE_URL, {
       method: "POST",
@@ -213,15 +231,33 @@ async function sendWhatsAppMessage({
 }
 
 /**
- * Normalizes local phone numbers to Costa Rica international format.
- * Later this should use the client's country_code for international support.
+ * Normalizes phone numbers to the configured international format.
  */
-function formatPhoneNumber(phone: string): string {
+function formatPhoneNumber(
+  phone: string,
+  phoneCountryCode?: string | null,
+): string {
   const cleaned = phone.replace(/\D/g, "");
 
-  if (cleaned.startsWith("506")) {
+  if (!cleaned) {
     return cleaned;
   }
 
-  return `506${cleaned}`;
+  const resolvedPhoneCountryCode =
+    phoneCountryCode || resolveAppSettings().phoneCountryCode;
+
+  const cleanedCountryCode = String(resolvedPhoneCountryCode || "").replace(
+    /\D/g,
+    "",
+  );
+
+  if (!cleanedCountryCode) {
+    return cleaned;
+  }
+
+  if (cleaned.startsWith(cleanedCountryCode)) {
+    return cleaned;
+  }
+
+  return `${cleanedCountryCode}${cleaned}`;
 }

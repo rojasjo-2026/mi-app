@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { resolveAppSettings } from "@/lib/config/app-settings";
+
 type Note = {
   technical_note_id: string;
   note_text: string;
@@ -12,10 +14,22 @@ type Props = {
   installationId: string;
 };
 
+function formatNoteDate(value: string, locale: string) {
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleString(locale);
+}
+
 export default function TechnicalNotes({ installationId }: Props) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const locale = useMemo(() => resolveAppSettings().locale, []);
 
   const noteCountLabel = useMemo(() => {
     if (notes.length === 1) return "1 observación";
@@ -157,7 +171,7 @@ export default function TechnicalNotes({ installationId }: Props) {
                 </span>
 
                 <span className="text-xs font-medium text-slate-400">
-                  {new Date(n.created_at).toLocaleString("es-CR")}
+                  {formatNoteDate(n.created_at, locale)}
                 </span>
               </div>
 

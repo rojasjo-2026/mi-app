@@ -3,6 +3,7 @@ import {
   evaluateAvailabilityForDate,
   type AvailabilityDateEvaluationResult,
 } from "@/lib/availability/availability.service";
+import { resolveAppSettings } from "@/lib/config/app-settings";
 import { prisma } from "@/lib/prisma";
 
 type ContactFlowAvailabilityCheckResult = {
@@ -29,10 +30,14 @@ function isConfirmationPendingOperationalValidation(
   );
 }
 
-function formatAvailabilityDate(value: Date | null) {
+function formatAvailabilityDate(value: Date | null, countryCode: string) {
   if (!value) return "fecha no disponible";
 
-  return new Intl.DateTimeFormat("es-CR", {
+  const resolvedSettings = resolveAppSettings({
+    country_code: countryCode,
+  });
+
+  return new Intl.DateTimeFormat(resolvedSettings.locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -42,6 +47,8 @@ function formatAvailabilityDate(value: Date | null) {
 export async function evaluateContactFlowAvailability(
   contactFlowId: string,
 ): Promise<ContactFlowAvailabilityCheckResult> {
+  const defaultSettings = resolveAppSettings();
+
   const contactFlow = await prisma.maintenanceContactFlow.findUnique({
     where: {
       contact_flow_id: contactFlowId,
@@ -74,7 +81,7 @@ export async function evaluateContactFlowAvailability(
       checked: false,
       canOfferDay: false,
       requiresManualValidation: true,
-      countryCode: "CR",
+      countryCode: defaultSettings.countryCode,
       date: null,
       operationalZoneId: null,
       reason:
@@ -83,7 +90,9 @@ export async function evaluateContactFlowAvailability(
     };
   }
 
-  const countryCode = contactFlow.client?.country_code || "CR";
+  const countryCode =
+    contactFlow.client?.country_code || defaultSettings.countryCode;
+
   const date =
     contactFlow.follow_up.scheduled_date ?? contactFlow.follow_up.target_date;
 
@@ -137,7 +146,10 @@ export function mergeAutomationWithAvailability(params: {
     return automationResult;
   }
 
-  const dateLabel = formatAvailabilityDate(availabilityResult.date);
+  const dateLabel = formatAvailabilityDate(
+    availabilityResult.date,
+    availabilityResult.countryCode,
+  );
 
   if (!availabilityResult.checked) {
     return {

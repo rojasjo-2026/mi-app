@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { resolveAppSettings } from "@/lib/config/app-settings";
 
 type BlockedDate = {
   id: string;
@@ -16,22 +17,34 @@ type CalendarBlockedApiResponse = {
   message?: string;
 };
 
-function formatDisplayDate(dateValue: string) {
+type CalendarBlockedDatesManagerProps = {
+  locale?: string | null;
+};
+
+function formatDisplayDate(dateValue: string, locale?: string | null) {
   const [year, month, day] = dateValue.split("-").map(Number);
 
   if (!year || !month || !day) {
     return dateValue;
   }
 
-  return new Date(year, month - 1, day).toLocaleDateString("es-CR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return new Date(year, month - 1, day).toLocaleDateString(
+    locale || undefined,
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    },
+  );
 }
 
-export default function CalendarBlockedDatesManager() {
+export default function CalendarBlockedDatesManager({
+  locale,
+}: CalendarBlockedDatesManagerProps) {
+  const resolvedSettings = resolveAppSettings();
+  const displayLocale = locale || resolvedSettings.locale;
+
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
   const [blockedDate, setBlockedDate] = useState("");
   const [reason, setReason] = useState("");
@@ -246,7 +259,7 @@ export default function CalendarBlockedDatesManager() {
               >
                 <div>
                   <p className="text-sm font-semibold capitalize text-slate-900">
-                    {formatDisplayDate(item.date)}
+                    {formatDisplayDate(item.date, displayLocale)}
                   </p>
 
                   <p className="mt-1 text-xs text-slate-500">

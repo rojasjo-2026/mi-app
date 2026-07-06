@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { resolveAppSettings } from "@/lib/config/app-settings";
+
 type OperationalZone = {
   operational_zone_id: string;
   country_code: string;
@@ -45,12 +47,17 @@ export default function OperationalZoneSelect({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const defaultCountryCode = useMemo(
+    () => resolveAppSettings().countryCode,
+    [],
+  );
+
   const normalizedCountryCode = useMemo(
     () =>
-      String(countryCode || "CR")
+      String(countryCode || defaultCountryCode)
         .trim()
         .toUpperCase(),
-    [countryCode],
+    [countryCode, defaultCountryCode],
   );
 
   async function loadZones() {

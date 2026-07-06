@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
 import {
-  COUNTRY_PRESETS,
-  getCountryPreset,
-} from "@/lib/settings/countryPresets";
+  fallbackCountryPreset,
+  resolveAppSettings,
+} from "@/lib/config/app-settings";
+import { getCountryPreset } from "@/lib/settings/countryPresets";
 
 type PaymentTerm = "CASH" | "CREDIT";
 type SourceType = "INSTALLATION" | "FOLLOW_UP" | "MANUAL";
@@ -57,28 +59,24 @@ type AppSettingsResponse = {
   } | null;
 };
 
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
-
 function getBusinessCountryMeta(
   settings?: AppSettingsResponse["data"],
   client?: FinanceInvoiceDraftFormProps["client"],
 ) {
-  const countryPreset =
-    getCountryPreset(
+  const resolvedSettings = resolveAppSettings({
+    country_code:
       client?.country_code ??
-        client?.identification_country ??
-        settings?.country_code,
-    ) ?? fallbackCountryPreset;
+      client?.identification_country ??
+      settings?.country_code,
+    default_currency: client?.preferred_currency || settings?.default_currency,
+  });
+
+  const countryPreset =
+    getCountryPreset(resolvedSettings.countryCode) ?? fallbackCountryPreset;
 
   return {
-    currency:
-      client?.preferred_currency ||
-      settings?.default_currency ||
-      countryPreset.primaryCurrency,
-    locale: countryPreset.locale,
+    currency: resolvedSettings.currency,
+    locale: resolvedSettings.locale,
     taxLabel: countryPreset.taxLabel || "Impuesto",
     taxRate:
       settings?.default_tax_rate !== null &&

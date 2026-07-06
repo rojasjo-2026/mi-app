@@ -1,3 +1,5 @@
+import { isCostaRicaCountry } from "@/lib/config/country-features";
+
 export type ClientType = "PERSON" | "COMPANY" | "OTHER";
 
 export type ClientComplianceProfile = "GLOBAL" | "COSTA_RICA";
@@ -68,5 +70,5 @@ export function normalizeComplianceProfile(
     return textValue;
   }
 
-  return countryCode === "CR" ? "COSTA_RICA" : "GLOBAL";
+  return isCostaRicaCountry(countryCode) ? "COSTA_RICA" : "GLOBAL";
 }

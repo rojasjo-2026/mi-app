@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
+import {
+  DEFAULT_COUNTRY_CODE,
+  fallbackCountryPreset,
+  normalizeCountryCode as normalizeConfiguredCountryCode,
+} from "@/lib/config/app-settings";
 import {
   COUNTRY_PRESET_OPTIONS,
   COUNTRY_PRESETS,
@@ -53,11 +59,6 @@ type SettingsApiResponse = {
   data: AppSettings | null;
   message?: string;
 };
-
-const DEFAULT_COUNTRY_CODE = "CR";
-
-const fallbackCountryPreset =
-  getCountryPreset(DEFAULT_COUNTRY_CODE) ?? Object.values(COUNTRY_PRESETS)[0];
 
 const currencyNames: Record<string, string> = {
   ARS: "Peso argentino",
@@ -130,11 +131,7 @@ function normalizeCountryCode(value: string | null | undefined) {
     .toUpperCase()
     .replace(/\s+/g, " ");
 
-  if (normalizedValue === "COSTA RICA") {
-    return "CR";
-  }
-
-  return getCountryPreset(normalizedValue)?.countryCode ?? DEFAULT_COUNTRY_CODE;
+  return normalizeConfiguredCountryCode(normalizedValue, DEFAULT_COUNTRY_CODE);
 }
 
 function getCountryByCode(countryCode: string | null | undefined) {

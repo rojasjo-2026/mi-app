@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { resolveAppSettings } from "@/lib/config/app-settings";
 
 type GooglePlace = {
   formatted_address?: string;
@@ -48,7 +50,7 @@ type SelectedPlace = {
 
 type OperationalZonePlaceAutocompleteProps = {
   value: string;
-  countryCode: string;
+  countryCode?: string | null;
   disabled?: boolean;
   placeholder?: string;
   onValueChange: (value: string) => void;
@@ -129,11 +131,17 @@ function loadGooglePlacesLibrary() {
   return googlePlacesLoadPromise;
 }
 
+function getActiveCountryCode(countryCode?: string | null) {
+  const cleanCountryCode = countryCode?.trim();
+
+  return (cleanCountryCode || resolveAppSettings().countryCode).toLowerCase();
+}
+
 export default function OperationalZonePlaceAutocomplete({
   value,
   countryCode,
   disabled = false,
-  placeholder = "Busque una dirección de referencia. Ej. Parque Central de Liberia",
+  placeholder = "Busque una dirección de referencia. Ej. oficina central o punto de referencia",
   onValueChange,
   onPlaceSelected,
 }: OperationalZonePlaceAutocompleteProps) {
@@ -141,6 +149,11 @@ export default function OperationalZonePlaceAutocomplete({
   const autocompleteRef = useRef<GoogleAutocomplete | null>(null);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [placesError, setPlacesError] = useState("");
+
+  const activeCountryCode = useMemo(
+    () => getActiveCountryCode(countryCode),
+    [countryCode],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -166,8 +179,8 @@ export default function OperationalZonePlaceAutocomplete({
           inputRef.current,
           {
             fields: ["formatted_address", "geometry", "name", "place_id"],
-            componentRestrictions: countryCode
-              ? { country: countryCode.toLowerCase() }
+            componentRestrictions: activeCountryCode
+              ? { country: activeCountryCode }
               : undefined,
           },
         );
@@ -228,7 +241,7 @@ export default function OperationalZonePlaceAutocomplete({
     return () => {
       isMounted = false;
     };
-  }, [countryCode, onPlaceSelected, onValueChange]);
+  }, [activeCountryCode, onPlaceSelected, onValueChange]);
 
   return (
     <div className="space-y-2">

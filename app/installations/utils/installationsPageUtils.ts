@@ -1,21 +1,13 @@
-﻿import { getCountryPreset } from "@/lib/settings/countryPresets";
+﻿import { getBusinessCountryMeta } from "@/lib/config/app-settings";
+
 import {
-  fallbackCountryPreset,
   type AppSettingsResponse,
   type ColumnKey,
   type InstallationItem,
   type SortDirection,
 } from "../config/installationsPageConfig";
 
-export function getBusinessCountryMeta(settings?: AppSettingsResponse["data"]) {
-  const countryPreset =
-    getCountryPreset(settings?.country_code) ?? fallbackCountryPreset;
-
-  return {
-    currency: settings?.default_currency || countryPreset.primaryCurrency,
-    locale: countryPreset.locale,
-  };
-}
+export { getBusinessCountryMeta };
 
 export function getFilterButtonClass(isActive: boolean) {
   return isActive
@@ -56,7 +48,7 @@ export function getStatusBadgeClass(status?: string | null) {
   return "border border-slate-200 bg-slate-100 text-slate-700";
 }
 
-export function formatDateLabel(value?: string | null, locale = "es-CR") {
+export function formatDateLabel(value?: string | null, locale?: string) {
   if (!value) return "No disponible";
 
   const parsed = new Date(value);
@@ -74,8 +66,8 @@ export function formatDateLabel(value?: string | null, locale = "es-CR") {
 
 export function formatCurrency(
   value?: number | null,
-  currency = "CRC",
-  locale = "es-CR",
+  currency?: string,
+  locale?: string,
 ) {
   if (value == null) return "No definido";
 
@@ -157,4 +149,3 @@ export function getStickyBodyClass(columnKey: ColumnKey) {
 
   return "";
 }
-

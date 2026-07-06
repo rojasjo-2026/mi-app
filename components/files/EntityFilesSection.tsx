@@ -128,7 +128,11 @@ function getFileTypeOrder(file: FileItem) {
   return 3;
 }
 
-function formatFileDate(value?: string | null) {
+function formatFileDate(
+  value?: string | null,
+  locale?: string,
+  timeZone?: string,
+) {
   if (!value) return "-";
 
   const date = new Date(value);
@@ -137,7 +141,14 @@ function formatFileDate(value?: string | null) {
     return "-";
   }
 
-  return date.toLocaleString("es-CR");
+  return date.toLocaleString(
+    locale,
+    timeZone
+      ? {
+          timeZone,
+        }
+      : undefined,
+  );
 }
 
 type EntityFilesSectionProps = {
@@ -148,6 +159,8 @@ type EntityFilesSectionProps = {
   title: string;
   description: string;
   emptyMessage: string;
+  locale?: string;
+  timeZone?: string;
 };
 
 export default function EntityFilesSection({
@@ -158,6 +171,8 @@ export default function EntityFilesSection({
   title,
   description,
   emptyMessage,
+  locale,
+  timeZone,
 }: EntityFilesSectionProps) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [previewFiles, setPreviewFiles] = useState<PreviewFile[]>([]);
@@ -531,13 +546,15 @@ export default function EntityFilesSection({
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{eyebrow}</p>
+            <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {eyebrow}
+            </p>
 
-            <h2 className="text-lg font-semibold text-slate-900">
-              {title}
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
 
-            <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {description}
+            </p>
           </div>
 
           <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
@@ -725,7 +742,7 @@ export default function EntityFilesSection({
                     </p>
 
                     <p className="mt-1 text-xs text-slate-400">
-                      {formatFileDate(file.created_at)}
+                      {formatFileDate(file.created_at, locale, timeZone)}
                     </p>
                   </div>
 
@@ -851,5 +868,3 @@ export default function EntityFilesSection({
     </>
   );
 }
-
-

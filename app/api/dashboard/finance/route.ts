@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { Prisma, WorkBillingStatus } from "@prisma/client";
+
+import { resolveAppSettings } from "@/lib/config/app-settings";
 import { prisma } from "@/lib/prisma";
 import { refreshOverdueInvoices } from "@/lib/services/invoiceOverdueService";
 
@@ -87,8 +89,8 @@ function getPreviousRange(start: Date, end: Date) {
   };
 }
 
-function getMonthLabel(date: Date) {
-  return date.toLocaleDateString("es-CR", {
+function getMonthLabel(date: Date, locale: string) {
+  return date.toLocaleDateString(locale, {
     month: "short",
   });
 }
@@ -257,7 +259,10 @@ async function getPendingBillablesMetrics(start: Date, end: Date) {
   };
 }
 
-async function getTrendPoint(monthStart: Date): Promise<TrendPoint> {
+async function getTrendPoint(
+  monthStart: Date,
+  locale: string,
+): Promise<TrendPoint> {
   const monthEnd = new Date(
     monthStart.getFullYear(),
     monthStart.getMonth() + 1,
@@ -274,7 +279,7 @@ async function getTrendPoint(monthStart: Date): Promise<TrendPoint> {
   ]);
 
   return {
-    label: getMonthLabel(monthStart),
+    label: getMonthLabel(monthStart, locale),
     invoiced: billing.totalInvoiced,
     paid: billing.totalPaid,
     pending: billing.totalPending,
@@ -283,14 +288,14 @@ async function getTrendPoint(monthStart: Date): Promise<TrendPoint> {
   };
 }
 
-async function getTrends(end: Date) {
+async function getTrends(end: Date, locale: string) {
   const currentMonthStart = new Date(end.getFullYear(), end.getMonth(), 1);
   const monthStarts = Array.from({ length: 6 }, (_, index) =>
     addMonths(currentMonthStart, index - 5),
   );
 
   return Promise.all(
-    monthStarts.map((monthStart) => getTrendPoint(monthStart)),
+    monthStarts.map((monthStart) => getTrendPoint(monthStart, locale)),
   );
 }
 
@@ -300,6 +305,7 @@ export async function GET(req: Request) {
 
     await refreshOverdueInvoices();
 
+    const locale = resolveAppSettings().locale;
     const range = normalizeRange(searchParams);
     const previousRange = getPreviousRange(range.start, range.end);
 
@@ -314,7 +320,7 @@ export async function GET(req: Request) {
       getPendingBillablesMetrics(range.start, range.end),
       getBillingMetrics(previousRange.start, previousRange.end),
       getPendingBillablesMetrics(previousRange.start, previousRange.end),
-      getTrends(range.end),
+      getTrends(range.end, locale),
     ]);
 
     const potentialTotal = billing.totalInvoiced + pendingBillables.totalAmount;

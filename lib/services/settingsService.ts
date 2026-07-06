@@ -1,11 +1,18 @@
 import { Prisma, type CurrencyCode } from "@prisma/client";
 
-import { DEFAULT_APP_SETTINGS } from "@/lib/settings/settingsDefaults";
+import {
+  DEFAULT_COUNTRY_CODE,
+  DEFAULT_CURRENCY_CODE,
+  fallbackCountryPreset,
+  normalizeCountryCode as normalizeConfiguredCountryCode,
+} from "@/lib/config/app-settings";
+import { prisma } from "@/lib/prisma";
 import {
   createAppSettings,
   findAppSettings,
   updateAppSettings,
 } from "@/lib/repositories/settingsRepository";
+import { DEFAULT_APP_SETTINGS } from "@/lib/settings/settingsDefaults";
 import {
   COUNTRY_PRESETS,
   getCountryPreset,
@@ -69,8 +76,6 @@ type AppSettingsRecord = {
   updated_at: Date;
 };
 
-const DEFAULT_COUNTRY_CODE = DEFAULT_APP_SETTINGS.country_code || "CR";
-
 const SUPPORTED_CURRENCY_CODES: CurrencyCode[] = [
   "ARS",
   "BOB",
@@ -92,21 +97,6 @@ const SUPPORTED_CURRENCY_CODES: CurrencyCode[] = [
   "VES",
   "XAF",
 ] as CurrencyCode[];
-
-function getFallbackCountryPreset(): CountryPreset {
-  const defaultPreset = getCountryPreset(DEFAULT_COUNTRY_CODE);
-  const firstPreset = Object.values(COUNTRY_PRESETS)[0];
-
-  if (defaultPreset) {
-    return defaultPreset;
-  }
-
-  if (firstPreset) {
-    return firstPreset;
-  }
-
-  throw new Error("No country presets were found.");
-}
 
 function normalizeNullableText(value: unknown) {
   const text = String(value || "").trim();
@@ -135,10 +125,15 @@ function normalizeInteger(
 
 function normalizeTaxRate(value: unknown) {
   const numberValue = Number(value);
-  const fallbackTaxRate = Number(DEFAULT_APP_SETTINGS.default_tax_rate ?? 13);
+  const fallbackTaxRate = Number(
+    DEFAULT_APP_SETTINGS.default_tax_rate ??
+      fallbackCountryPreset.defaultTaxRate,
+  );
 
   if (!Number.isFinite(numberValue)) {
-    return Number.isFinite(fallbackTaxRate) ? fallbackTaxRate : 13;
+    return Number.isFinite(fallbackTaxRate)
+      ? fallbackTaxRate
+      : fallbackCountryPreset.defaultTaxRate;
   }
 
   return Math.min(Math.max(numberValue, 0), 100);
@@ -146,7 +141,7 @@ function normalizeTaxRate(value: unknown) {
 
 function normalizeCurrencyCode(
   value: unknown,
-  fallback: CurrencyCode = "CRC",
+  fallback: CurrencyCode = DEFAULT_CURRENCY_CODE as CurrencyCode,
 ): CurrencyCode {
   const normalizedValue = String(value || "")
     .trim()
@@ -180,8 +175,8 @@ function normalizeCountryCode(value: unknown) {
     .toUpperCase()
     .replace(/\s+/g, " ");
 
-  if (normalizedValue === "COSTA RICA") {
-    return "CR";
+  if (!normalizedValue) {
+    return DEFAULT_COUNTRY_CODE;
   }
 
   const presetByCode = getCountryPreset(normalizedValue);
@@ -194,17 +189,23 @@ function normalizeCountryCode(value: unknown) {
     (country) => country.countryName.toUpperCase() === normalizedValue,
   );
 
-  return presetByName?.countryCode ?? DEFAULT_COUNTRY_CODE;
+  return (
+    presetByName?.countryCode ??
+    normalizeConfiguredCountryCode(normalizedValue, DEFAULT_COUNTRY_CODE)
+  );
 }
 
 function getSupportedCountry(value: unknown): CountryPreset {
   const countryCode = normalizeCountryCode(value);
 
-  return getCountryPreset(countryCode) ?? getFallbackCountryPreset();
+  return getCountryPreset(countryCode) ?? fallbackCountryPreset;
 }
 
 function getPresetDefaultCurrency(country: CountryPreset): CurrencyCode {
-  return normalizeCurrencyCode(country.primaryCurrency, "CRC");
+  return normalizeCurrencyCode(
+    country.primaryCurrency,
+    DEFAULT_CURRENCY_CODE as CurrencyCode,
+  );
 }
 
 function getPresetSecondaryCurrency(

@@ -2,27 +2,44 @@
 
 import Link from "next/link";
 import { BarChart3, CircleCheck, Headphones, RefreshCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-function getCurrentTime() {
-  return new Intl.DateTimeFormat("es-CR", {
+import { useAppSettings } from "@/app/hooks/useAppSettings";
+
+function formatCurrentTime(locale: string, timezone: string) {
+  return new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: timezone,
   }).format(new Date());
 }
 
 export default function BottomStatusBar() {
+  const { businessCountryMeta } = useAppSettings();
+
   const [lastUpdateTime, setLastUpdateTime] = useState("");
 
-  useEffect(() => {
-    setLastUpdateTime(getCurrentTime());
+  const locale = useMemo(
+    () => businessCountryMeta.locale,
+    [businessCountryMeta],
+  );
 
-    const intervalId = window.setInterval(() => {
-      setLastUpdateTime(getCurrentTime());
-    }, 60000);
+  const timezone = useMemo(
+    () => businessCountryMeta.timezone,
+    [businessCountryMeta],
+  );
+
+  useEffect(() => {
+    function updateTime() {
+      setLastUpdateTime(formatCurrentTime(locale, timezone));
+    }
+
+    updateTime();
+
+    const intervalId = window.setInterval(updateTime, 60000);
 
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [locale, timezone]);
 
   return (
     <footer className="border-t border-slate-200 bg-white px-4 py-2 text-xs text-slate-500">

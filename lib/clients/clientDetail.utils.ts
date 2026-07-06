@@ -1,4 +1,5 @@
 import { getClientStatusLabel } from "@/lib/clients/clientStatus";
+import { resolveAppSettings } from "@/lib/config/app-settings";
 
 /* =========================
    Client detail labels
@@ -48,7 +49,7 @@ export function getPaymentTermLabel(term?: string | null) {
    Formatters
 ========================= */
 
-const DEFAULT_LOCALE = "es";
+const DEFAULT_LOCALE = resolveAppSettings().locale;
 
 const currencyLocaleMap: Record<string, string> = {
   ARS: "es-AR",

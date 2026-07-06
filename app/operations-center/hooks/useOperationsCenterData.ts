@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { resolveAppSettings } from "@/lib/config/app-settings";
+
 import type {
   AvailabilityApiResponse,
   AvailabilityByDateMap,
@@ -96,10 +98,21 @@ function buildCalendarUrl(params: { startDate: string; endDate: string }) {
   return `/api/calendar?${searchParams.toString()}`;
 }
 
+function getActiveCountryCode(countryCode?: string | null) {
+  const cleanCountryCode = countryCode?.trim();
+
+  return (cleanCountryCode || resolveAppSettings().countryCode).toUpperCase();
+}
+
 export function useOperationsCenterData(
-  countryCode = "CR",
+  countryCode?: string | null,
   viewMode: OperationsViewMode = "day",
 ) {
+  const activeCountryCode = useMemo(
+    () => getActiveCountryCode(countryCode),
+    [countryCode],
+  );
+
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [availability, setAvailability] = useState<AvailabilityData | null>(
@@ -180,7 +193,7 @@ export function useOperationsCenterData(
 
       const response = await fetch(
         `/api/availability/daily?country_code=${encodeURIComponent(
-          countryCode,
+          activeCountryCode,
         )}&date=${encodeURIComponent(date)}`,
         {
           cache: "no-store",
@@ -224,7 +237,7 @@ export function useOperationsCenterData(
 
       const response = await fetch(
         `/api/availability/daily?country_code=${encodeURIComponent(
-          countryCode,
+          activeCountryCode,
         )}&date=${encodeURIComponent(params.startDate)}&days=${encodeURIComponent(
           String(params.days),
         )}`,
@@ -286,7 +299,7 @@ export function useOperationsCenterData(
       startDate: rangeConfig.startDate,
       days: rangeConfig.days,
     });
-  }, [countryCode, selectedDate, viewMode]);
+  }, [activeCountryCode, selectedDate, viewMode]);
 
   return {
     selectedDate,

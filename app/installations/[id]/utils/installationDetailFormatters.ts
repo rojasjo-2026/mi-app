@@ -1,5 +1,8 @@
+import { resolveAppSettings } from "@/lib/config/app-settings";
 import { formatDate } from "@/lib/installations/installation-detail.utils";
 import type { ClientNameParts } from "../types/installationDetailPage.types";
+
+const DEFAULT_LOCALE = resolveAppSettings().locale;
 
 export function getClientFullName(client?: ClientNameParts | null): string {
   if (!client) return "";
@@ -79,7 +82,10 @@ export function formatChangeLogValue(
   return value;
 }
 
-export function formatChangeLogDate(value?: string | null): string {
+export function formatChangeLogDate(
+  value?: string | null,
+  locale = DEFAULT_LOCALE,
+): string {
   if (!value) return "-";
 
   const date = new Date(value);
@@ -88,7 +94,7 @@ export function formatChangeLogDate(value?: string | null): string {
     return value;
   }
 
-  return date.toLocaleString("es-CR", {
+  return date.toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
