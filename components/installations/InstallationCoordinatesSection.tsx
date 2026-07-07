@@ -12,7 +12,10 @@ type Props = {
 };
 
 const inputClassName =
-  "w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200";
+  "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
+
+const secondaryButtonClassName =
+  "inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function InstallationCoordinatesSection({
   locating,
@@ -61,29 +64,13 @@ export default function InstallationCoordinatesSection({
   }, [hasCoordinates, latValue, lngValue]);
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 md:p-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-lg font-semibold tracking-tight text-slate-900">
-            Coordenadas GPS
-          </p>
-          <p className="mt-1 text-sm text-slate-500">
-            Captura automáticamente la ubicación o ingresa las coordenadas
-            manualmente.
-          </p>
-        </div>
-
-        <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
-          GPS
-        </span>
-      </div>
-
-      <div className="mb-5 flex flex-wrap gap-3">
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={handleUseCurrentLocation}
           disabled={locating}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className={secondaryButtonClassName}
         >
           {locating ? (
             <>
@@ -91,25 +78,25 @@ export default function InstallationCoordinatesSection({
               Obteniendo ubicación...
             </>
           ) : (
-            <>📍 Usar mi ubicación actual</>
+            <>📍 Usar ubicación actual</>
           )}
         </button>
 
-        {googleMapsUrl && (
+        {googleMapsUrl ? (
           <a
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+            className={secondaryButtonClassName}
           >
             🗺️ Abrir en Google Maps
           </a>
-        )}
+        ) : null}
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Latitud
           </label>
           <input
@@ -121,15 +108,15 @@ export default function InstallationCoordinatesSection({
             placeholder="Ingrese la latitud"
           />
 
-          {hasInvalidLatitude && (
+          {hasInvalidLatitude ? (
             <p className="mt-1 text-xs font-medium text-red-600">
               La latitud debe estar entre -90 y 90.
             </p>
-          )}
+          ) : null}
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Longitud
           </label>
           <input
@@ -141,31 +128,29 @@ export default function InstallationCoordinatesSection({
             placeholder="Ingrese la longitud"
           />
 
-          {hasInvalidLongitude && (
+          {hasInvalidLongitude ? (
             <p className="mt-1 text-xs font-medium text-red-600">
               La longitud debe estar entre -180 y 180.
             </p>
-          )}
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-5">
-        {openStreetMapEmbedUrl ? (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <iframe
-              title="Mapa de ubicación"
-              src={openStreetMapEmbedUrl}
-              className="h-72 w-full"
-              loading="lazy"
-            />
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-8 text-sm text-slate-500">
-            Ingrese coordenadas válidas o use su ubicación actual para ver una
-            vista previa del mapa.
-          </div>
-        )}
-      </div>
+      {openStreetMapEmbedUrl ? (
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <iframe
+            title="Mapa de ubicación"
+            src={openStreetMapEmbedUrl}
+            className="h-72 w-full"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-6 text-sm leading-6 text-slate-500">
+          Ingrese coordenadas válidas o use su ubicación actual para ver una
+          vista previa del mapa.
+        </div>
+      )}
     </div>
   );
 }

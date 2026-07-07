@@ -75,8 +75,8 @@ export default function NewInstallationPage() {
   const [message, setMessage] = useState("");
 
   const [openSections, setOpenSections] = useState({
-    main: false,
-    commercial: false,
+    main: true,
+    commercial: true,
     location: false,
     coordinates: false,
     notes: false,
@@ -119,6 +119,38 @@ export default function NewInstallationPage() {
 
     return cantonSeleccionado?.distritos ?? [];
   }, [adminLevel2, cantonOptions, shouldUseCostaRicaLocationCatalog]);
+
+  const clientSummary = selectedClient
+    ? getClientDisplayName(selectedClient)
+    : "Pendiente";
+
+  const serviceSummary = serviceTypeId
+    ? `Servicio ${serviceTypeId}`
+    : "Sin definir";
+
+  const locationSummary =
+    adminLevel1 || adminLevel2 || adminLevel3
+      ? [adminLevel1, adminLevel2, adminLevel3].filter(Boolean).join(" · ")
+      : "Pendiente";
+
+  const summaryCards = [
+    {
+      label: "Cliente",
+      value: clientSummary,
+    },
+    {
+      label: "Servicio",
+      value: serviceSummary,
+    },
+    {
+      label: "Fecha",
+      value: installationDate || "Sin definir",
+    },
+    {
+      label: "Ubicación",
+      value: locationSummary,
+    },
+  ];
 
   function toggleSection(section: keyof typeof openSections) {
     setOpenSections((prev) => ({
@@ -584,302 +616,284 @@ export default function NewInstallationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 xl:p-8">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <div className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+    <main className="min-h-screen bg-slate-50 p-4 text-slate-900 md:p-6 xl:p-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 shadow-sm">
               Instalaciones
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-              Nueva instalación
-            </h1>
-            <p className="text-sm text-slate-500 md:text-base">
-              Registrá un nuevo trabajo con cliente, ubicación y notas técnicas.
-            </p>
+
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+                Nueva instalación
+              </h1>
+              <p className="text-sm leading-6 text-slate-500">
+                Registrá una nueva instalación con cliente, ubicación, fecha y
+                detalles técnicos.
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             ← Volver
           </button>
         </div>
 
         {settingsError ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-700">
             No se pudo cargar la configuración de la app. Se está usando la
             configuración base.
           </div>
         ) : null}
 
-        <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white md:px-8">
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-                  País
-                </p>
-                <p className="mt-2 text-sm font-medium text-white">
-                  {businessCountryMeta.countryName}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-                  Cliente
-                </p>
-                <p className="mt-2 text-sm font-medium text-white">
-                  {selectedClient
-                    ? getClientDisplayName(selectedClient)
-                    : "Pendiente"}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-                  Fecha
-                </p>
-                <p className="mt-2 text-sm font-medium text-white">
-                  {installationDate || "Sin definir"}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-                  Ubicación
-                </p>
-                <p className="mt-2 text-sm font-medium text-white">
-                  {adminLevel1 || adminLevel2 || adminLevel3
-                    ? [adminLevel1, adminLevel2, adminLevel3]
-                        .filter(Boolean)
-                        .join(" · ")
-                    : "Pendiente"}
-                </p>
-              </div>
+        <div className="grid gap-3 md:grid-cols-4">
+          {summaryCards.map((card) => (
+            <div
+              key={card.label}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                {card.label}
+              </p>
+              <p className="mt-1 truncate text-sm font-semibold text-slate-950">
+                {card.value}
+              </p>
             </div>
-          </div>
+          ))}
+        </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-3 px-6 py-6 md:px-8 md:py-8"
-          >
-            <CollapsibleSection
-              title="Datos principales"
-              isOpen={openSections.main}
-              onToggle={() => toggleSection("main")}
-            >
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <ClientSearchSection
-                  clientSearch={clientSearch}
-                  setClientSearch={(value) => {
-                    setClientSearch(value);
-                    setSelectedClient(null);
-                  }}
-                  clients={clients}
-                  selectedClient={selectedClient}
-                  loadingClients={loadingClients}
-                  handleSelectClient={handleSelectClient}
-                  useClientAddress={useClientAddress}
-                  handleToggleUseClientAddress={handleToggleUseClientAddress}
-                />
-
-                <div className="space-y-5">
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Service Type *
-                    </label>
-                    <input
-                      value={serviceTypeId}
-                      onChange={(e) => setServiceTypeId(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Fecha *
-                    </label>
-                    <input
-                      type="date"
-                      value={installationDate}
-                      onChange={(e) => setInstallationDate(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Técnico
-                  </label>
-                  <input
-                    value={technicianName}
-                    onChange={(e) => setTechnicianName(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <form onSubmit={handleSubmit} className="p-4 md:p-5">
+            <div className="space-y-3">
+              <CollapsibleSection
+                title="Datos principales"
+                description="Cliente, técnico, servicio y fecha."
+                isOpen={openSections.main}
+                onToggle={() => toggleSection("main")}
+              >
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <ClientSearchSection
+                    clientSearch={clientSearch}
+                    setClientSearch={(value) => {
+                      setClientSearch(value);
+                      setSelectedClient(null);
+                    }}
+                    clients={clients}
+                    selectedClient={selectedClient}
+                    loadingClients={loadingClients}
+                    handleSelectClient={handleSelectClient}
+                    useClientAddress={useClientAddress}
+                    handleToggleUseClientAddress={handleToggleUseClientAddress}
                   />
-                </div>
 
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Descripción
-                  </label>
-                  <input
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-                  />
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection
-              title="Información comercial"
-              isOpen={openSections.commercial}
-              onToggle={() => toggleSection("commercial")}
-            >
-              <InstallationCommercialSection
-                estimatedAmount={estimatedAmount}
-                setEstimatedAmount={setEstimatedAmount}
-                costAmount={costAmount}
-                setCostAmount={setCostAmount}
-                billingStatus={billingStatus}
-                setBillingStatus={setBillingStatus}
-                billingNotes={billingNotes}
-                setBillingNotes={setBillingNotes}
-                currencyCode={businessCountryMeta.currency}
-              />
-            </CollapsibleSection>
-
-            <CollapsibleSection
-              title="Ubicación"
-              isOpen={openSections.location}
-              onToggle={() => toggleSection("location")}
-            >
-              <div className="space-y-5">
-                <InstallationLocationSection
-                  useClientAddress={useClientAddress}
-                  hasSelectedClient={!!selectedClient}
-                  provinciaOptions={provinciaOptions}
-                  cantonOptions={cantonOptions}
-                  distritoOptions={distritoOptions}
-                  adminLevel1={adminLevel1}
-                  adminLevel2={adminLevel2}
-                  adminLevel3={adminLevel3}
-                  addressLine={addressLine}
-                  referencePoint={referencePoint}
-                  addressRef={addressRef}
-                  handleProvinceChange={handleProvinceChange}
-                  handleCantonChange={handleCantonChange}
-                  setAdminLevel3={setAdminLevel3}
-                  setAddressLine={setAddressLine}
-                  setReferencePoint={setReferencePoint}
-                  adminLevel1Label={businessCountryMeta.adminLevel1Label}
-                  adminLevel2Label={businessCountryMeta.adminLevel2Label}
-                  adminLevel3Label={businessCountryMeta.adminLevel3Label}
-                />
-
-                <OperationalZoneSelect
-                  value={operationalZoneId}
-                  countryCode={countryCode}
-                  label="Zona operativa"
-                  helperText="Seleccione una zona operativa. Esta zona será heredada por los mantenimientos de la instalación y se usará para disponibilidad, agrupación operativa y rutas."
-                  onChange={(value) => {
-                    setOperationalZoneId(value);
-
-                    if (value) {
-                      setAllowWithoutOperationalZone(false);
-                    }
-                  }}
-                />
-
-                {!operationalZoneId ? (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                    <label className="flex items-start gap-3">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                        Service Type *
+                      </label>
                       <input
-                        type="checkbox"
-                        checked={allowWithoutOperationalZone}
-                        onChange={(event) =>
-                          setAllowWithoutOperationalZone(event.target.checked)
-                        }
-                        className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                        value={serviceTypeId}
+                        onChange={(e) => setServiceTypeId(e.target.value)}
+                        className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                       />
+                    </div>
 
-                      <span className="text-sm leading-6 text-amber-800">
-                        <span className="font-semibold">
-                          Crear esta instalación sin zona operativa.
-                        </span>{" "}
-                        Esta es una excepción. La instalación no se agrupará
-                        correctamente por zona y sus mantenimientos pueden
-                        afectar la planificación, rutas y disponibilidad
-                        operativa.
-                      </span>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                        Fecha *
+                      </label>
+                      <input
+                        type="date"
+                        value={installationDate}
+                        onChange={(e) => setInstallationDate(e.target.value)}
+                        className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      Técnico
                     </label>
+                    <input
+                      value={technicianName}
+                      onChange={(e) => setTechnicianName(e.target.value)}
+                      placeholder="Seleccionar técnico"
+                      className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                    />
                   </div>
-                ) : null}
 
-                {allowWithoutOperationalZone && !operationalZoneId ? (
-                  <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm leading-6 text-orange-700">
-                    Esta instalación se guardará sin zona operativa. Más
-                    adelante podrá completarse desde el detalle de instalación.
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      Descripción
+                    </label>
+                    <input
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Agregar una descripción opcional"
+                      className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                    />
                   </div>
-                ) : null}
-              </div>
-            </CollapsibleSection>
+                </div>
+              </CollapsibleSection>
 
-            <CollapsibleSection
-              title="Coordenadas GPS"
-              isOpen={openSections.coordinates}
-              onToggle={() => toggleSection("coordinates")}
-            >
-              <InstallationCoordinatesSection
-                locating={locating}
-                latitude={latitude}
-                longitude={longitude}
-                handleUseCurrentLocation={handleUseCurrentLocation}
-                setLatitude={setLatitude}
-                setLongitude={setLongitude}
-              />
-            </CollapsibleSection>
+              <CollapsibleSection
+                title="Información comercial"
+                description="Precio, costo y estado de facturación."
+                badge={businessCountryMeta.currency}
+                isOpen={openSections.commercial}
+                onToggle={() => toggleSection("commercial")}
+              >
+                <InstallationCommercialSection
+                  estimatedAmount={estimatedAmount}
+                  setEstimatedAmount={setEstimatedAmount}
+                  costAmount={costAmount}
+                  setCostAmount={setCostAmount}
+                  billingStatus={billingStatus}
+                  setBillingStatus={setBillingStatus}
+                  billingNotes={billingNotes}
+                  setBillingNotes={setBillingNotes}
+                  currencyCode={businessCountryMeta.currency}
+                />
+              </CollapsibleSection>
 
-            <CollapsibleSection
-              title="Notas técnicas"
-              isOpen={openSections.notes}
-              onToggle={() => toggleSection("notes")}
-            >
-              <NotesSection
-                locationNotes={locationNotes}
-                setLocationNotes={setLocationNotes}
-                isListening={isListening}
-                startVoiceRecognition={startVoiceRecognition}
-                stopVoiceRecognition={stopVoiceRecognition}
-                addManualNote={addManualNote}
-                clearNotes={clearNotes}
-                maxNotesLength={MAX_NOTES_LENGTH}
-              />
-            </CollapsibleSection>
+              <CollapsibleSection
+                title="Ubicación"
+                description="Dirección operativa, zona y referencia para planificación."
+                isOpen={openSections.location}
+                onToggle={() => toggleSection("location")}
+              >
+                <div className="space-y-4">
+                  <InstallationLocationSection
+                    useClientAddress={useClientAddress}
+                    hasSelectedClient={!!selectedClient}
+                    provinciaOptions={provinciaOptions}
+                    cantonOptions={cantonOptions}
+                    distritoOptions={distritoOptions}
+                    adminLevel1={adminLevel1}
+                    adminLevel2={adminLevel2}
+                    adminLevel3={adminLevel3}
+                    addressLine={addressLine}
+                    referencePoint={referencePoint}
+                    addressRef={addressRef}
+                    handleProvinceChange={handleProvinceChange}
+                    handleCantonChange={handleCantonChange}
+                    setAdminLevel3={setAdminLevel3}
+                    setAddressLine={setAddressLine}
+                    setReferencePoint={setReferencePoint}
+                    adminLevel1Label={businessCountryMeta.adminLevel1Label}
+                    adminLevel2Label={businessCountryMeta.adminLevel2Label}
+                    adminLevel3Label={businessCountryMeta.adminLevel3Label}
+                  />
+
+                  <OperationalZoneSelect
+                    value={operationalZoneId}
+                    countryCode={countryCode}
+                    label="Zona operativa"
+                    helperText="Seleccione una zona operativa. Esta zona será heredada por los mantenimientos de la instalación y se usará para disponibilidad, agrupación operativa y rutas."
+                    onChange={(value) => {
+                      setOperationalZoneId(value);
+
+                      if (value) {
+                        setAllowWithoutOperationalZone(false);
+                      }
+                    }}
+                  />
+
+                  {!operationalZoneId ? (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+                      <label className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={allowWithoutOperationalZone}
+                          onChange={(event) =>
+                            setAllowWithoutOperationalZone(event.target.checked)
+                          }
+                          className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                        />
+
+                        <span className="text-sm leading-6 text-amber-800">
+                          <span className="font-semibold">
+                            Crear esta instalación sin zona operativa.
+                          </span>{" "}
+                          Esta es una excepción. La instalación no se agrupará
+                          correctamente por zona y sus mantenimientos pueden
+                          afectar la planificación, rutas y disponibilidad
+                          operativa.
+                        </span>
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {allowWithoutOperationalZone && !operationalZoneId ? (
+                    <div className="rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-sm leading-6 text-orange-700">
+                      Esta instalación se guardará sin zona operativa. Más
+                      adelante podrá completarse desde el detalle de
+                      instalación.
+                    </div>
+                  ) : null}
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="Coordenadas GPS"
+                description="Latitud y longitud para ubicación exacta si aplica."
+                isOpen={openSections.coordinates}
+                onToggle={() => toggleSection("coordinates")}
+              >
+                <InstallationCoordinatesSection
+                  locating={locating}
+                  latitude={latitude}
+                  longitude={longitude}
+                  handleUseCurrentLocation={handleUseCurrentLocation}
+                  setLatitude={setLatitude}
+                  setLongitude={setLongitude}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="Notas técnicas"
+                description="Observaciones internas del trabajo."
+                isOpen={openSections.notes}
+                onToggle={() => toggleSection("notes")}
+              >
+                <NotesSection
+                  locationNotes={locationNotes}
+                  setLocationNotes={setLocationNotes}
+                  isListening={isListening}
+                  startVoiceRecognition={startVoiceRecognition}
+                  stopVoiceRecognition={stopVoiceRecognition}
+                  addManualNote={addManualNote}
+                  clearNotes={clearNotes}
+                  maxNotesLength={MAX_NOTES_LENGTH}
+                />
+              </CollapsibleSection>
+            </div>
 
             <div className="space-y-3 pt-4">
-              {message && (
-                <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+              {message ? (
+                <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
                   {message}
                 </p>
-              )}
+              ) : null}
 
-              {error && (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {error ? (
+                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {error}
                 </p>
-              )}
+              ) : null}
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end">
+            <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => window.history.back()}
-                className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
                 Cancelar
               </button>
@@ -887,7 +901,7 @@ export default function NewInstallationPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Guardando..." : "Guardar instalación"}
               </button>

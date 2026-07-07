@@ -13,8 +13,8 @@ type NotesSectionProps = {
   maxNotesLength: number;
 };
 
-const buttonBase =
-  "inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60";
+const secondaryButtonClassName =
+  "inline-flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function NotesSection({
   locationNotes,
@@ -31,29 +31,14 @@ export default function NotesSection({
   const isNearLimit = remaining < 30;
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 md:p-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-lg font-semibold tracking-tight text-slate-900">
-            Notas técnicas
-          </p>
-          <p className="mt-1 text-sm text-slate-500">
-            Registra observaciones del técnico, accesos o condiciones del sitio.
-          </p>
-        </div>
-
-        <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
-          Notas
-        </span>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-2">
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={startVoiceRecognition}
           disabled={isListening}
-          className={`${buttonBase} ${
-            isListening ? "border-red-300 bg-red-50 text-red-700" : ""
+          className={`${secondaryButtonClassName} ${
+            isListening ? "border-red-200 bg-red-50 text-red-700" : ""
           }`}
         >
           {isListening ? "🎤 Escuchando..." : "🎤 Dictar"}
@@ -63,12 +48,16 @@ export default function NotesSection({
           type="button"
           onClick={stopVoiceRecognition}
           disabled={!isListening}
-          className={buttonBase}
+          className={secondaryButtonClassName}
         >
           ⏹ Detener
         </button>
 
-        <button type="button" onClick={addManualNote} className={buttonBase}>
+        <button
+          type="button"
+          onClick={addManualNote}
+          className={secondaryButtonClassName}
+        >
           ➕ Nota con fecha
         </button>
 
@@ -76,13 +65,13 @@ export default function NotesSection({
           type="button"
           onClick={clearNotes}
           disabled={!hasNotes}
-          className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           🗑 Limpiar
         </button>
       </div>
 
-      <div className="relative">
+      <div>
         <textarea
           value={locationNotes}
           onChange={(e) => {
@@ -90,9 +79,8 @@ export default function NotesSection({
               setLocationNotes(e.target.value);
             }
           }}
-          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+          className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
           placeholder="Ejemplo: acceso complicado, portón cerrado, cliente pidió llamar antes..."
-          rows={5}
         />
 
         <div className="mt-2 flex items-center justify-between text-xs">

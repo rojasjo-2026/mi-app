@@ -33,7 +33,7 @@ type Props = {
 };
 
 const inputClassName =
-  "w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400";
+  "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 
 function getDistrictName(district: District) {
   if (typeof district === "string") {
@@ -67,22 +67,24 @@ export default function InstallationLocationSection({
   const isLocked = useClientAddress && hasSelectedClient;
   const usesLocationCatalog = provinciaOptions.length > 0;
 
-  const firstLevelLabel =
-    adminLevel1Label ||
-    (usesLocationCatalog ? "Provincia" : "Nivel administrativo 1");
+  const firstLevelLabel = usesLocationCatalog
+    ? "Provincia"
+    : adminLevel1Label || "Nivel administrativo 1";
 
-  const secondLevelLabel =
-    adminLevel2Label ||
-    (usesLocationCatalog ? "Cantón" : "Nivel administrativo 2");
+  const secondLevelLabel = usesLocationCatalog
+    ? "Cantón"
+    : adminLevel2Label || "Nivel administrativo 2";
 
-  const thirdLevelLabel =
-    adminLevel3Label ||
-    (usesLocationCatalog ? "Distrito" : "Nivel administrativo 3");
+  const thirdLevelLabel = usesLocationCatalog
+    ? "Distrito"
+    : adminLevel3Label || "Nivel administrativo 3";
 
   const firstLevelPlaceholder = `Seleccione ${firstLevelLabel.toLowerCase()}`;
+
   const secondLevelPlaceholder = adminLevel1
     ? `Seleccione ${secondLevelLabel.toLowerCase()}`
     : `Primero seleccione ${firstLevelLabel.toLowerCase()}`;
+
   const thirdLevelPlaceholder =
     adminLevel1 && adminLevel2
       ? `Seleccione ${thirdLevelLabel.toLowerCase()}`
@@ -104,36 +106,19 @@ export default function InstallationLocationSection({
     ? adminLevel3
     : "";
 
-  const locationDescription = usesLocationCatalog
-    ? `Define ${firstLevelLabel.toLowerCase()}, ${secondLevelLabel.toLowerCase()}, ${thirdLevelLabel.toLowerCase()} y la referencia exacta del lugar.`
-    : "Define la ubicación administrativa, dirección y referencia exacta del lugar.";
-
   return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 md:p-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-lg font-semibold tracking-tight text-slate-900">
-            Dirección de la instalación
-          </p>
-          <p className="mt-1 text-sm text-slate-500">{locationDescription}</p>
+    <div className="space-y-4">
+      {isLocked ? (
+        <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm leading-6 text-blue-700">
+          Se está usando la dirección registrada del cliente como punto de
+          partida. Podés usar el localizador para obtener coordenadas sin
+          modificar esta dirección.
         </div>
+      ) : null}
 
-        <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
-          Ubicación
-        </span>
-      </div>
-
-      {isLocked && (
-        <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-          Se está utilizando la dirección del cliente. Puede usar el localizador
-          para obtener automáticamente las coordenadas sin modificar esta
-          dirección.
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             {firstLevelLabel}
           </label>
 
@@ -166,7 +151,7 @@ export default function InstallationLocationSection({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             {secondLevelLabel}
           </label>
 
@@ -198,8 +183,8 @@ export default function InstallationLocationSection({
           )}
         </div>
 
-        <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             {thirdLevelLabel}
           </label>
 
@@ -236,7 +221,7 @@ export default function InstallationLocationSection({
         </div>
 
         <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Dirección
           </label>
           <input
@@ -247,10 +232,14 @@ export default function InstallationLocationSection({
             className={inputClassName}
             placeholder="Dirección exacta de la instalación"
           />
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Usá la dirección donde se realizará el trabajo, no necesariamente la
+            dirección administrativa del cliente.
+          </p>
         </div>
 
         <div className="md:col-span-2">
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Punto de referencia
           </label>
           <input
