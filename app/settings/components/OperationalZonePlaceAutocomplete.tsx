@@ -213,20 +213,22 @@ export default function OperationalZonePlaceAutocomplete({
               place_id: place?.place_id,
               name: place?.name,
             });
-          } else {
-            onPlaceSelected({
-              reference_address: referenceAddress,
-              latitude: "",
-              longitude: "",
-              place_id: place?.place_id,
-              name: place?.name,
-            });
+
+            return;
           }
+
+          onPlaceSelected({
+            reference_address: referenceAddress,
+            latitude: "",
+            longitude: "",
+            place_id: place?.place_id,
+            name: place?.name,
+          });
         });
       } catch {
         if (isMounted) {
           setPlacesError(
-            "No se pudo cargar la búsqueda de direcciones. Puede escribir la dirección manualmente.",
+            "La búsqueda automática no está disponible. Puede escribir la dirección manualmente.",
           );
         }
       } finally {
@@ -244,14 +246,15 @@ export default function OperationalZonePlaceAutocomplete({
   }, [activeCountryCode, onPlaceSelected, onValueChange]);
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <input
         ref={inputRef}
         value={value}
         disabled={disabled}
         onChange={(event) => onValueChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+        autoComplete="off"
+        className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
       />
 
       <p className="text-xs leading-5 text-slate-400">

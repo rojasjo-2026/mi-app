@@ -79,6 +79,7 @@ type CreateInstallationInput = {
   address_line?: string | null;
   zone?: string | null;
   operational_zone_id?: string | null;
+  allow_without_operational_zone?: boolean;
   city?: string | null;
   admin_level_1?: string | null;
   admin_level_2?: string | null;
@@ -616,6 +617,27 @@ export async function createInstallationService(body: CreateInstallationInput) {
     return { success: false, errors };
   }
 
+  const operationalZoneId = toTrimmedStringOrFallback(
+    body.operational_zone_id,
+    null,
+  );
+
+  const allowWithoutOperationalZone =
+    body.allow_without_operational_zone === true;
+
+  if (!operationalZoneId && !allowWithoutOperationalZone) {
+    return {
+      success: false,
+      errors: [
+        {
+          field: "operational_zone_id",
+          error:
+            "Seleccione una zona operativa o confirme que desea crear la instalación sin zona.",
+        },
+      ],
+    };
+  }
+
   const clientId = String(body.client_id).trim();
   const parsedServiceTypeId = toNumberOrFallback(body.service_type_id, null);
   const parsedInstallationDate = toDateOrFallback(body.installation_date, null);
@@ -699,10 +721,6 @@ export async function createInstallationService(body: CreateInstallationInput) {
 
   const addressLine = toTrimmedStringOrFallback(body.address_line, null);
   const zone = toTrimmedStringOrFallback(body.zone, null);
-  const operationalZoneId = toTrimmedStringOrFallback(
-    body.operational_zone_id,
-    null,
-  );
   const adminLevel1 = toTrimmedStringOrFallback(body.admin_level_1, null);
   const adminLevel2 = toTrimmedStringOrFallback(body.admin_level_2, null);
   const adminLevel3 = toTrimmedStringOrFallback(body.admin_level_3, null);

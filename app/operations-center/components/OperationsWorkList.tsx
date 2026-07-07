@@ -13,10 +13,10 @@ export function OperationsWorkList({
   onRefresh,
 }: OperationsWorkListProps) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-base font-semibold text-slate-950">
             Trabajos para visitar
           </h2>
 
@@ -28,41 +28,40 @@ export function OperationsWorkList({
         <button
           type="button"
           onClick={onRefresh}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
           Refrescar
         </button>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="divide-y divide-slate-200">
         {loadingEvents ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+          <div className="px-4 py-4 text-sm text-slate-500">
             Cargando trabajos...
           </div>
         ) : selectedDateEvents.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
-            <p className="text-sm font-semibold text-slate-700">
-              No hay trabajos programados para esta fecha.
-            </p>
+          <div className="px-4 py-5">
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
+              <p className="text-sm font-semibold text-slate-700">
+                No hay trabajos programados para esta fecha.
+              </p>
 
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              Puede revisar otra fecha o programar instalaciones y
-              mantenimientos desde el calendario.
-            </p>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Puede revisar otra fecha o programar instalaciones y
+                mantenimientos desde el calendario.
+              </p>
 
-            <p className="mt-3 text-xs leading-5 text-slate-400">
-              Cuando existan trabajos programados, aparecerán aquí como lista
-              operativa para preparar visitas y rutas.
-            </p>
+              <p className="mt-3 text-xs leading-5 text-slate-400">
+                Cuando existan trabajos programados, aparecerán aquí como lista
+                operativa para preparar visitas y rutas.
+              </p>
+            </div>
           </div>
         ) : (
           selectedDateEvents.map((event, index) => (
-            <div
-              key={event.id}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-4"
-            >
+            <div key={event.id} className="px-4 py-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
                       #{index + 1}
@@ -83,7 +82,7 @@ export function OperationsWorkList({
                     ) : null}
                   </div>
 
-                  <p className="mt-3 text-sm font-bold text-slate-900">
+                  <p className="mt-3 text-sm font-semibold text-slate-950">
                     {event.title}
                   </p>
 

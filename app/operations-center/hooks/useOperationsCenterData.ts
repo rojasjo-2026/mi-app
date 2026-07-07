@@ -89,11 +89,16 @@ function buildAvailabilityByDateMap(
   }, {});
 }
 
-function buildCalendarUrl(params: { startDate: string; endDate: string }) {
+function buildCalendarUrl(params: {
+  startDate: string;
+  endDate: string;
+  countryCode: string;
+}) {
   const searchParams = new URLSearchParams();
 
   searchParams.set("startDate", params.startDate);
   searchParams.set("endDate", params.endDate);
+  searchParams.set("country_code", params.countryCode);
 
   return `/api/calendar?${searchParams.toString()}`;
 }
@@ -163,9 +168,15 @@ export function useOperationsCenterData(
           };
         })();
 
-      const response = await fetch(buildCalendarUrl(nextParams), {
-        cache: "no-store",
-      });
+      const response = await fetch(
+        buildCalendarUrl({
+          ...nextParams,
+          countryCode: activeCountryCode,
+        }),
+        {
+          cache: "no-store",
+        },
+      );
 
       const result: CalendarApiResponse = await response.json();
 
@@ -282,7 +293,7 @@ export function useOperationsCenterData(
       startDate: rangeConfig.startDate,
       endDate: addDays(rangeConfig.startDate, rangeConfig.days - 1),
     });
-  }, [selectedDate, viewMode]);
+  }, [activeCountryCode, selectedDate, viewMode]);
 
   useEffect(() => {
     if (viewMode === "day") {

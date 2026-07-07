@@ -53,6 +53,8 @@ export default function NewInstallationPage() {
   const [billingNotes, setBillingNotes] = useState("");
   const [technicianName, setTechnicianName] = useState("");
   const [operationalZoneId, setOperationalZoneId] = useState("");
+  const [allowWithoutOperationalZone, setAllowWithoutOperationalZone] =
+    useState(false);
 
   const [useClientAddress, setUseClientAddress] = useState(false);
 
@@ -125,6 +127,13 @@ export default function NewInstallationPage() {
     }));
   }
 
+  function openRequiredSection(section: keyof typeof openSections) {
+    setOpenSections((prev) => ({
+      ...prev,
+      [section]: true,
+    }));
+  }
+
   function handleProvinceChange(value: string) {
     setAdminLevel1(value);
     setAdminLevel2("");
@@ -143,6 +152,7 @@ export default function NewInstallationPage() {
     setAddressLine("");
     setReferencePoint("");
     setOperationalZoneId("");
+    setAllowWithoutOperationalZone(false);
     setLatitude("");
     setLongitude("");
   }
@@ -154,6 +164,7 @@ export default function NewInstallationPage() {
     setAddressLine(client.address_line || "");
     setReferencePoint(client.reference_point || "");
     setOperationalZoneId(client.operational_zone_id || "");
+    setAllowWithoutOperationalZone(false);
     setLatitude(
       client.latitude !== null && client.latitude !== undefined
         ? String(client.latitude)
@@ -486,7 +497,16 @@ export default function NewInstallationPage() {
     e.preventDefault();
 
     if (!selectedClient || !installationDate || !serviceTypeId) {
+      openRequiredSection("main");
       setError("Faltan campos obligatorios");
+      return;
+    }
+
+    if (!operationalZoneId && !allowWithoutOperationalZone) {
+      openRequiredSection("location");
+      setError(
+        "Debe seleccionar una zona operativa o confirmar que desea crear esta instalación sin zona. La zona se usa para planificación, disponibilidad, mantenimientos y rutas.",
+      );
       return;
     }
 
@@ -506,6 +526,8 @@ export default function NewInstallationPage() {
         billing_notes: billingNotes || null,
         technician_name: technicianName || null,
         operational_zone_id: operationalZoneId || null,
+        allow_without_operational_zone:
+          !operationalZoneId && allowWithoutOperationalZone,
         address_line: addressLine || null,
         admin_level_1: adminLevel1 || null,
         admin_level_2: adminLevel2 || null,
@@ -763,9 +785,47 @@ export default function NewInstallationPage() {
                   value={operationalZoneId}
                   countryCode={countryCode}
                   label="Zona operativa"
-                  helperText="Seleccione una zona creada por el usuario. Esta zona ayudará al motor de disponibilidad a agrupar instalaciones, mantenimientos y rutas."
-                  onChange={setOperationalZoneId}
+                  helperText="Seleccione una zona operativa. Esta zona será heredada por los mantenimientos de la instalación y se usará para disponibilidad, agrupación operativa y rutas."
+                  onChange={(value) => {
+                    setOperationalZoneId(value);
+
+                    if (value) {
+                      setAllowWithoutOperationalZone(false);
+                    }
+                  }}
                 />
+
+                {!operationalZoneId ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <label className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={allowWithoutOperationalZone}
+                        onChange={(event) =>
+                          setAllowWithoutOperationalZone(event.target.checked)
+                        }
+                        className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                      />
+
+                      <span className="text-sm leading-6 text-amber-800">
+                        <span className="font-semibold">
+                          Crear esta instalación sin zona operativa.
+                        </span>{" "}
+                        Esta es una excepción. La instalación no se agrupará
+                        correctamente por zona y sus mantenimientos pueden
+                        afectar la planificación, rutas y disponibilidad
+                        operativa.
+                      </span>
+                    </label>
+                  </div>
+                ) : null}
+
+                {allowWithoutOperationalZone && !operationalZoneId ? (
+                  <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm leading-6 text-orange-700">
+                    Esta instalación se guardará sin zona operativa. Más
+                    adelante podrá completarse desde el detalle de instalación.
+                  </div>
+                ) : null}
               </div>
             </CollapsibleSection>
 

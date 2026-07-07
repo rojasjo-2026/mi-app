@@ -61,9 +61,9 @@ export function OperationsZoneGroups({
   const zoneGroups = buildZoneGroups(selectedDateEvents);
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div>
-        <h2 className="text-lg font-bold text-slate-900">
+    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 px-4 py-4">
+        <h2 className="text-base font-semibold text-slate-950">
           Agrupaciones operativas del día
         </h2>
 
@@ -73,33 +73,32 @@ export function OperationsZoneGroups({
         </p>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="divide-y divide-slate-200">
         {zoneGroups.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
-            <p className="text-sm font-semibold text-slate-700">
-              No hay agrupaciones operativas para esta fecha.
-            </p>
+          <div className="px-4 py-5">
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
+              <p className="text-sm font-semibold text-slate-700">
+                No hay agrupaciones operativas para esta fecha.
+              </p>
 
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              Esto ocurre cuando no existen instalaciones o mantenimientos
-              programados para el día seleccionado.
-            </p>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Esto ocurre cuando no existen instalaciones o mantenimientos
+                programados para el día seleccionado.
+              </p>
 
-            <p className="mt-3 text-xs leading-5 text-slate-400">
-              Cuando existan trabajos, CLARIUS los agrupará por zona operativa
-              para preparar rutas y visitas con más facilidad.
-            </p>
+              <p className="mt-3 text-xs leading-5 text-slate-400">
+                Cuando existan trabajos, CLARIUS los agrupará por zona operativa
+                para preparar rutas y visitas con más facilidad.
+              </p>
+            </div>
           </div>
         ) : (
           zoneGroups.map((group) => (
-            <div
-              key={group.zone_id || "NO_ZONE"}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
-            >
+            <div key={group.zone_id || "NO_ZONE"} className="px-4 py-4">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-bold text-slate-900">
+                    <p className="text-sm font-semibold text-slate-950">
                       {group.zone_name}
                     </p>
 
@@ -120,24 +119,24 @@ export function OperationsZoneGroups({
                     </p>
                   ) : null}
 
-                  <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
-                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                  <div className="mt-3 grid max-w-xl gap-2 text-xs sm:grid-cols-3">
+                    <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
                       <p className="text-slate-400">Trabajos</p>
-                      <p className="mt-1 font-bold text-slate-900">
+                      <p className="mt-1 font-semibold text-slate-950">
                         {group.total_jobs}
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-blue-200 bg-white px-3 py-2">
+                    <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
                       <p className="text-slate-400">Instalaciones</p>
-                      <p className="mt-1 font-bold text-blue-700">
+                      <p className="mt-1 font-semibold text-slate-950">
                         {group.total_installations}
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-emerald-200 bg-white px-3 py-2">
+                    <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
                       <p className="text-slate-400">Mantenimientos</p>
-                      <p className="mt-1 font-bold text-emerald-700">
+                      <p className="mt-1 font-semibold text-slate-950">
                         {group.total_maintenances}
                       </p>
                     </div>
@@ -161,14 +160,14 @@ export function OperationsZoneGroups({
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 lg:min-w-52">
+                <div className="flex flex-col gap-2 lg:min-w-52 lg:items-end">
                   <button
                     type="button"
                     onClick={() => onUseGroupAsRoute?.(group.route_stops)}
                     disabled={
                       !onUseGroupAsRoute || group.route_stops.length === 0
                     }
-                    className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Usar esta agrupación como ruta
                   </button>

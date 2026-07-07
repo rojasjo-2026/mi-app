@@ -86,6 +86,28 @@ function getCapacityDescription(params: {
   return `${remainingJobsCapacity} espacios disponibles.`;
 }
 
+function SummaryCard({
+  title,
+  value,
+  detail,
+}: {
+  title: string;
+  value: string | number;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      <p className="text-sm font-semibold text-slate-500">{title}</p>
+
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+        {value}
+      </p>
+
+      <p className="mt-1 text-xs leading-5 text-slate-400">{detail}</p>
+    </div>
+  );
+}
+
 export function OperationsSummaryCards({
   selectedDateEvents,
   installations,
@@ -105,52 +127,30 @@ export function OperationsSummaryCards({
   });
 
   return (
-    <section className="grid gap-5 lg:grid-cols-4">
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold text-slate-500">Trabajos del día</p>
+    <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard
+        title="Trabajos del día"
+        value={loadingEvents ? "..." : selectedDateEvents.length}
+        detail="Instalaciones y mantenimientos programados."
+      />
 
-        <p className="mt-2 text-3xl font-bold text-slate-900">
-          {loadingEvents ? "..." : selectedDateEvents.length}
-        </p>
+      <SummaryCard
+        title="Instalaciones"
+        value={loadingEvents ? "..." : installations.length}
+        detail="Trabajos de mayor carga operativa."
+      />
 
-        <p className="mt-1 text-xs text-slate-400">
-          Instalaciones y mantenimientos programados.
-        </p>
-      </div>
+      <SummaryCard
+        title="Mantenimientos"
+        value={loadingEvents ? "..." : maintenances.length}
+        detail="Seguimientos o visitas preventivas."
+      />
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold text-slate-500">Instalaciones</p>
-
-        <p className="mt-2 text-3xl font-bold text-blue-700">
-          {loadingEvents ? "..." : installations.length}
-        </p>
-
-        <p className="mt-1 text-xs text-slate-400">
-          Trabajos de mayor carga operativa.
-        </p>
-      </div>
-
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold text-slate-500">Mantenimientos</p>
-
-        <p className="mt-2 text-3xl font-bold text-emerald-700">
-          {loadingEvents ? "..." : maintenances.length}
-        </p>
-
-        <p className="mt-1 text-xs text-slate-400">
-          Seguimientos o visitas preventivas.
-        </p>
-      </div>
-
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold text-slate-500">Capacidad</p>
-
-        <p className="mt-2 text-3xl font-bold text-slate-900">
-          {capacityValue}
-        </p>
-
-        <p className="mt-1 text-xs text-slate-400">{capacityDescription}</p>
-      </div>
+      <SummaryCard
+        title="Capacidad"
+        value={capacityValue}
+        detail={capacityDescription}
+      />
     </section>
   );
 }

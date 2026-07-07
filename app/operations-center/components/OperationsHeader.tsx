@@ -20,61 +20,57 @@ export function OperationsHeader({
   onViewModeChange,
 }: OperationsHeaderProps) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            CLARIUS
-          </p>
+    <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+          Centro operativo
+        </h1>
 
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
-            Centro operativo
-          </h1>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+          Planifique los trabajos por fecha, revise la capacidad del día, agrupe
+          visitas por rutas configuradas y prepare una ruta para abrirla en
+          Google Maps.
+        </p>
+      </div>
 
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-            Planifique los trabajos por fecha, revise la capacidad del día,
-            agrupe visitas por rutas configuradas y prepare una ruta para
-            abrirla en Google Maps.
-          </p>
-        </div>
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end lg:w-auto">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-500">Vista</span>
 
-        <div className="flex w-full flex-col gap-4 lg:max-w-md">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-1">
-            <div className="grid grid-cols-3 gap-1">
-              {viewModeOptions.map((option) => {
-                const isActive = option.value === viewMode;
+          <div className="inline-flex h-9 rounded-md border border-slate-200 bg-white p-1 shadow-sm">
+            {viewModeOptions.map((option) => {
+              const isActive = option.value === viewMode;
 
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => onViewModeChange(option.value)}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                      isActive
-                        ? "bg-slate-900 text-white shadow-sm"
-                        : "text-slate-600 hover:bg-white"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onViewModeChange(option.value)}
+                  className={`inline-flex h-7 items-center justify-center rounded px-3 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
-
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-slate-700">
-              Fecha operativa
-            </span>
-
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(event) => onDateChange(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-            />
-          </label>
         </div>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-500">
+            Fecha operativa
+          </span>
+
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(event) => onDateChange(event.target.value)}
+            className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+          />
+        </label>
       </div>
     </section>
   );

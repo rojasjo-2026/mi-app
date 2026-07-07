@@ -68,13 +68,41 @@ export default function InstallationLocationSection({
   const usesLocationCatalog = provinciaOptions.length > 0;
 
   const firstLevelLabel =
-    adminLevel1Label || (usesLocationCatalog ? "Provincia" : "Nivel administrativo 1");
+    adminLevel1Label ||
+    (usesLocationCatalog ? "Provincia" : "Nivel administrativo 1");
 
   const secondLevelLabel =
-    adminLevel2Label || (usesLocationCatalog ? "Cantón" : "Nivel administrativo 2");
+    adminLevel2Label ||
+    (usesLocationCatalog ? "Cantón" : "Nivel administrativo 2");
 
   const thirdLevelLabel =
-    adminLevel3Label || (usesLocationCatalog ? "Distrito" : "Nivel administrativo 3");
+    adminLevel3Label ||
+    (usesLocationCatalog ? "Distrito" : "Nivel administrativo 3");
+
+  const firstLevelPlaceholder = `Seleccione ${firstLevelLabel.toLowerCase()}`;
+  const secondLevelPlaceholder = adminLevel1
+    ? `Seleccione ${secondLevelLabel.toLowerCase()}`
+    : `Primero seleccione ${firstLevelLabel.toLowerCase()}`;
+  const thirdLevelPlaceholder =
+    adminLevel1 && adminLevel2
+      ? `Seleccione ${thirdLevelLabel.toLowerCase()}`
+      : `Primero seleccione ${secondLevelLabel.toLowerCase()}`;
+
+  const safeAdminLevel1 = provinciaOptions.includes(adminLevel1)
+    ? adminLevel1
+    : "";
+
+  const safeAdminLevel2 = cantonOptions.some(
+    (canton) => canton.nombre === adminLevel2,
+  )
+    ? adminLevel2
+    : "";
+
+  const safeAdminLevel3 = distritoOptions.some(
+    (distrito) => getDistrictName(distrito) === adminLevel3,
+  )
+    ? adminLevel3
+    : "";
 
   const locationDescription = usesLocationCatalog
     ? `Define ${firstLevelLabel.toLowerCase()}, ${secondLevelLabel.toLowerCase()}, ${thirdLevelLabel.toLowerCase()} y la referencia exacta del lugar.`
@@ -87,9 +115,7 @@ export default function InstallationLocationSection({
           <p className="text-lg font-semibold tracking-tight text-slate-900">
             Dirección de la instalación
           </p>
-          <p className="mt-1 text-sm text-slate-500">
-            {locationDescription}
-          </p>
+          <p className="mt-1 text-sm text-slate-500">{locationDescription}</p>
         </div>
 
         <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
@@ -113,12 +139,15 @@ export default function InstallationLocationSection({
 
           {usesLocationCatalog ? (
             <select
-              value={adminLevel1}
+              value={safeAdminLevel1}
               onChange={(e) => handleProvinceChange(e.target.value)}
               disabled={isLocked}
               className={inputClassName}
             >
-              <option value="">Seleccione {firstLevelLabel.toLowerCase()}</option>
+              <option value="" disabled>
+                {firstLevelPlaceholder}
+              </option>
+
               {provinciaOptions.map((provincia) => (
                 <option key={provincia} value={provincia}>
                   {provincia}
@@ -143,12 +172,15 @@ export default function InstallationLocationSection({
 
           {usesLocationCatalog ? (
             <select
-              value={adminLevel2}
+              value={safeAdminLevel2}
               onChange={(e) => handleCantonChange(e.target.value)}
               disabled={!adminLevel1 || isLocked}
               className={inputClassName}
             >
-              <option value="">Seleccione {secondLevelLabel.toLowerCase()}</option>
+              <option value="" disabled>
+                {secondLevelPlaceholder}
+              </option>
+
               {cantonOptions.map((canton) => (
                 <option key={canton.nombre} value={canton.nombre}>
                   {canton.nombre}
@@ -173,12 +205,15 @@ export default function InstallationLocationSection({
 
           {usesLocationCatalog ? (
             <select
-              value={adminLevel3}
+              value={safeAdminLevel3}
               onChange={(e) => setAdminLevel3(e.target.value)}
               disabled={!adminLevel1 || !adminLevel2 || isLocked}
               className={inputClassName}
             >
-              <option value="">Seleccione {thirdLevelLabel.toLowerCase()}</option>
+              <option value="" disabled>
+                {thirdLevelPlaceholder}
+              </option>
+
               {distritoOptions.map((distrito) => {
                 const districtName = getDistrictName(distrito);
 

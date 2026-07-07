@@ -40,11 +40,47 @@ function normalizeSortDirection(value: string | null) {
   return value === "asc" ? "asc" : "desc";
 }
 
+function normalizeOptionalString(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim();
+}
+
+function normalizeBoolean(value: unknown) {
+  return value === true;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const result = await createInstallationService(body);
+    const operationalZoneId = normalizeOptionalString(body.operational_zone_id);
+    const allowWithoutOperationalZone = normalizeBoolean(
+      body.allow_without_operational_zone,
+    );
+
+    if (!operationalZoneId && !allowWithoutOperationalZone) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Debe seleccionar una zona operativa o confirmar que desea crear esta instalación sin zona.",
+          errors: {
+            operational_zone_id: [
+              "Seleccione una zona operativa o confirme la excepción.",
+            ],
+          },
+        },
+        { status: 400 },
+      );
+    }
+
+    const result = await createInstallationService({
+      ...body,
+      operational_zone_id: operationalZoneId || null,
+    });
 
     if (!result.success && result.errors) {
       return NextResponse.json(

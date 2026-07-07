@@ -106,11 +106,15 @@ function buildFollowUpZoneFilter(operationalZoneId: string | null) {
 export async function countInstallationsForAvailability(
   params: AvailabilityWorkloadQuery,
 ) {
+  const countryCode = normalizeAvailabilityCountryCode(params.country_code);
   const operationalZoneId = normalizeOptionalId(params.operational_zone_id);
   const { startOfDay, endOfDay } = getDayRange(params.date);
 
   return prisma.installation.count({
     where: {
+      client: {
+        country_code: countryCode,
+      },
       installation_date: {
         gte: startOfDay,
         lte: endOfDay,
@@ -123,12 +127,16 @@ export async function countInstallationsForAvailability(
 export async function countFollowUpsForAvailability(
   params: AvailabilityWorkloadQuery,
 ) {
+  const countryCode = normalizeAvailabilityCountryCode(params.country_code);
   const operationalZoneId = normalizeOptionalId(params.operational_zone_id);
   const { startOfDay, endOfDay } = getDayRange(params.date);
   const zoneFilter = buildFollowUpZoneFilter(operationalZoneId);
 
   return prisma.followUp.count({
     where: {
+      client: {
+        country_code: countryCode,
+      },
       follow_up_status: {
         code: {
           not: "completed",

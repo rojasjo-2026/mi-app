@@ -43,8 +43,8 @@ export default function OperationsCenterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-6">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
         <OperationsHeader
           selectedDate={selectedDate}
           viewMode={viewMode}
@@ -53,14 +53,14 @@ export default function OperationsCenterPage() {
         />
 
         {settingsError ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700 shadow-sm">
             No se pudo cargar la configuración de la app. Se está usando la
             configuración base.
           </div>
         ) : null}
 
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 shadow-sm">
             {error}
           </div>
         ) : null}
@@ -81,14 +81,14 @@ export default function OperationsCenterPage() {
               onUseGroupAsRoute={handleUseGroupAsRoute}
             />
 
-            <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
               <OperationsWorkList
                 selectedDateEvents={selectedDateEvents}
                 loadingEvents={loadingEvents}
                 onRefresh={() => void loadCalendarEvents()}
               />
 
-              <div className="space-y-6">
+              <div className="flex min-w-0 flex-col gap-5">
                 <OperationsRoutePanel
                   routeStopsText={routeStopsText}
                   onRouteStopsTextChange={setRouteStopsText}
@@ -103,7 +103,7 @@ export default function OperationsCenterPage() {
             </section>
           </>
         ) : (
-          <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
             <OperationsRangeGroups
               events={events}
               selectedDate={selectedDate}
@@ -113,14 +113,14 @@ export default function OperationsCenterPage() {
               onUseGroupAsRoute={handleUseGroupAsRoute}
             />
 
-            <div className="space-y-6">
+            <div className="flex min-w-0 flex-col gap-5">
               <OperationsRoutePanel
                 routeStopsText={routeStopsText}
                 onRouteStopsTextChange={setRouteStopsText}
                 countryCode={countryCode}
               />
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-500 shadow-sm">
+              <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500 shadow-sm">
                 En la vista de {viewMode === "week" ? "semana" : "mes"}, las
                 agrupaciones se muestran según las rutas configuradas y los
                 trabajos programados dentro del rango seleccionado.
@@ -128,7 +128,7 @@ export default function OperationsCenterPage() {
             </div>
           </section>
         )}
-      </div>
+      </section>
     </main>
   );
 }

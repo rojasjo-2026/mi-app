@@ -20,6 +20,10 @@ type OperationsRoutePanelProps = {
   countryCode?: string;
 };
 
+function getStopsLabel(totalStops: number) {
+  return totalStops === 1 ? "1 parada" : `${totalStops} paradas`;
+}
+
 export function OperationsRoutePanel({
   routeStopsText,
   onRouteStopsTextChange,
@@ -159,10 +163,10 @@ export function OperationsRoutePanel({
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-slate-950">
             Ruta en Google Maps
           </h2>
 
@@ -172,13 +176,13 @@ export function OperationsRoutePanel({
           </p>
         </div>
 
-        <span className="w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-          {routeStops.length} paradas
+        <span className="inline-flex h-7 shrink-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-600">
+          {getStopsLabel(routeStops.length)}
         </span>
       </div>
 
-      <div className="mt-5 space-y-4">
-        <div className="space-y-2">
+      <div className="flex flex-col gap-4 px-4 py-4">
+        <div className="flex flex-col gap-2">
           <span className="text-sm font-semibold text-slate-700">
             Punto de salida
           </span>
@@ -196,7 +200,7 @@ export function OperationsRoutePanel({
           type="button"
           onClick={handleUseCurrentLocation}
           disabled={loadingLocation}
-          className="w-full rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-9 w-full items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loadingLocation
             ? "Obteniendo ubicación..."
@@ -206,7 +210,7 @@ export function OperationsRoutePanel({
         {originCoordinate &&
         allStopsHaveCoordinates &&
         routeStops.length > 1 ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-700">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-700">
             Las paradas fueron ordenadas automáticamente por cercanía desde el
             punto de salida.
           </div>
@@ -215,14 +219,14 @@ export function OperationsRoutePanel({
         {!originCoordinate &&
         allStopsHaveCoordinates &&
         routeStops.length > 1 ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">
             Para ordenar automáticamente las paradas por cercanía, use la
             ubicación actual o seleccione una dirección desde las sugerencias.
           </div>
         ) : null}
 
         {hasRouteStops ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-slate-700">
@@ -255,7 +259,7 @@ export function OperationsRoutePanel({
               {routeStops.map((stop, index) => (
                 <div
                   key={`${stop}-${index}`}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2"
+                  className="rounded-md border border-slate-200 bg-white px-3 py-2"
                 >
                   <p className="text-xs font-semibold text-slate-500">
                     Parada {index + 1}
@@ -270,7 +274,7 @@ export function OperationsRoutePanel({
           </div>
         ) : null}
 
-        <label className="space-y-2">
+        <label className="flex flex-col gap-2">
           <span className="text-sm font-semibold text-slate-700">
             Paradas de la ruta
           </span>
@@ -280,12 +284,12 @@ export function OperationsRoutePanel({
             value={routeStopsText}
             onChange={(event) => onRouteStopsTextChange(event.target.value)}
             placeholder={`Seleccione una agrupación operativa o ingrese una parada por línea.\nEj.\nCliente 1, dirección o coordenadas\nCliente 2, dirección o coordenadas\nCliente 3, dirección o coordenadas`}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           />
         </label>
 
         {routeError ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {routeError}
           </div>
         ) : null}
@@ -293,7 +297,7 @@ export function OperationsRoutePanel({
         <button
           type="button"
           onClick={handleOpenGoogleMapsRoute}
-          className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md"
+          className="inline-flex h-9 w-full items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
         >
           Abrir ruta en Google Maps
         </button>
