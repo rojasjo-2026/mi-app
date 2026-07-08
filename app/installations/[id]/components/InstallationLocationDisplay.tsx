@@ -5,6 +5,9 @@ import InfoRow from "./InfoRow";
 type InstallationLocationDisplayProps = {
   zone?: string | null;
   city?: string | null;
+  adminLevel1?: string | null;
+  adminLevel2?: string | null;
+  adminLevel3?: string | null;
   address_line?: string | null;
   location_notes?: string | null;
   reference_point?: string | null;
@@ -18,6 +21,9 @@ type InstallationLocationDisplayProps = {
 export default function InstallationLocationDisplay({
   zone,
   city,
+  adminLevel1,
+  adminLevel2,
+  adminLevel3,
   address_line,
   location_notes,
   reference_point,
@@ -27,12 +33,24 @@ export default function InstallationLocationDisplay({
   openStreetMapEmbedUrl,
   googleMapsUrl,
 }: InstallationLocationDisplayProps) {
+  const hasAdministrativeLocation = adminLevel1 || adminLevel2 || adminLevel3;
+
   return (
-    <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <Card title="📍 Ubicación">
+    <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <Card title="Ubicación">
         <InfoGrid>
-          <InfoRow label="Zona" value={zone || "-"} />
-          <InfoRow label="Ciudad" value={city || "-"} />
+          <InfoRow label="Zona operativa" value={zone || "-"} />
+
+          {hasAdministrativeLocation ? (
+            <>
+              <InfoRow label="Provincia" value={adminLevel1 || "-"} />
+              <InfoRow label="Cantón" value={adminLevel2 || "-"} />
+              <InfoRow label="Distrito" value={adminLevel3 || "-"} />
+            </>
+          ) : (
+            <InfoRow label="Área / ciudad" value={city || "-"} />
+          )}
+
           <InfoRow
             label="Latitud"
             value={hasCoordinates ? String(latitude) : "-"}
@@ -48,28 +66,28 @@ export default function InstallationLocationDisplay({
         </div>
 
         <InfoGrid>
-          <InfoRow label="Notas de ubicación" value={location_notes || "-"} />
           <InfoRow label="Punto de referencia" value={reference_point || "-"} />
+          <InfoRow label="Notas de ubicación" value={location_notes || "-"} />
         </InfoGrid>
 
-        {googleMapsUrl && (
+        {googleMapsUrl ? (
           <div className="pt-4">
             <a
               href={googleMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
               Abrir en Google Maps
             </a>
           </div>
-        )}
+        ) : null}
       </Card>
 
-      <Card title="🗺️ Mapa">
+      <Card title="Mapa">
         {openStreetMapEmbedUrl ? (
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+          <div className="space-y-3">
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <iframe
                 title="Mapa de ubicación de la instalación"
                 src={openStreetMapEmbedUrl}
@@ -78,19 +96,19 @@ export default function InstallationLocationDisplay({
               />
             </div>
 
-            {googleMapsUrl && (
+            {googleMapsUrl ? (
               <a
                 href={googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
                 Ver ruta en Google Maps
               </a>
-            )}
+            ) : null}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-sm text-slate-500">
+          <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-6 text-sm text-slate-500">
             No hay coordenadas disponibles para mostrar el mapa.
           </div>
         )}

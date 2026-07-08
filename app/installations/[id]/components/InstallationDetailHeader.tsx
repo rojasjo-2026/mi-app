@@ -1,3 +1,5 @@
+import HeaderChip from "./HeaderChip";
+
 type InstallationDetailHeaderProps = {
   title: string;
   statusBadge: React.ReactNode;
@@ -14,8 +16,6 @@ type InstallationDetailHeaderProps = {
   onDeactivate: () => void;
   onBack: () => void;
 };
-
-import HeaderChip from "./HeaderChip";
 
 export default function InstallationDetailHeader({
   title,
@@ -34,89 +34,84 @@ export default function InstallationDetailHeader({
   onBack,
 }: InstallationDetailHeaderProps) {
   return (
-    <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white md:px-8">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-2xl bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-200">
-                Detalle de instalación
-              </div>
-              {statusBadge}
-            </div>
+    <section className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 shadow-sm">
+              Detalle de instalación
+            </span>
 
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-                {title}
-              </h1>
-              <p className="max-w-3xl text-sm leading-6 text-slate-300 md:text-base">
-                Vista general de la instalación, cliente asociado, ubicación,
-                historial técnico y mantenimientos programados.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <HeaderChip
-                label="Cliente"
-                value={clientName || "Cliente no definido"}
-                dark
-              />
-              <HeaderChip label="Fecha" value={installationDate} dark />
-              <HeaderChip label="Ubicación" value={location} dark />
-              <HeaderChip label="Monto" value={amount} dark />
-            </div>
-
-            {nextPendingFollowUpDate && (
-              <div className="inline-flex rounded-2xl border border-emerald-300/30 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-emerald-100">
-                Próximo mantenimiento:
-                <span className="ml-2 font-semibold">
-                  {nextPendingFollowUpDate}
-                </span>
-              </div>
-            )}
+            {statusBadge}
           </div>
 
-          <div className="flex flex-wrap gap-3 xl:max-w-md xl:justify-end">
-            <button
-              type="button"
-              onClick={onCreateMaintenance}
-              disabled={creatingMaintenance || isInactive}
-              className="rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {creatingMaintenance
-                ? "Programando..."
-                : "➕ Programar mantenimiento"}
-            </button>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              {title}
+            </h1>
 
-            <button
-              type="button"
-              onClick={onEdit}
-              className="rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
-            >
-              ✏️ Editar
-            </button>
-
-            {!isInactive && (
-              <button
-                type="button"
-                onClick={onDeactivate}
-                disabled={deactivatingInstallation}
-                className="rounded-xl border border-red-300/30 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {deactivatingInstallation ? "Desactivando..." : "⛔ Desactivar"}
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={onBack}
-              className="rounded-xl border border-white/20 bg-transparent px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              ← Volver
-            </button>
+            <p className="max-w-3xl text-sm leading-6 text-slate-500">
+              Vista general de la instalación, cliente asociado, ubicación,
+              historial técnico y mantenimientos programados.
+            </p>
           </div>
         </div>
+
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            ← Volver
+          </button>
+
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            Editar
+          </button>
+
+          <button
+            type="button"
+            onClick={onCreateMaintenance}
+            disabled={creatingMaintenance || isInactive}
+            className="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {creatingMaintenance ? "Programando..." : "Programar mantenimiento"}
+          </button>
+
+          {!isInactive ? (
+            <button
+              type="button"
+              onClick={onDeactivate}
+              disabled={deactivatingInstallation}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {deactivatingInstallation ? "Desactivando..." : "Desactivar"}
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <HeaderChip
+          label="Cliente"
+          value={clientName || "Cliente no definido"}
+        />
+        <HeaderChip label="Fecha" value={installationDate} />
+        <HeaderChip label="Ubicación" value={location} />
+        <HeaderChip label="Monto" value={amount} />
+      </div>
+
+      {nextPendingFollowUpDate ? (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <span className="font-semibold">Próximo mantenimiento:</span>{" "}
+          {nextPendingFollowUpDate}
+        </div>
+      ) : null}
     </section>
   );
 }

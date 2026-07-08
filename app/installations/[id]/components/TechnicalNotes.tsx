@@ -64,18 +64,20 @@ export default function TechnicalNotes({ installationId }: Props) {
         );
       }
 
-      setNotes(data);
+      setNotes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error al cargar observaciones:", error);
     }
   }
 
   useEffect(() => {
-    loadNotes();
+    void loadNotes();
   }, [installationId]);
 
   async function handleAddNote() {
-    if (!newNote.trim()) return;
+    const noteText = newNote.trim();
+
+    if (!noteText) return;
 
     try {
       setLoading(true);
@@ -87,7 +89,7 @@ export default function TechnicalNotes({ installationId }: Props) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ note: newNote }),
+          body: JSON.stringify({ note: noteText }),
         },
       );
 
@@ -114,74 +116,78 @@ export default function TechnicalNotes({ installationId }: Props) {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">
-              Nueva observación
-            </p>
-            <p className="text-xs text-slate-500">
-              Registra detalles técnicos importantes de esta instalación.
-            </p>
-          </div>
+    <div className="space-y-4">
+      <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-4 py-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-slate-950">
+                Observaciones técnicas
+              </h2>
+              <p className="text-xs leading-5 text-slate-500">
+                Registra detalles técnicos importantes de esta instalación.
+              </p>
+            </div>
 
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-            {noteCountLabel}
-          </span>
+            <span className="inline-flex w-fit items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
+              {noteCountLabel}
+            </span>
+          </div>
         </div>
 
-        <textarea
-          className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
-          placeholder="Agregar observación técnica..."
-          value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
-        />
+        <div className="space-y-3 px-4 py-4">
+          <textarea
+            className="min-h-[96px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+            placeholder="Agregar observación técnica..."
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+          />
 
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-slate-500">
-            Las observaciones más recientes se muestran primero.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs leading-5 text-slate-500">
+              Las observaciones más recientes se muestran primero.
+            </p>
 
-          <button
-            type="button"
-            onClick={handleAddNote}
-            disabled={loading || !newNote.trim()}
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? "Guardando..." : "Agregar observación"}
-          </button>
+            <button
+              type="button"
+              onClick={handleAddNote}
+              disabled={loading || !newNote.trim()}
+              className="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "Guardando..." : "Agregar observación"}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {notes.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-sm text-slate-500">
-            Sin observaciones registradas.
-          </div>
-        ) : (
-          notes.map((n, index) => (
-            <div
-              key={n.technical_note_id}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300"
+      {notes.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-6 text-sm text-slate-500">
+          Sin observaciones registradas.
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          {notes.map((note, index) => (
+            <article
+              key={note.technical_note_id}
+              className="border-t border-slate-100 px-4 py-4 first:border-t-0"
             >
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
                   {index === 0 ? "Más reciente" : "Historial técnico"}
                 </span>
 
                 <span className="text-xs font-medium text-slate-400">
-                  {formatNoteDate(n.created_at, locale)}
+                  {formatNoteDate(note.created_at, locale)}
                 </span>
               </div>
 
-              <p className="whitespace-pre-wrap text-sm leading-6 text-slate-800">
-                {n.note_text}
+              <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                {note.note_text}
               </p>
-            </div>
-          ))
-        )}
-      </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

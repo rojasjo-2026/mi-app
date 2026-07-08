@@ -42,6 +42,17 @@ type InstallationCommercialInfo = {
   warranty_months?: number | string | null;
 };
 
+type InstallationLocationInfo = {
+  zone?: string | null;
+  city?: string | null;
+  address_line?: string | null;
+  admin_level_1?: string | null;
+  admin_level_2?: string | null;
+  admin_level_3?: string | null;
+  location_notes?: string | null;
+  reference_point?: string | null;
+};
+
 function formatBusinessDate(value?: string | null, locale = "es") {
   if (!value) return "-";
 
@@ -61,7 +72,7 @@ function formatBusinessDate(value?: string | null, locale = "es") {
 function getInstallationStatusBadge(status?: string | null) {
   if (status === "OPEN") {
     return (
-      <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+      <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
         Abierta
       </span>
     );
@@ -69,7 +80,7 @@ function getInstallationStatusBadge(status?: string | null) {
 
   if (status === "IN_PROGRESS") {
     return (
-      <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+      <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
         En proceso
       </span>
     );
@@ -77,7 +88,7 @@ function getInstallationStatusBadge(status?: string | null) {
 
   if (status === "CLOSED") {
     return (
-      <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
+      <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
         Completada
       </span>
     );
@@ -85,14 +96,14 @@ function getInstallationStatusBadge(status?: string | null) {
 
   if (status === "CANCELLED") {
     return (
-      <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+      <span className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
         Cancelada
       </span>
     );
   }
 
   return (
-    <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+    <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
       {status || "Sin estado"}
     </span>
   );
@@ -162,6 +173,23 @@ function formatWarrantyMonths(value?: number | string | null) {
   return String(value);
 }
 
+function buildLocationLabel(locationInfo: InstallationLocationInfo) {
+  const administrativeLocation = [
+    locationInfo.admin_level_1,
+    locationInfo.admin_level_2,
+    locationInfo.admin_level_3,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    administrativeLocation ||
+    [locationInfo.city, locationInfo.zone].filter(Boolean).join(" · ") ||
+    locationInfo.address_line ||
+    "-"
+  );
+}
+
 export default function InstallationDetailPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -226,14 +254,23 @@ export default function InstallationDetailPage() {
   }
 
   if (loading) {
-    return <main className="p-8">Cargando instalación...</main>;
+    return (
+      <main className="min-h-screen bg-slate-50 p-4 text-sm text-slate-500 md:p-6 xl:p-8">
+        Cargando instalación...
+      </main>
+    );
   }
 
   if (error || !installation) {
-    return <main className="p-8">{error || "Instalación no encontrada"}</main>;
+    return (
+      <main className="min-h-screen bg-slate-50 p-4 text-sm text-slate-500 md:p-6 xl:p-8">
+        {error || "Instalación no encontrada"}
+      </main>
+    );
   }
 
   const commercialInfo = installation as InstallationCommercialInfo;
+  const locationInfo = installation as InstallationLocationInfo;
 
   const clientFullName = getClientFullName(
     installation.client as ClientNameParts | null | undefined,
@@ -263,10 +300,7 @@ export default function InstallationDetailPage() {
 
   const billingNotes = commercialInfo.billing_notes || undefined;
 
-  const locationLabel =
-    [installation.city, installation.zone].filter(Boolean).join(" · ") ||
-    installation.address_line ||
-    "-";
+  const locationLabel = buildLocationLabel(locationInfo);
 
   const warrantyMonths =
     installation.warranty_months !== null &&
@@ -284,8 +318,8 @@ export default function InstallationDetailPage() {
       : "-";
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 xl:p-8">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <main className="min-h-screen bg-slate-50 p-4 text-slate-900 md:p-6 xl:p-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
         <InstallationDetailHeader
           title={installation.description || "Instalación"}
           statusBadge={getInstallationStatusBadge(
@@ -315,7 +349,7 @@ export default function InstallationDetailPage() {
           onBack={() => window.history.back()}
         />
 
-        <section className="grid grid-cols-1 gap-4 bg-slate-50 md:grid-cols-4">
+        <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <MetricCard
             label="Servicio"
             value={installation.service_type?.name || "-"}
@@ -350,7 +384,7 @@ export default function InstallationDetailPage() {
           isInactive={isInactive}
         />
 
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           <InstallationMainInfoSection
             installationDate={formatBusinessDate(
               installation.installation_date,
@@ -395,7 +429,7 @@ export default function InstallationDetailPage() {
         />
 
         <section>
-          <Card title="🧩 Componentes de la instalación">
+          <Card title="Componentes de la instalación">
             <InstallationComponentsSection
               installationId={installation.installation_id}
             />
@@ -409,11 +443,14 @@ export default function InstallationDetailPage() {
         </section>
 
         <InstallationLocationDisplay
-          zone={installation.zone}
-          city={installation.city}
-          address_line={installation.address_line}
-          location_notes={installation.location_notes}
-          reference_point={installation.reference_point}
+          zone={locationInfo.zone}
+          city={locationInfo.city}
+          adminLevel1={locationInfo.admin_level_1}
+          adminLevel2={locationInfo.admin_level_2}
+          adminLevel3={locationInfo.admin_level_3}
+          address_line={locationInfo.address_line}
+          location_notes={locationInfo.location_notes}
+          reference_point={locationInfo.reference_point}
           latitude={latitude}
           longitude={longitude}
           hasCoordinates={hasLocationCoordinates}
