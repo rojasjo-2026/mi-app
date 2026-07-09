@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { provincias } from "@/lib/data/costa-rica-locations";
 import InstallationCommercialSection from "./InstallationCommercialSection";
+import InstallationCoordinatesSection from "./InstallationCoordinatesSection";
+import ServiceTypeSelect from "./ServiceTypeSelect";
 import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
 import {
   fallbackCountryPreset,
@@ -20,6 +22,232 @@ import {
 import { FormSection } from "./installation-form/FormSection";
 import { RoleBadge } from "./installation-form/RoleBadge";
 
+function formatDateForInput(value?: string | null) {
+  if (!value) return "";
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value.slice(0, 10);
+  }
+
+  return parsedDate.toISOString().slice(0, 10);
+}
+
+function normalizeSensitiveValue(value?: string | number | null) {
+  if (value === null || value === undefined) return "";
+
+  return String(value).trim();
+}
+
+function getInstallationStatusConfirmLabel(status?: string | null) {
+  if (status === "OPEN") return "Abierta";
+  if (status === "IN_PROGRESS") return "En proceso";
+  if (status === "CLOSED") return "Completada";
+  if (status === "CANCELLED") return "Cancelada";
+
+  return status || "Sin definir";
+}
+
+function getConfirmDisplayValue(value?: string | number | null) {
+  const normalizedValue = normalizeSensitiveValue(value);
+
+  return normalizedValue || "Sin definir";
+}
+
+function buildSensitiveChangeDescription(
+  label: string,
+  previousValue?: string | number | null,
+  nextValue?: string | number | null,
+) {
+  return `${label}: ${getConfirmDisplayValue(
+    previousValue,
+  )} → ${getConfirmDisplayValue(nextValue)}`;
+}
+
+type WarrantyPreview = {
+  title: string;
+  description: string;
+  tone: "neutral" | "valid" | "warning" | "expired";
+};
+
+function parseDateOnly(value?: string | null) {
+  if (!value) return null;
+
+  const [datePart] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  const parsedDate = new Date(year, month - 1, day);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate;
+}
+
+function addMonthsToDate(date: Date, months: number) {
+  const result = new Date(date);
+  const originalDay = result.getDate();
+
+  result.setMonth(result.getMonth() + months);
+
+  if (result.getDate() !== originalDay) {
+    result.setDate(0);
+  }
+
+  return result;
+}
+
+function getStartOfToday() {
+  const now = new Date();
+
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function getWholeMonthsBetween(startDate: Date, endDate: Date) {
+  let months =
+    (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+    (endDate.getMonth() - startDate.getMonth());
+
+  if (endDate.getDate() < startDate.getDate()) {
+    months -= 1;
+  }
+
+  return Math.max(months, 0);
+}
+
+function formatWarrantyDate(date: Date) {
+  return new Intl.DateTimeFormat("es-CR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatWarrantyMonthCount(months: number) {
+  return months === 1 ? "1 mes" : `${months} meses`;
+}
+
+function getWarrantyPreview(
+  installationDate: string,
+  warrantyMonths: string,
+): WarrantyPreview {
+  const normalizedWarrantyMonths = warrantyMonths.trim();
+
+  if (!normalizedWarrantyMonths) {
+    return {
+      title: "Sin garantía configurada",
+      description:
+        "Ingrese los meses de garantía para calcular el vencimiento.",
+      tone: "neutral",
+    };
+  }
+
+  const warrantyMonthsValue = Number(normalizedWarrantyMonths);
+
+  if (
+    !Number.isFinite(warrantyMonthsValue) ||
+    !Number.isInteger(warrantyMonthsValue) ||
+    warrantyMonthsValue < 0
+  ) {
+    return {
+      title: "Garantía inválida",
+      description: "Ingrese una cantidad válida de meses.",
+      tone: "warning",
+    };
+  }
+
+  if (warrantyMonthsValue === 0) {
+    return {
+      title: "Sin garantía configurada",
+      description: "0 meses no genera un período de garantía.",
+      tone: "neutral",
+    };
+  }
+
+  const parsedInstallationDate = parseDateOnly(installationDate);
+
+  if (!parsedInstallationDate) {
+    return {
+      title: "Fecha pendiente",
+      description:
+        "Seleccione la fecha de instalación para calcular la garantía.",
+      tone: "neutral",
+    };
+  }
+
+  const warrantyExpirationDate = addMonthsToDate(
+    parsedInstallationDate,
+    warrantyMonthsValue,
+  );
+
+  const today = getStartOfToday();
+  const installationLabel = formatWarrantyDate(parsedInstallationDate);
+  const expirationLabel = formatWarrantyDate(warrantyExpirationDate);
+
+  if (parsedInstallationDate > today) {
+    return {
+      title: "Garantía pendiente",
+      description: `Inicia el ${installationLabel} · Vence el ${expirationLabel} · Duración ${formatWarrantyMonthCount(
+        warrantyMonthsValue,
+      )}`,
+      tone: "neutral",
+    };
+  }
+
+  if (warrantyExpirationDate < today) {
+    const expiredMonths = getWholeMonthsBetween(warrantyExpirationDate, today);
+
+    return {
+      title: "Garantía vencida",
+      description:
+        expiredMonths > 0
+          ? `Venció el ${expirationLabel} · Hace ${formatWarrantyMonthCount(
+              expiredMonths,
+            )}`
+          : `Venció el ${expirationLabel} · Hace menos de 1 mes`,
+      tone: "expired",
+    };
+  }
+
+  const remainingMonths = getWholeMonthsBetween(today, warrantyExpirationDate);
+
+  if (remainingMonths === 0) {
+    return {
+      title: "Garantía vigente",
+      description: `Vence el ${expirationLabel} · Queda menos de 1 mes`,
+      tone: "warning",
+    };
+  }
+
+  return {
+    title: "Garantía vigente",
+    description: `Vence el ${expirationLabel} · Quedan ${formatWarrantyMonthCount(
+      remainingMonths,
+    )}`,
+    tone: remainingMonths <= 2 ? "warning" : "valid",
+  };
+}
+
+function getWarrantyPreviewClass(tone: WarrantyPreview["tone"]) {
+  if (tone === "valid") {
+    return "rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800";
+  }
+
+  if (tone === "warning") {
+    return "rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800";
+  }
+
+  if (tone === "expired") {
+    return "rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800";
+  }
+
+  return "rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700";
+}
+
 export default function InstallationForm({
   mode,
   initialData = null,
@@ -30,6 +258,8 @@ export default function InstallationForm({
     useState<CountryPreset>(fallbackCountryPreset);
 
   const [description, setDescription] = useState("");
+  const [serviceTypeId, setServiceTypeId] = useState("");
+  const [installationDate, setInstallationDate] = useState("");
   const [technicianName, setTechnicianName] = useState("");
   const [technicianId, setTechnicianId] = useState("");
   const [warrantyMonths, setWarrantyMonths] = useState("");
@@ -46,6 +276,10 @@ export default function InstallationForm({
   const [adminLevel2, setAdminLevel2] = useState("");
   const [adminLevel3, setAdminLevel3] = useState("");
 
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [locating, setLocating] = useState(false);
+
   const [locationNotes, setLocationNotes] = useState("");
   const [referencePoint, setReferencePoint] = useState("");
 
@@ -55,6 +289,28 @@ export default function InstallationForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  const [openSections, setOpenSections] = useState({
+    general: true,
+    commercial: false,
+    staff: false,
+    location: false,
+    coordinates: false,
+  });
+
+  function toggleSection(section: keyof typeof openSections) {
+    setOpenSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  }
+
+  function openRequiredSection(section: keyof typeof openSections) {
+    setOpenSections((current) => ({
+      ...current,
+      [section]: true,
+    }));
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -94,6 +350,23 @@ export default function InstallationForm({
     if (!initialData) return;
 
     setDescription(initialData.description ?? "");
+    setServiceTypeId(
+      initialData.service_type_id !== null &&
+        initialData.service_type_id !== undefined
+        ? String(initialData.service_type_id)
+        : "",
+    );
+    setInstallationDate(formatDateForInput(initialData.installation_date));
+    setLatitude(
+      initialData.latitude !== null && initialData.latitude !== undefined
+        ? String(initialData.latitude)
+        : "",
+    );
+    setLongitude(
+      initialData.longitude !== null && initialData.longitude !== undefined
+        ? String(initialData.longitude)
+        : "",
+    );
     setTechnicianName(initialData.technician_name ?? "");
     setTechnicianId(initialData.technician_id ?? "");
     setWarrantyMonths(
@@ -205,6 +478,11 @@ export default function InstallationForm({
     return technicianName || "Sin asignar";
   }, [selectedTechnician, technicianName]);
 
+  const warrantyPreview = useMemo(
+    () => getWarrantyPreview(installationDate, warrantyMonths),
+    [installationDate, warrantyMonths],
+  );
+
   const locationSummary =
     adminLevel1 || adminLevel2 || adminLevel3
       ? [adminLevel1, adminLevel2, adminLevel3].filter(Boolean).join(" · ")
@@ -286,12 +564,195 @@ export default function InstallationForm({
     }
   }
 
+  function handleUseCurrentLocation() {
+    setError("");
+    setMessage("");
+
+    if (!navigator.geolocation) {
+      setError("Este navegador no soporta geolocalización");
+      return;
+    }
+
+    setLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(String(position.coords.latitude));
+        setLongitude(String(position.coords.longitude));
+        setMessage("Coordenadas actualizadas correctamente.");
+        setLocating(false);
+      },
+      () => {
+        setError("No se pudo obtener la ubicación actual");
+        setLocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    );
+  }
+
+  function validateCoordinates() {
+    const hasLatitudeValue = latitude.trim() !== "";
+    const hasLongitudeValue = longitude.trim() !== "";
+
+    if (hasLatitudeValue !== hasLongitudeValue) {
+      return "Debe ingresar latitud y longitud, o dejar ambas vacías.";
+    }
+
+    if (!hasLatitudeValue && !hasLongitudeValue) {
+      return "";
+    }
+
+    const latitudeValue = Number(latitude);
+    const longitudeValue = Number(longitude);
+
+    if (
+      Number.isNaN(latitudeValue) ||
+      latitudeValue < -90 ||
+      latitudeValue > 90
+    ) {
+      return "La latitud debe estar entre -90 y 90.";
+    }
+
+    if (
+      Number.isNaN(longitudeValue) ||
+      longitudeValue < -180 ||
+      longitudeValue > 180
+    ) {
+      return "La longitud debe estar entre -180 y 180.";
+    }
+
+    return "";
+  }
+
+  function getSensitiveChangeDescriptions() {
+    if (mode !== "edit" || !initialData) {
+      return [];
+    }
+
+    const changes: string[] = [];
+
+    const initialInstallationDate = formatDateForInput(
+      initialData.installation_date,
+    );
+
+    if (installationDate !== initialInstallationDate) {
+      changes.push(
+        buildSensitiveChangeDescription(
+          "Fecha de instalación",
+          initialInstallationDate,
+          installationDate,
+        ),
+      );
+    }
+
+    if (
+      normalizeSensitiveValue(operationalZoneId) !==
+      normalizeSensitiveValue(initialData.operational_zone_id)
+    ) {
+      changes.push(
+        buildSensitiveChangeDescription(
+          "Zona operativa",
+          initialData.operational_zone_id,
+          operationalZoneId,
+        ),
+      );
+    }
+
+    const initialInstallationStatus = initialData.installation_status ?? "OPEN";
+
+    if (
+      normalizeSensitiveValue(installationStatus) !==
+      normalizeSensitiveValue(initialInstallationStatus)
+    ) {
+      changes.push(
+        buildSensitiveChangeDescription(
+          "Estado de instalación",
+          getInstallationStatusConfirmLabel(initialInstallationStatus),
+          getInstallationStatusConfirmLabel(installationStatus),
+        ),
+      );
+    }
+
+    const latitudeChanged =
+      normalizeSensitiveValue(latitude) !==
+      normalizeSensitiveValue(initialData.latitude);
+
+    const longitudeChanged =
+      normalizeSensitiveValue(longitude) !==
+      normalizeSensitiveValue(initialData.longitude);
+
+    if (latitudeChanged || longitudeChanged) {
+      const previousCoordinates = [
+        normalizeSensitiveValue(initialData.latitude),
+        normalizeSensitiveValue(initialData.longitude),
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      const nextCoordinates = [
+        normalizeSensitiveValue(latitude),
+        normalizeSensitiveValue(longitude),
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      changes.push(
+        buildSensitiveChangeDescription(
+          "Coordenadas GPS",
+          previousCoordinates,
+          nextCoordinates,
+        ),
+      );
+    }
+
+    return changes;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    setSaving(true);
     setError("");
     setMessage("");
+
+    if (!serviceTypeId) {
+      openRequiredSection("general");
+      setError("Seleccione un tipo de servicio.");
+      return;
+    }
+
+    if (!installationDate) {
+      openRequiredSection("general");
+      setError("Seleccione la fecha de instalación.");
+      return;
+    }
+
+    const coordinateValidationError = validateCoordinates();
+
+    if (coordinateValidationError) {
+      openRequiredSection("coordinates");
+      setError(coordinateValidationError);
+      return;
+    }
+
+    const sensitiveChanges = getSensitiveChangeDescriptions();
+
+    if (sensitiveChanges.length > 0) {
+      const shouldContinue = window.confirm(
+        `Está por modificar datos operativos sensibles de esta instalación:\n\n${sensitiveChanges
+          .map((change) => `- ${change}`)
+          .join("\n")}\n\n¿Está seguro de continuar?`,
+      );
+
+      if (!shouldContinue) {
+        return;
+      }
+    }
+
+    setSaving(true);
 
     try {
       const endpoint =
@@ -303,6 +764,10 @@ export default function InstallationForm({
 
       const payload = {
         description: description || null,
+        service_type_id: Number(serviceTypeId),
+        installation_date: installationDate,
+        latitude: latitude || null,
+        longitude: longitude || null,
         technician_name: technicianName || null,
         technician_id: technicianId || null,
         warranty_months: warrantyMonths ? Number(warrantyMonths) : null,
@@ -436,7 +901,9 @@ export default function InstallationForm({
           <form onSubmit={handleSubmit}>
             <FormSection
               title="Información general"
-              description="Datos básicos, garantía y estado de la instalación."
+              description="Datos básicos, fecha, garantía y estado de la instalación."
+              isOpen={openSections.general}
+              onToggle={() => toggleSection("general")}
             >
               <div className="md:col-span-2">
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -451,17 +918,57 @@ export default function InstallationForm({
               </div>
 
               <div>
+                <ServiceTypeSelect
+                  value={serviceTypeId}
+                  onChange={setServiceTypeId}
+                />
+              </div>
+
+              <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Meses de garantía
+                  Fecha de instalación
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  value={warrantyMonths}
-                  onChange={(e) => setWarrantyMonths(e.target.value)}
+                  type="date"
+                  value={installationDate}
+                  onChange={(e) => setInstallationDate(e.target.value)}
                   className={inputClass}
-                  placeholder="Ej: 12"
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      Meses de garantía
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={warrantyMonths}
+                      onChange={(e) => setWarrantyMonths(e.target.value)}
+                      className={inputClass}
+                      placeholder="Ej: 12"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <div
+                      className={getWarrantyPreviewClass(warrantyPreview.tone)}
+                    >
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em]">
+                        Garantía
+                      </p>
+                      <p className="mt-1 text-sm font-semibold">
+                        {warrantyPreview.title}
+                      </p>
+                      <p className="mt-1 text-xs leading-5">
+                        {warrantyPreview.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {mode === "edit" ? (
@@ -487,6 +994,8 @@ export default function InstallationForm({
               title="Información comercial"
               description="Precio, costo y estado de facturación."
               badge={businessCountryPreset.primaryCurrency}
+              isOpen={openSections.commercial}
+              onToggle={() => toggleSection("commercial")}
             >
               <div className="md:col-span-2">
                 <InstallationCommercialSection
@@ -506,6 +1015,8 @@ export default function InstallationForm({
             <FormSection
               title="Personal asignado"
               description="Asocia un técnico real o conserva un respaldo manual."
+              isOpen={openSections.staff}
+              onToggle={() => toggleSection("staff")}
             >
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -589,6 +1100,8 @@ export default function InstallationForm({
             <FormSection
               title="Ubicación"
               description="Dirección operativa, zona y referencias de la instalación."
+              isOpen={openSections.location}
+              onToggle={() => toggleSection("location")}
             >
               <div className="md:col-span-2">
                 <OperationalZoneSelect
@@ -739,6 +1252,24 @@ export default function InstallationForm({
                   onChange={(e) => setLocationNotes(e.target.value)}
                   className={textareaClass}
                   placeholder="Detalles adicionales de ubicación"
+                />
+              </div>
+            </FormSection>
+
+            <FormSection
+              title="Coordenadas GPS"
+              description="Latitud y longitud para ubicación exacta si aplica."
+              isOpen={openSections.coordinates}
+              onToggle={() => toggleSection("coordinates")}
+            >
+              <div className="md:col-span-2">
+                <InstallationCoordinatesSection
+                  locating={locating}
+                  latitude={latitude}
+                  longitude={longitude}
+                  handleUseCurrentLocation={handleUseCurrentLocation}
+                  setLatitude={setLatitude}
+                  setLongitude={setLongitude}
                 />
               </div>
             </FormSection>

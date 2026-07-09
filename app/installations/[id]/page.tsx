@@ -173,6 +173,161 @@ function formatWarrantyMonths(value?: number | string | null) {
   return String(value);
 }
 
+function parseDateOnly(value?: string | null) {
+  if (!value) return null;
+
+  const dateText = value.slice(0, 10);
+  const [year, month, day] = dateText.split("-").map(Number);
+
+  if (year && month && day) {
+    return new Date(year, month - 1, day);
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
+function addMonthsToDate(date: Date, months: number) {
+  const result = new Date(
+    date.getFullYear(),
+    date.getMonth() + months,
+    date.getDate(),
+  );
+
+  if (result.getDate() !== date.getDate()) {
+    result.setDate(0);
+  }
+
+  return result;
+}
+
+function getTodayDateOnly() {
+  const today = new Date();
+
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+}
+
+function getFullMonthsBetween(startDate: Date, endDate: Date) {
+  let months =
+    (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+    (endDate.getMonth() - startDate.getMonth());
+
+  if (endDate.getDate() < startDate.getDate()) {
+    months -= 1;
+  }
+
+  return Math.max(months, 0);
+}
+
+function formatMonthsLabel(months: number) {
+  if (months <= 0) return "menos de 1 mes";
+  if (months === 1) return "1 mes";
+
+  return `${months} meses`;
+}
+
+function formatWarrantyDuration(months: number) {
+  if (months === 1) return "1 mes";
+
+  return `${months} meses`;
+}
+
+function getTooltipIfUseful(value?: string | null, minLength = 28) {
+  const text = value?.trim();
+
+  if (!text || text.length <= minLength) {
+    return undefined;
+  }
+
+  return text;
+}
+
+function getWarrantySummary(
+  installationDate?: string | null,
+  warrantyMonths?: number | string | null,
+  locale = "es",
+) {
+  const numericWarrantyMonths = Number(warrantyMonths);
+
+  if (!Number.isFinite(numericWarrantyMonths) || numericWarrantyMonths <= 0) {
+    return {
+      metricValue: "-",
+      monthsLabel: "-",
+      endDateLabel: "-",
+      coverageLabel: "-",
+      detailLabel: "Sin garantía configurada.",
+      tooltip: undefined,
+    };
+  }
+
+  const durationLabel = formatWarrantyDuration(numericWarrantyMonths);
+  const startDate = parseDateOnly(installationDate);
+
+  if (!startDate) {
+    return {
+      metricValue: durationLabel,
+      monthsLabel: durationLabel,
+      endDateLabel: "-",
+      coverageLabel: "Fecha pendiente",
+      detailLabel:
+        "Seleccione la fecha de instalación para calcular el vencimiento de la garantía.",
+      tooltip:
+        "Seleccione la fecha de instalación para calcular el vencimiento de la garantía.",
+    };
+  }
+
+  const today = getTodayDateOnly();
+  const endDate = addMonthsToDate(startDate, numericWarrantyMonths);
+  const startDateLabel = formatBusinessDate(startDate.toISOString(), locale);
+  const endDateLabel = formatBusinessDate(endDate.toISOString(), locale);
+
+  if (today < startDate) {
+    const detailLabel = `Inicia el ${startDateLabel} · Vence el ${endDateLabel} · Duración ${durationLabel}`;
+
+    return {
+      metricValue: `Pendiente · ${durationLabel}`,
+      monthsLabel: durationLabel,
+      endDateLabel,
+      coverageLabel: "Pendiente",
+      detailLabel,
+      tooltip: detailLabel,
+    };
+  }
+
+  if (today > endDate) {
+    const expiredMonths = getFullMonthsBetween(endDate, today);
+    const expiredLabel = formatMonthsLabel(expiredMonths);
+    const detailLabel = `Venció el ${endDateLabel} · Vencida hace ${expiredLabel}`;
+
+    return {
+      metricValue: "Vencida",
+      monthsLabel: durationLabel,
+      endDateLabel,
+      coverageLabel: "Vencida",
+      detailLabel,
+      tooltip: detailLabel,
+    };
+  }
+
+  const remainingMonths = getFullMonthsBetween(today, endDate);
+  const remainingLabel = formatMonthsLabel(remainingMonths);
+  const detailLabel = `Vence el ${endDateLabel} · Quedan ${remainingLabel}`;
+
+  return {
+    metricValue: `Vigente · ${remainingLabel}`,
+    monthsLabel: durationLabel,
+    endDateLabel,
+    coverageLabel: "Vigente",
+    detailLabel,
+    tooltip: detailLabel,
+  };
+}
+
 function buildLocationLabel(locationInfo: InstallationLocationInfo) {
   const administrativeLocation = [
     locationInfo.admin_level_1,
@@ -302,15 +457,14 @@ export default function InstallationDetailPage() {
 
   const locationLabel = buildLocationLabel(locationInfo);
 
-  const warrantyMonths =
-    installation.warranty_months !== null &&
-    installation.warranty_months !== undefined
-      ? String(installation.warranty_months)
-      : "-";
+  const warrantySummary = getWarrantySummary(
+    installation.installation_date,
+    commercialInfo.warranty_months,
+    businessLocale,
+  );
 
-  const warrantyCoverage = installation.warranty_end_date
-    ? "Con fecha definida"
-    : "-";
+  const warrantyMonths = warrantySummary.monthsLabel;
+  const warrantyCoverage = warrantySummary.coverageLabel;
 
   const manualBackup =
     installation.technician_name && !installation.technician
@@ -350,28 +504,26 @@ export default function InstallationDetailPage() {
         />
 
         <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <MetricCard
-            label="Servicio"
-            value={installation.service_type?.name || "-"}
-          />
+          <div title={getTooltipIfUseful(installation.service_type?.name)}>
+            <MetricCard
+              label="Servicio"
+              value={installation.service_type?.name || "-"}
+            />
+          </div>
 
-          <StaffMetricCard
-            label="Técnico"
-            name={technicianDisplayName}
-            role={installation.technician?.role}
-            isActive={installation.technician?.is_active}
-            isLinked={Boolean(installation.technician)}
-          />
+          <div title={getTooltipIfUseful(technicianDisplayName)}>
+            <StaffMetricCard
+              label="Técnico"
+              name={technicianDisplayName}
+              role={installation.technician?.role}
+              isActive={installation.technician?.is_active}
+              isLinked={Boolean(installation.technician)}
+            />
+          </div>
 
-          <MetricCard
-            label="Garantía"
-            value={
-              installation.warranty_months !== null &&
-              installation.warranty_months !== undefined
-                ? `${installation.warranty_months} meses`
-                : "-"
-            }
-          />
+          <div title={warrantySummary.tooltip}>
+            <MetricCard label="Garantía" value={warrantySummary.metricValue} />
+          </div>
 
           <MetricCard
             label="Seguimientos"
@@ -420,10 +572,7 @@ export default function InstallationDetailPage() {
           technicianIsActive={installation.technician?.is_active}
           hasLinkedTechnician={Boolean(installation.technician)}
           warrantyMonths={warrantyMonths}
-          warrantyEndDate={formatBusinessDate(
-            installation.warranty_end_date,
-            businessLocale,
-          )}
+          warrantyEndDate={warrantySummary.endDateLabel}
           coverage={warrantyCoverage}
           manualBackup={manualBackup}
         />

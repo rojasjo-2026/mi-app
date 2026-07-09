@@ -15,34 +15,37 @@ export default function StaffMetricCard({
   isActive,
   isLinked,
 }: StaffMetricCardProps) {
+  const isEmpty = !name || name === "Sin asignar";
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </p>
 
-      <div className="mt-2 space-y-2">
+      <div className="mt-1 space-y-2">
         <p
-          className={`text-sm font-semibold ${
-            name === "Sin asignar" ? "text-slate-400" : "text-slate-800"
+          className={`truncate text-sm font-semibold ${
+            isEmpty ? "text-slate-400" : "text-slate-950"
           }`}
         >
           {name}
         </p>
 
         <div className="flex flex-wrap gap-2">
-          {role && <RoleBadge role={role} />}
-          {isLinked && (
+          {role ? <RoleBadge role={role} /> : null}
+
+          {isLinked ? (
             <span
-              className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+              className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${
                 isActive === false
-                  ? "bg-red-100 text-red-700"
-                  : "bg-blue-100 text-blue-700"
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : "border-blue-200 bg-blue-50 text-blue-700"
               }`}
             >
               {isActive === false ? "Inactivo" : "Asignado"}
             </span>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

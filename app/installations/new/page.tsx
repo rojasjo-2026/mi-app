@@ -9,6 +9,7 @@ import ClientSearchSection from "@/components/installations/ClientSearchSection"
 import InstallationLocationSection from "@/components/installations/InstallationLocationSection";
 import InstallationCoordinatesSection from "@/components/installations/InstallationCoordinatesSection";
 import InstallationCommercialSection from "@/components/installations/InstallationCommercialSection";
+import ServiceTypeSelect from "@/components/installations/ServiceTypeSelect";
 import { provincias } from "@/lib/data/costa-rica-locations";
 
 import {
@@ -44,7 +45,8 @@ export default function NewInstallationPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
-  const [serviceTypeId, setServiceTypeId] = useState("1");
+  const [serviceTypeId, setServiceTypeId] = useState("");
+  const [serviceTypeName, setServiceTypeName] = useState("");
   const [installationDate, setInstallationDate] = useState("");
   const [description, setDescription] = useState("");
   const [estimatedAmount, setEstimatedAmount] = useState("");
@@ -124,9 +126,7 @@ export default function NewInstallationPage() {
     ? getClientDisplayName(selectedClient)
     : "Pendiente";
 
-  const serviceSummary = serviceTypeId
-    ? `Servicio ${serviceTypeId}`
-    : "Sin definir";
+  const serviceSummary = serviceTypeName || "Sin definir";
 
   const locationSummary =
     adminLevel1 || adminLevel2 || adminLevel3
@@ -692,16 +692,13 @@ export default function NewInstallationPage() {
                   />
 
                   <div className="space-y-4">
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                        Service Type *
-                      </label>
-                      <input
-                        value={serviceTypeId}
-                        onChange={(e) => setServiceTypeId(e.target.value)}
-                        className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                      />
-                    </div>
+                    <ServiceTypeSelect
+                      value={serviceTypeId}
+                      onChange={setServiceTypeId}
+                      onSelectedServiceTypeNameChange={setServiceTypeName}
+                      label="Tipo de servicio"
+                      required
+                    />
 
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-slate-700">

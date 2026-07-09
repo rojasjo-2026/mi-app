@@ -16,6 +16,10 @@ type TechnicianOption = {
 type InstallationDetail = {
   installation_id: string;
   description?: string | null;
+  service_type_id?: number | string | null;
+  installation_date?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   technician_name?: string | null;
   technician_id?: string | null;
   technician?: TechnicianOption | null;
