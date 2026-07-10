@@ -70,13 +70,13 @@ export default function InstallationComponentsSection({
   function getStatusClasses(status: string) {
     switch (status) {
       case "OPERATIVE":
-        return "bg-emerald-100 text-emerald-700";
+        return "border-emerald-200 bg-emerald-50 text-emerald-700";
       case "REVIEW_REQUIRED":
-        return "bg-yellow-100 text-yellow-800";
+        return "border-amber-200 bg-amber-50 text-amber-700";
       case "REPLACEMENT_SUGGESTED":
-        return "bg-red-100 text-red-700";
+        return "border-red-200 bg-red-50 text-red-700";
       default:
-        return "bg-slate-100 text-slate-700";
+        return "border-slate-200 bg-slate-50 text-slate-600";
     }
   }
 
@@ -132,95 +132,96 @@ export default function InstallationComponentsSection({
     <>
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Componentes de la instalación
-            </h2>
-            <p className="text-sm text-slate-500">
-              Registro técnico de piezas y equipos instalados.
-            </p>
-          </div>
+          <p className="text-sm leading-6 text-slate-500">
+            Registro técnico de piezas y equipos instalados.
+          </p>
 
           <button
+            type="button"
             onClick={handleOpenCreate}
-            className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
           >
             + Agregar componente
           </button>
         </div>
 
         {components.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center text-sm text-slate-500">
+          <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
             No hay componentes registrados en esta instalación.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200">
+          <div className="overflow-hidden rounded-md border border-slate-200">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-sm">
                 <thead className="bg-slate-50 text-left">
                   <tr>
-                    <th className="px-4 py-3 font-semibold text-slate-600">
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                       Componente
                     </th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">
+
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                       Categoría
                     </th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">
+
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                       Cantidad
                     </th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">
+
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                       Unidad
                     </th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">
+
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                       Estado
                     </th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">
+
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                       Acciones
                     </th>
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {components.map((component) => (
                     <tr
                       key={component.component_id}
-                      className="border-t border-slate-200"
+                      className="transition hover:bg-slate-50/70"
                     >
-                      <td className="px-4 py-4">
-                        <div className="font-medium text-slate-900">
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-slate-900">
                           {component.name}
                         </div>
 
-                        {(component.brand || component.model) && (
-                          <div className="mt-1 text-xs text-slate-500">
+                        {component.brand || component.model ? (
+                          <div className="mt-1 text-xs leading-5 text-slate-500">
                             {[component.brand, component.model]
                               .filter(Boolean)
                               .join(" · ")}
                           </div>
-                        )}
+                        ) : null}
 
-                        {component.technical_notes && (
-                          <div className="mt-1 line-clamp-2 text-xs text-slate-400">
+                        {component.technical_notes ? (
+                          <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">
                             {component.technical_notes}
                           </div>
-                        )}
+                        ) : null}
                       </td>
 
-                      <td className="px-4 py-4 text-slate-700">
+                      <td className="px-4 py-3 text-slate-700">
                         {component.category || "-"}
                       </td>
 
-                      <td className="px-4 py-4 text-slate-700">
+                      <td className="px-4 py-3 text-slate-700">
                         {component.quantity}
                       </td>
 
-                      <td className="px-4 py-4 text-slate-700">
+                      <td className="px-4 py-3 text-slate-700">
                         {component.unit || "-"}
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
+                          className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${getStatusClasses(
                             component.status,
                           )}`}
                         >
@@ -228,12 +229,12 @@ export default function InstallationComponentsSection({
                         </span>
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(component)}
-                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                           >
                             Editar
                           </button>
@@ -242,7 +243,7 @@ export default function InstallationComponentsSection({
                             type="button"
                             onClick={() => handleDelete(component.component_id)}
                             disabled={deletingId === component.component_id}
-                            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex h-8 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {deletingId === component.component_id
                               ? "Eliminando..."
@@ -259,14 +260,14 @@ export default function InstallationComponentsSection({
         )}
       </div>
 
-      {open && (
+      {open ? (
         <ComponentFormModal
           installationId={installationId}
           component={editingComponent}
           onClose={handleCloseModal}
           onCreated={fetchComponents}
         />
-      )}
+      ) : null}
     </>
   );
 }

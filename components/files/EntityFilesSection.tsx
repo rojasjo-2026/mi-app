@@ -115,6 +115,7 @@ function getFileLabel(file: FileItem) {
 
 function getPreviewLabel(file: File) {
   if (file.type.startsWith("image/")) return "Imagen";
+
   if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
     return "PDF";
   }
@@ -178,15 +179,19 @@ export default function EntityFilesSection({
   const [previewFiles, setPreviewFiles] = useState<PreviewFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+
   const [uploadProgress, setUploadProgress] = useState({
     current: 0,
     total: 0,
   });
+
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
     null,
   );
+
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
@@ -194,6 +199,7 @@ export default function EntityFilesSection({
 
   const fileCountLabel = useMemo(() => {
     if (files.length === 1) return "1 archivo";
+
     return `${files.length} archivos`;
   }, [files.length]);
 
@@ -204,6 +210,7 @@ export default function EntityFilesSection({
       return copiedFiles.sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+
         return dateA - dateB;
       });
     }
@@ -214,6 +221,7 @@ export default function EntityFilesSection({
         const typeB = getFileTypeOrder(b);
 
         if (typeA !== typeB) return typeA - typeB;
+
         return a.file_name.localeCompare(b.file_name);
       });
     }
@@ -221,6 +229,7 @@ export default function EntityFilesSection({
     return copiedFiles.sort((a, b) => {
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+
       return dateB - dateA;
     });
   }, [files, sortOption]);
@@ -253,9 +262,11 @@ export default function EntityFilesSection({
         const normalizedFiles = normalizeFilesPayload(data);
 
         setFiles(normalizedFiles);
+
         return normalizedFiles;
       } catch (error) {
         console.error("Error loading entity files:", error);
+
         return [];
       } finally {
         if (showLoadingState) {
@@ -346,6 +357,7 @@ export default function EntityFilesSection({
 
     try {
       setUploading(true);
+
       setUploadProgress({
         current: 0,
         total: previewFiles.length,
@@ -370,6 +382,7 @@ export default function EntityFilesSection({
         if (error) {
           console.error(error);
           alert(error.message || "No se pudo subir el archivo");
+
           return;
         }
 
@@ -418,6 +431,7 @@ export default function EntityFilesSection({
       alert("Ocurrió un error al subir el archivo");
     } finally {
       setUploading(false);
+
       setUploadProgress({
         current: 0,
         total: 0,
@@ -427,9 +441,11 @@ export default function EntityFilesSection({
 
   function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = e.target.files;
+
     if (!selectedFiles) return;
 
     addSelectedFiles(selectedFiles);
+
     e.target.value = "";
   }
 
@@ -447,6 +463,7 @@ export default function EntityFilesSection({
     setIsDragging(false);
 
     const selectedFiles = e.dataTransfer.files;
+
     if (!selectedFiles) return;
 
     addSelectedFiles(selectedFiles);
@@ -543,240 +560,247 @@ export default function EntityFilesSection({
 
   return (
     <>
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              {eyebrow}
-            </p>
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="px-6 pt-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                {eyebrow}
+              </p>
 
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+              <h2 className="mt-3 text-sm font-semibold text-slate-950">
+                {title}
+              </h2>
 
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              {description}
-            </p>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+                {description}
+              </p>
+            </div>
+
+            <span className="inline-flex w-fit shrink-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
+              {fileCountLabel}
+            </span>
           </div>
-
-          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
-            {fileCountLabel}
-          </span>
         </div>
 
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`mb-5 rounded-3xl border border-dashed p-5 transition ${
-            isDragging
-              ? "border-slate-900 bg-slate-100"
-              : "border-slate-300 bg-slate-50"
-          }`}
-        >
-          {previewFiles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-              <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-3xl shadow-sm">
-                📁
-              </div>
+        <div className="space-y-5 px-6 pb-6 pt-5">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`rounded-md border border-dashed p-5 transition ${
+              isDragging
+                ? "border-slate-500 bg-slate-100"
+                : "border-slate-300 bg-slate-50"
+            }`}
+          >
+            {previewFiles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
+                <div className="text-3xl" aria-hidden="true">
+                  📁
+                </div>
 
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  Arrastre uno o varios archivos aquí
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  También puede seleccionar archivos desde su dispositivo.
-                </p>
-              </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Arrastre uno o varios archivos aquí
+                  </p>
 
-              <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
-                Seleccionar archivos
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleUpload}
-                  disabled={uploading}
-                  className="hidden"
-                />
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    También puede seleccionarlos desde su dispositivo.
+                  </p>
+                </div>
+
+                <label className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
+                  Seleccionar archivos
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {previewFiles.map((previewFile, index) => (
+                    <article
+                      key={`${previewFile.file.name}-${index}`}
+                      className="overflow-hidden rounded-md border border-slate-200 bg-white"
+                    >
+                      {isPreviewImage(previewFile.file) ? (
+                        <img
+                          src={previewFile.previewUrl}
+                          alt={previewFile.file.name}
+                          className="h-40 w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-40 items-center justify-center bg-slate-50">
+                          <div className="text-center">
+                            <p className="text-3xl">
+                              {isPreviewPdf(previewFile.file) ? "📄" : "📎"}
+                            </p>
+
+                            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                              {getPreviewLabel(previewFile.file)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-3 p-4">
+                        <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                          {previewFile.file.name}
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => removePreviewFile(index)}
+                          disabled={uploading}
+                          className="inline-flex h-9 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void uploadSelectedFiles()}
+                    disabled={uploading}
+                    className="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {uploading
+                      ? `Subiendo ${uploadProgress.current}/${uploadProgress.total}`
+                      : previewFiles.length === 1
+                        ? "Subir archivo"
+                        : "Subir archivos"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={clearPreviewFiles}
+                    disabled={uploading}
+                    className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+
+                {uploading ? (
+                  <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Procesando archivo {uploadProgress.current} de{" "}
+                    {uploadProgress.total}.
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          {!loading && files.length > 0 ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-semibold text-slate-700">
+                Archivos guardados
+              </p>
+
+              <label className="flex items-center gap-2 text-sm text-slate-500">
+                Ordenar por
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value as SortOption)}
+                  className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                >
+                  <option value="newest">Más recientes</option>
+                  <option value="oldest">Más antiguos</option>
+                  <option value="type">Tipo de archivo</option>
+                </select>
               </label>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {previewFiles.map((previewFile, index) => (
-                  <article
-                    key={`${previewFile.file.name}-${index}`}
-                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:scale-[1.01] hover:shadow-md"
-                  >
-                    {isPreviewImage(previewFile.file) ? (
-                      <img
-                        src={previewFile.previewUrl}
-                        alt={previewFile.file.name}
-                        className="h-40 w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-40 items-center justify-center bg-slate-50">
-                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-center">
-                          <p className="text-3xl">
-                            {isPreviewPdf(previewFile.file) ? "📄" : "📎"}
-                          </p>
-                          <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                            {getPreviewLabel(previewFile.file)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+          ) : null}
 
-                    <div className="space-y-3 p-4">
-                      <p className="line-clamp-2 text-sm font-semibold text-slate-900">
-                        {previewFile.file.name}
-                      </p>
-
-                      <button
-                        type="button"
-                        onClick={() => removePreviewFile(index)}
-                        disabled={uploading}
-                        className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
-                      >
-                        Quitar
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void uploadSelectedFiles()}
-                  disabled={uploading}
-                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {uploading
-                    ? `Subiendo ${uploadProgress.current}/${uploadProgress.total}`
-                    : previewFiles.length === 1
-                      ? "Subir archivo"
-                      : "Subir archivos"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={clearPreviewFiles}
-                  disabled={uploading}
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-              </div>
-
-              {uploading ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                  Procesando archivo {uploadProgress.current} de{" "}
-                  {uploadProgress.total}.
-                </div>
-              ) : null}
+          {loading ? (
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+              Cargando archivos...
             </div>
-          )}
-        </div>
-
-        {!loading && files.length > 0 ? (
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-medium text-slate-600">
-              Archivos guardados
-            </p>
-
-            <label className="flex items-center gap-2 text-sm text-slate-500">
-              Ordenar por
-              <select
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value as SortOption)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400"
-              >
-                <option value="newest">Más recientes</option>
-                <option value="oldest">Más antiguos</option>
-                <option value="type">Tipo de archivo</option>
-              </select>
-            </label>
-          </div>
-        ) : null}
-
-        {loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
-            Cargando archivos...
-          </div>
-        ) : sortedFiles.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-            {emptyMessage}
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {sortedFiles.map((file, index) => (
-              <article
-                key={file.file_id}
-                onClick={() => openFileModal(index)}
-                className="cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 shadow-sm transition hover:scale-[1.01] hover:shadow-md"
-              >
-                {isImage(file) ? (
-                  <div className="block w-full text-left">
+          ) : sortedFiles.length === 0 ? (
+            <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+              {emptyMessage}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {sortedFiles.map((file, index) => (
+                <article
+                  key={file.file_id}
+                  onClick={() => openFileModal(index)}
+                  className="cursor-pointer overflow-hidden rounded-md border border-slate-200 bg-white transition hover:border-slate-300"
+                >
+                  {isImage(file) ? (
                     <img
                       src={file.file_url}
                       alt={file.file_name}
-                      className="h-44 w-full object-cover transition hover:scale-[1.02]"
+                      className="h-44 w-full object-cover"
                     />
-                  </div>
-                ) : (
-                  <div className="flex h-44 w-full items-center justify-center bg-white">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-center">
-                      <p className="text-3xl">
-                        {getFileLabel(file) === "PDF" ? "📄" : "📎"}
+                  ) : (
+                    <div className="flex h-44 w-full items-center justify-center bg-slate-50">
+                      <div className="text-center">
+                        <p className="text-3xl">
+                          {getFileLabel(file) === "PDF" ? "📄" : "📎"}
+                        </p>
+
+                        <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          {getFileLabel(file)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3 p-4">
+                    <div>
+                      <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                        {file.file_name}
                       </p>
-                      <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                        {getFileLabel(file)}
+
+                      <p className="mt-1 text-xs text-slate-400">
+                        {formatFileDate(file.created_at, locale, timeZone)}
                       </p>
                     </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openFileModal(index);
+                        }}
+                        className="inline-flex h-9 flex-1 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Ver
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDelete(file.file_id);
+                        }}
+                        disabled={deletingId === file.file_id}
+                        className="inline-flex h-9 flex-1 items-center justify-center rounded-md border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                      >
+                        {deletingId === file.file_id
+                          ? "Eliminando..."
+                          : "Eliminar"}
+                      </button>
+                    </div>
                   </div>
-                )}
-
-                <div className="space-y-3 p-4">
-                  <div>
-                    <p className="line-clamp-2 text-sm font-semibold text-slate-900">
-                      {file.file_name}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      {formatFileDate(file.created_at, locale, timeZone)}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openFileModal(index);
-                      }}
-                      className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                    >
-                      Ver
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleDelete(file.file_id);
-                      }}
-                      disabled={deletingId === file.file_id}
-                      className="inline-flex flex-1 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-50"
-                    >
-                      {deletingId === file.file_id
-                        ? "Eliminando..."
-                        : "Eliminar"}
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       {selectedFile ? (
@@ -784,13 +808,14 @@ export default function EntityFilesSection({
           <div
             onTouchStart={handleModalTouchStart}
             onTouchEnd={handleModalTouchEnd}
-            className="relative flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+            className="relative flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
           >
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-slate-900">
                   {selectedFile.file_name}
                 </p>
+
                 <p className="text-xs text-slate-500">
                   {selectedFileIndex !== null ? selectedFileIndex + 1 : 1} de{" "}
                   {sortedFiles.length}
@@ -800,7 +825,7 @@ export default function EntityFilesSection({
               <button
                 type="button"
                 onClick={closeFileModal}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-700 transition hover:bg-slate-200"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-lg font-semibold text-slate-700 transition hover:bg-slate-200"
                 aria-label="Cerrar vista previa"
               >
                 ×
@@ -813,7 +838,7 @@ export default function EntityFilesSection({
                   <button
                     type="button"
                     onClick={goToPreviousFile}
-                    className="absolute left-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-2xl font-bold text-slate-700 shadow transition hover:bg-white"
+                    className="absolute left-3 top-1/2 z-10 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-2xl font-semibold text-slate-700 shadow transition hover:bg-white"
                     aria-label="Archivo anterior"
                   >
                     ‹
@@ -822,7 +847,7 @@ export default function EntityFilesSection({
                   <button
                     type="button"
                     onClick={goToNextFile}
-                    className="absolute right-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-2xl font-bold text-slate-700 shadow transition hover:bg-white"
+                    className="absolute right-3 top-1/2 z-10 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-2xl font-semibold text-slate-700 shadow transition hover:bg-white"
                     aria-label="Archivo siguiente"
                   >
                     ›
@@ -843,19 +868,22 @@ export default function EntityFilesSection({
                   className="h-full w-full border-0 bg-white"
                 />
               ) : (
-                <div className="m-6 rounded-3xl bg-white p-8 text-center shadow-sm">
+                <div className="m-6 rounded-lg bg-white p-8 text-center shadow-sm">
                   <p className="text-4xl">📎</p>
+
                   <p className="mt-3 text-sm font-semibold text-slate-900">
                     Vista previa no disponible
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">
+
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
                     Este tipo de archivo puede abrirse en una nueva pestaña.
                   </p>
+
                   <a
                     href={selectedFile.file_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-5 inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    className="mt-5 inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     Abrir archivo
                   </a>

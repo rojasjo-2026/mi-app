@@ -36,82 +36,126 @@ export default function InstallationLocationDisplay({
   const hasAdministrativeLocation = adminLevel1 || adminLevel2 || adminLevel3;
 
   return (
-    <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+    <section>
       <Card title="Ubicación">
-        <InfoGrid>
-          <InfoRow label="Zona operativa" value={zone || "-"} />
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-950">
+                  Datos de ubicación
+                </h3>
 
-          {hasAdministrativeLocation ? (
-            <>
-              <InfoRow label="Provincia" value={adminLevel1 || "-"} />
-              <InfoRow label="Cantón" value={adminLevel2 || "-"} />
-              <InfoRow label="Distrito" value={adminLevel3 || "-"} />
-            </>
-          ) : (
-            <InfoRow label="Área / ciudad" value={city || "-"} />
-          )}
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Información administrativa y operativa del lugar.
+                </p>
+              </div>
 
-          <InfoRow
-            label="Latitud"
-            value={hasCoordinates ? String(latitude) : "-"}
-          />
-          <InfoRow
-            label="Longitud"
-            value={hasCoordinates ? String(longitude) : "-"}
-          />
-        </InfoGrid>
+              <InfoGrid>
+                <InfoRow label="Zona operativa" value={zone || "-"} />
 
-        <div className="pt-1">
-          <InfoRow label="Dirección" value={address_line || "-"} />
-        </div>
+                {hasAdministrativeLocation ? (
+                  <>
+                    <InfoRow label="Provincia" value={adminLevel1 || "-"} />
+                    <InfoRow label="Cantón" value={adminLevel2 || "-"} />
+                    <InfoRow label="Distrito" value={adminLevel3 || "-"} />
+                  </>
+                ) : (
+                  <InfoRow label="Área / ciudad" value={city || "-"} />
+                )}
+              </InfoGrid>
+            </div>
 
-        <InfoGrid>
-          <InfoRow label="Punto de referencia" value={reference_point || "-"} />
-          <InfoRow label="Notas de ubicación" value={location_notes || "-"} />
-        </InfoGrid>
+            <div className="space-y-4 border-t border-slate-100 pt-5">
+              <h3 className="text-sm font-semibold text-slate-950">
+                Dirección y referencias
+              </h3>
 
-        {googleMapsUrl ? (
-          <div className="pt-4">
-            <a
-              href={googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-            >
-              Abrir en Google Maps
-            </a>
-          </div>
-        ) : null}
-      </Card>
+              <InfoRow label="Dirección" value={address_line || "-"} />
 
-      <Card title="Mapa">
-        {openStreetMapEmbedUrl ? (
-          <div className="space-y-3">
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              <iframe
-                title="Mapa de ubicación de la instalación"
-                src={openStreetMapEmbedUrl}
-                className="h-80 w-full"
-                loading="lazy"
-              />
+              <InfoGrid>
+                <InfoRow
+                  label="Punto de referencia"
+                  value={reference_point || "-"}
+                />
+
+                <InfoRow
+                  label="Notas de ubicación"
+                  value={location_notes || "-"}
+                />
+              </InfoGrid>
+            </div>
+
+            <div className="space-y-4 border-t border-slate-100 pt-5">
+              <h3 className="text-sm font-semibold text-slate-950">
+                Coordenadas
+              </h3>
+
+              <InfoGrid>
+                <InfoRow
+                  label="Latitud"
+                  value={hasCoordinates ? String(latitude) : "-"}
+                />
+
+                <InfoRow
+                  label="Longitud"
+                  value={hasCoordinates ? String(longitude) : "-"}
+                />
+              </InfoGrid>
             </div>
 
             {googleMapsUrl ? (
-              <a
-                href={googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-              >
-                Ver ruta en Google Maps
-              </a>
+              <div className="pt-1">
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  Abrir en Google Maps
+                </a>
+              </div>
             ) : null}
           </div>
-        ) : (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-6 text-sm text-slate-500">
-            No hay coordenadas disponibles para mostrar el mapa.
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-950">Mapa</h3>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Referencia visual de la ubicación registrada.
+              </p>
+            </div>
+
+            {openStreetMapEmbedUrl ? (
+              <>
+                <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                  <iframe
+                    title="Mapa de ubicación de la instalación"
+                    src={openStreetMapEmbedUrl}
+                    className="h-[420px] w-full"
+                    loading="lazy"
+                  />
+                </div>
+
+                {googleMapsUrl ? (
+                  <a
+                    href={googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  >
+                    Ver ruta en Google Maps
+                  </a>
+                ) : null}
+              </>
+            ) : (
+              <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm leading-6 text-slate-500">
+                No hay coordenadas disponibles para mostrar el mapa.
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </Card>
     </section>
   );

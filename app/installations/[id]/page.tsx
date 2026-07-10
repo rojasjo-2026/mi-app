@@ -14,7 +14,6 @@ import InstallationMainInfoSection from "./components/InstallationMainInfoSectio
 import InstallationClientSection from "./components/InstallationClientSection";
 import InstallationTechnicianSection from "./components/InstallationTechnicianSection";
 import InstallationFilesSection from "./components/InstallationFilesSection";
-import InstallationActivityHistorySection from "./components/InstallationActivityHistorySection";
 import Card from "./components/Card";
 import { useInstallationDetail } from "./hooks/useInstallationDetail";
 import {
@@ -473,7 +472,7 @@ export default function InstallationDetailPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-900 md:p-6 xl:p-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <InstallationDetailHeader
           title={installation.description || "Instalación"}
           statusBadge={getInstallationStatusBadge(
@@ -503,7 +502,7 @@ export default function InstallationDetailPage() {
           onBack={() => window.history.back()}
         />
 
-        <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <section className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-4">
           <div title={getTooltipIfUseful(installation.service_type?.name)}>
             <MetricCard
               label="Servicio"
@@ -536,7 +535,7 @@ export default function InstallationDetailPage() {
           isInactive={isInactive}
         />
 
-        <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <InstallationMainInfoSection
             installationDate={formatBusinessDate(
               installation.installation_date,
@@ -552,9 +551,6 @@ export default function InstallationDetailPage() {
             finalAmount={finalAmount}
             billingStatusLabel={billingStatusLabel}
             billingNotes={billingNotes}
-            warrantyMonths={formatWarrantyMonths(
-              commercialInfo.warranty_months,
-            )}
           />
 
           <InstallationClientSection
@@ -608,11 +604,6 @@ export default function InstallationDetailPage() {
         />
 
         <InstallationChangeLogSection changeLogs={changeLogs} />
-
-        <InstallationActivityHistorySection
-          clientId={installation.client?.client_id}
-          installationId={installation.installation_id}
-        />
 
         <InstallationFollowUpsSection
           followUps={installation.follow_ups}

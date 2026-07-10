@@ -1,4 +1,4 @@
-import HeaderChip from "./HeaderChip";
+"use client";
 
 type InstallationDetailHeaderProps = {
   title: string;
@@ -33,35 +33,65 @@ export default function InstallationDetailHeader({
   onDeactivate,
   onBack,
 }: InstallationDetailHeaderProps) {
+  const summaryItems = [
+    {
+      label: "Cliente",
+      value: clientName || "Cliente no definido",
+    },
+    {
+      label: "Fecha de instalación",
+      value: installationDate || "-",
+    },
+    {
+      label: "Ubicación",
+      value: location || "-",
+    },
+    {
+      label: "Monto estimado",
+      value: amount || "-",
+    },
+    ...(nextPendingFollowUpDate
+      ? [
+          {
+            label: "Próximo mantenimiento",
+            value: nextPendingFollowUpDate,
+          },
+        ]
+      : []),
+  ];
+
+  const summaryGridClass =
+    summaryItems.length === 5
+      ? "grid grid-cols-1 gap-x-6 gap-y-4 px-5 py-4 sm:grid-cols-2 xl:grid-cols-5"
+      : "grid grid-cols-1 gap-x-6 gap-y-4 px-5 py-4 sm:grid-cols-2 xl:grid-cols-4";
+
   return (
-    <section className="flex flex-col gap-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 space-y-2">
+    <section className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 shadow-sm">
+            <div className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-blue-600 shadow-sm">
               Detalle de instalación
-            </span>
+            </div>
 
             {statusBadge}
           </div>
 
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              {title}
-            </h1>
+          <h1 className="mt-3 max-w-4xl text-3xl font-black tracking-tight text-slate-950">
+            {title}
+          </h1>
 
-            <p className="max-w-3xl text-sm leading-6 text-slate-500">
-              Vista general de la instalación, cliente asociado, ubicación,
-              historial técnico y mantenimientos programados.
-            </p>
-          </div>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            Vista general de la instalación, cliente asociado, ubicación,
+            historial técnico y mantenimientos programados.
+          </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 lg:justify-end">
+        <div className="flex shrink-0 flex-wrap gap-3 xl:max-w-[620px] xl:justify-end">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             ← Volver
           </button>
@@ -69,7 +99,7 @@ export default function InstallationDetailHeader({
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             Editar
           </button>
@@ -78,7 +108,7 @@ export default function InstallationDetailHeader({
             type="button"
             onClick={onCreateMaintenance}
             disabled={creatingMaintenance || isInactive}
-            className="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {creatingMaintenance ? "Programando..." : "Programar mantenimiento"}
           </button>
@@ -88,7 +118,7 @@ export default function InstallationDetailHeader({
               type="button"
               onClick={onDeactivate}
               disabled={deactivatingInstallation}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {deactivatingInstallation ? "Desactivando..." : "Desactivar"}
             </button>
@@ -96,22 +126,35 @@ export default function InstallationDetailHeader({
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        <HeaderChip
-          label="Cliente"
-          value={clientName || "Cliente no definido"}
-        />
-        <HeaderChip label="Fecha" value={installationDate} />
-        <HeaderChip label="Ubicación" value={location} />
-        <HeaderChip label="Monto" value={amount} />
-      </div>
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className={summaryGridClass}>
+          {summaryItems.map((item, index) => {
+            const isMaintenance = item.label === "Próximo mantenimiento";
 
-      {nextPendingFollowUpDate ? (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          <span className="font-semibold">Próximo mantenimiento:</span>{" "}
-          {nextPendingFollowUpDate}
+            return (
+              <div
+                key={item.label}
+                className={`min-w-0 ${
+                  index > 0 ? "xl:border-l xl:border-slate-200 xl:pl-6" : ""
+                }`}
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  {item.label}
+                </p>
+
+                <p
+                  title={item.value}
+                  className={`mt-1 break-words text-sm font-semibold leading-6 ${
+                    isMaintenance ? "text-emerald-700" : "text-slate-950"
+                  }`}
+                >
+                  {item.value}
+                </p>
+              </div>
+            );
+          })}
         </div>
-      ) : null}
+      </div>
     </section>
   );
 }

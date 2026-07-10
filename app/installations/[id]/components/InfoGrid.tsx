@@ -6,6 +6,8 @@ type InfoGridProps = {
 
 export default function InfoGrid({ children }: InfoGridProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
+    <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+      {children}
+    </div>
   );
 }
