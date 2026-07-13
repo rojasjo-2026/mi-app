@@ -563,10 +563,10 @@ export default function ClientForm({
   }
 
   const inputClass =
-    "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50";
+    "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 
   const selectClass =
-    "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100 disabled:text-slate-400";
+    "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 
   const previewName = resolveDisplayName().trim() || "Cliente en borrador";
 
@@ -609,7 +609,7 @@ export default function ClientForm({
   const progressPercent = Math.round((completedSections / totalSections) * 100);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 text-slate-900 md:p-8">
+    <main className="min-h-screen bg-slate-50 p-4 text-slate-900 md:p-6 xl:p-8">
       <form
         onSubmit={handleSubmit}
         className="mx-auto flex w-full max-w-[1500px] flex-col gap-6"

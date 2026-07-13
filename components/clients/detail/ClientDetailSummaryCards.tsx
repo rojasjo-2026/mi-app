@@ -70,23 +70,25 @@ function SummaryMetricCard({
 
   return (
     <article
-      className={`group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${styles.border}`}
+      className={`group rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:shadow-md ${styles.border}`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-bold text-slate-500">{label}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            {label}
+          </p>
 
-          <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+          <p className="mt-1.5 break-words text-xl font-semibold leading-tight tracking-tight text-slate-950">
             {value}
           </p>
 
-          <p className="mt-1 line-clamp-2 text-sm font-medium text-slate-500">
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
             {helper}
           </p>
         </div>
 
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${styles.icon}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${styles.icon}`}
         >
           {icon}
         </div>
@@ -121,12 +123,12 @@ export function ClientDetailSummaryCards({
       : "Sin próximos mantenimientos";
 
   return (
-    <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
       <SummaryMetricCard
         label="Instalaciones"
         value={String(installationsCount)}
         helper="Total registradas"
-        icon={<ClipboardList className="h-6 w-6" />}
+        icon={<ClipboardList className="h-4 w-4" />}
         tone="blue"
       />
 
@@ -134,7 +136,7 @@ export function ClientDetailSummaryCards({
         label="Mantenimientos"
         value={String(totalMaintenances)}
         helper={hasInstallations ? "Total asociados" : "Sin instalación base"}
-        icon={<Wrench className="h-6 w-6" />}
+        icon={<Wrench className="h-4 w-4" />}
         tone="orange"
       />
 
@@ -142,7 +144,7 @@ export function ClientDetailSummaryCards({
         label="Saldo pendiente"
         value={formatCurrency(pendingBalance, currency, locale)}
         helper={getPendingBalanceHelper(pendingInvoiceCount)}
-        icon={<CircleDollarSign className="h-6 w-6" />}
+        icon={<CircleDollarSign className="h-4 w-4" />}
         tone="green"
       />
 
@@ -150,7 +152,7 @@ export function ClientDetailSummaryCards({
         label="Próximo mantenimiento"
         value={nextMaintenanceValue}
         helper={nextMaintenanceHelper}
-        icon={<CalendarClock className="h-6 w-6" />}
+        icon={<CalendarClock className="h-4 w-4" />}
         tone="purple"
       />
     </section>

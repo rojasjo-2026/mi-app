@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { Clock3 } from "lucide-react";
 
 import type { ClientActivityLog } from "@/lib/clients/clientDetail.types";
@@ -17,8 +16,13 @@ type ClientActivityHistoryProps = {
   activityLogs: ClientActivityLog[];
   loading: boolean;
   error: string;
-  hasMore?: boolean;
-  onLoadMore?: () => void;
+  selectedCategory: string;
+  currentPage: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+  onCategoryChange: (category: string) => void;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
   locale?: string;
 };
 
@@ -41,6 +45,16 @@ const WHATSAPP_TITLES: Record<string, string> = {
   CONTACT_MESSAGE_RECEIVED: "Mensaje de WhatsApp recibido",
   CONTACT_STATUS_CHANGED: "Estado de contacto actualizado",
 };
+
+const ACTIVITY_CATEGORIES = [
+  "ALL",
+  "INSTALLATION",
+  "FILE",
+  "FOLLOW_UP",
+  "FINANCE",
+  "CLIENT",
+  "CONTACT",
+] as const;
 
 function getActivityMetadata(activity: ClientActivityLog): ActivityMetadata {
   const metadata = (activity as ClientActivityLogWithMetadata).metadata;
@@ -198,38 +212,18 @@ export function ClientActivityHistory({
   activityLogs,
   loading,
   error,
-  hasMore,
-  onLoadMore,
+  selectedCategory,
+  currentPage,
+  hasPreviousPage,
+  hasNextPage,
+  onCategoryChange,
+  onPreviousPage,
+  onNextPage,
   locale,
 }: ClientActivityHistoryProps) {
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
-
-  const categories = useMemo(
-    () => [
-      "ALL",
-      "INSTALLATION",
-      "FILE",
-      "FOLLOW_UP",
-      "FINANCE",
-      "CLIENT",
-      "CONTACT",
-    ],
-    [],
-  );
-
-  const filteredLogs = useMemo(
-    () =>
-      selectedCategory === "ALL"
-        ? activityLogs
-        : activityLogs.filter(
-            (activity) => activity.category === selectedCategory,
-          ),
-    [activityLogs, selectedCategory],
-  );
-
-  if (loading) {
+  if (loading && activityLogs.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-6">
+      <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-5">
         <p className="text-sm font-semibold text-slate-600">
           Cargando historial del cliente...
         </p>
@@ -237,39 +231,25 @@ export function ClientActivityHistory({
     );
   }
 
-  if (error) {
+  if (error && activityLogs.length === 0) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-6">
+      <div className="rounded-md border border-red-200 bg-red-50 px-4 py-5">
         <p className="text-sm font-semibold text-red-600">{error}</p>
       </div>
     );
   }
 
-  if (activityLogs.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-5 py-8 text-center">
-        <p className="text-sm font-semibold text-slate-600">
-          Aún no hay eventos registrados.
-        </p>
-
-        <p className="mt-1 text-sm text-slate-400">
-          Los cambios de clientes, instalaciones, mantenimientos, archivos,
-          contactos y finanzas aparecerán aquí automáticamente.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
+          {ACTIVITY_CATEGORIES.map((category) => (
             <button
               key={category}
               type="button"
-              onClick={() => setSelectedCategory(category)}
-              className={`rounded-full border px-3 py-1 text-xs font-bold transition ${
+              onClick={() => onCategoryChange(category)}
+              disabled={loading}
+              className={`inline-flex h-7 items-center justify-center rounded-md border px-2.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                 category === selectedCategory
                   ? "border-blue-600 bg-blue-600 text-white"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -282,93 +262,101 @@ export function ClientActivityHistory({
           ))}
         </div>
 
-        <p className="text-xs font-medium text-slate-500">
-          Mostrando {filteredLogs.length} de {activityLogs.length} eventos
+        <p className="text-xs text-slate-500">
+          {loading
+            ? "Actualizando historial..."
+            : `Página ${currentPage} · ${activityLogs.length} evento${
+                activityLogs.length === 1 ? "" : "s"
+              }`}
         </p>
       </div>
 
-      {filteredLogs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-8 text-center">
+      {activityLogs.length === 0 ? (
+        <div className="rounded-md border border-dashed border-slate-300 bg-slate-50/70 px-4 py-5 text-center">
           <p className="text-sm font-semibold text-slate-600">
-            No hay eventos para este filtro.
+            {selectedCategory === "ALL"
+              ? "Aún no hay eventos registrados."
+              : "No hay eventos para este filtro."}
           </p>
 
-          <p className="mt-1 text-sm text-slate-400">
-            Selecciona otra categoría o vuelve a Todos.
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {selectedCategory === "ALL"
+              ? "Los cambios de clientes, instalaciones, mantenimientos, archivos, contactos y finanzas aparecerán aquí automáticamente."
+              : "Selecciona otra categoría o vuelve a Todos."}
           </p>
         </div>
       ) : (
-        <div className="relative space-y-4 pl-6">
-          <div className="absolute bottom-0 left-[11px] top-0 w-px bg-slate-200" />
+        <div className="relative space-y-3 pl-5">
+          <div className="absolute bottom-0 left-[9px] top-0 w-px bg-slate-200" />
 
-          {filteredLogs.map((activity) => {
+          {activityLogs.map((activity) => {
             const whatsAppDetails = getWhatsAppDetails(activity);
             const description = getDisplayDescription(activity);
 
             return (
               <article key={activity.activity_id} className="relative">
-                <div className="absolute -left-6 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white ring-4 ring-white">
-                  <Clock3 className="h-3.5 w-3.5" />
+                <div className="absolute -left-5 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white ring-[3px] ring-white">
+                  <Clock3 className="h-3 w-3" />
                 </div>
 
-                <div className="rounded-3xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                  <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-bold ${getActivityCategoryClass(
+                          className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${getActivityCategoryClass(
                             activity.category,
                           )}`}
                         >
                           {getActivityCategoryLabel(activity.category)}
                         </span>
 
-                        <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+                        <span className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
                           {getDisplayActionLabel(activity)}
                         </span>
 
                         {isWhatsAppActivity(activity) ? (
-                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+                          <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
                             WhatsApp
                           </span>
                         ) : null}
                       </div>
 
-                      <p className="mt-2 text-sm font-black text-slate-900">
+                      <p className="mt-1.5 text-sm font-semibold text-slate-900">
                         {getDisplayTitle(activity)}
                       </p>
 
                       {description ? (
-                        <p className="mt-1 text-sm leading-5 text-slate-600">
+                        <p className="mt-1 text-xs leading-5 text-slate-600">
                           {description}
                         </p>
                       ) : null}
                     </div>
 
-                    <div className="shrink-0 text-xs font-bold text-slate-500">
+                    <div className="shrink-0 text-xs font-medium text-slate-500">
                       {formatDateTimeLabel(activity.created_at, locale)}
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-                    <span className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] font-medium text-slate-500">
+                    <span className="rounded-md bg-slate-50 px-2 py-0.5 ring-1 ring-slate-200">
                       Módulo: {getActivityCategoryLabel(activity.category)}
                     </span>
 
-                    <span className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
+                    <span className="rounded-md bg-slate-50 px-2 py-0.5 ring-1 ring-slate-200">
                       {isWhatsAppActivity(activity)
                         ? "Canal: WhatsApp"
                         : `Campo: ${getActivityFieldLabel(activity.field_name)}`}
                     </span>
 
-                    <span className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
+                    <span className="rounded-md bg-slate-50 px-2 py-0.5 ring-1 ring-slate-200">
                       Usuario: {activity.created_by || "Sistema"}
                     </span>
                   </div>
 
                   {whatsAppDetails ? (
-                    <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 px-3 py-3">
-                      <div className="grid gap-2 text-xs font-semibold text-emerald-800 sm:grid-cols-3">
+                    <div className="mt-2.5 rounded-md border border-emerald-100 bg-emerald-50/60 px-3 py-2.5">
+                      <div className="grid gap-2 text-xs font-medium text-emerald-800 sm:grid-cols-3">
                         <span>
                           Teléfono:{" "}
                           {whatsAppDetails.phoneNumber || "No registrado"}
@@ -390,28 +378,28 @@ export function ClientActivityHistory({
                   ) : null}
 
                   {whatsAppDetails?.followUpId ? (
-                    <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
-                      <summary className="cursor-pointer text-sm font-bold text-slate-700">
+                    <details className="mt-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <summary className="cursor-pointer text-xs font-semibold text-slate-700">
                         Ver contexto operativo
                       </summary>
 
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                      <div className="mt-2.5 grid gap-2 md:grid-cols-2">
+                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                             Mantenimiento
                           </p>
 
-                          <p className="mt-2 break-words text-sm font-semibold text-slate-800">
+                          <p className="mt-1 break-words text-sm font-medium leading-5 text-slate-800">
                             {whatsAppDetails.followUpId}
                           </p>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                             Instalación
                           </p>
 
-                          <p className="mt-2 break-words text-sm font-semibold text-slate-800">
+                          <p className="mt-1 break-words text-sm font-medium leading-5 text-slate-800">
                             {whatsAppDetails.installationId || "No registrada"}
                           </p>
                         </div>
@@ -420,18 +408,18 @@ export function ClientActivityHistory({
                   ) : null}
 
                   {activity.old_value || activity.new_value ? (
-                    <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
-                      <summary className="cursor-pointer text-sm font-bold text-slate-700">
+                    <details className="mt-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <summary className="cursor-pointer text-xs font-semibold text-slate-700">
                         Ver cambios
                       </summary>
 
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                      <div className="mt-2.5 grid gap-2 md:grid-cols-2">
+                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                             Antes
                           </p>
 
-                          <p className="mt-2 break-words text-sm font-semibold text-slate-800">
+                          <p className="mt-1 break-words text-sm font-medium leading-5 text-slate-800">
                             {formatActivityValue(
                               activity.old_value,
                               activity.field_name,
@@ -439,12 +427,12 @@ export function ClientActivityHistory({
                           </p>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                             Después
                           </p>
 
-                          <p className="mt-2 break-words text-sm font-semibold text-slate-800">
+                          <p className="mt-1 break-words text-sm font-medium leading-5 text-slate-800">
                             {formatActivityValue(
                               activity.new_value,
                               activity.field_name,
@@ -461,15 +449,28 @@ export function ClientActivityHistory({
         </div>
       )}
 
-      {hasMore && onLoadMore ? (
-        <div className="pt-2">
+      {hasPreviousPage || hasNextPage ? (
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
           <button
             type="button"
-            onClick={onLoadMore}
-            disabled={loading}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={onPreviousPage}
+            disabled={loading || !hasPreviousPage}
+            className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Mostrar más
+            Anterior
+          </button>
+
+          <span className="text-xs font-medium text-slate-500">
+            Página {currentPage}
+          </span>
+
+          <button
+            type="button"
+            onClick={onNextPage}
+            disabled={loading || !hasNextPage}
+            className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Siguiente
           </button>
         </div>
       ) : null}

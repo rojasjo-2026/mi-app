@@ -4,41 +4,33 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppSettings } from "@/app/hooks/useAppSettings";
 import OperationalZoneSelect from "@/app/settings/components/OperationalZoneSelect";
-import NotesSection from "@/components/installations/NotesSection";
 import ClientSearchSection from "@/components/installations/ClientSearchSection";
 import InstallationLocationSection from "@/components/installations/InstallationLocationSection";
 import InstallationCoordinatesSection from "@/components/installations/InstallationCoordinatesSection";
 import InstallationCommercialSection from "@/components/installations/InstallationCommercialSection";
 import ServiceTypeSelect from "@/components/installations/ServiceTypeSelect";
+import type { TechnicianOption } from "@/components/installations/installation-form/installationFormConfig";
+import { formatTechnicianName } from "@/components/installations/installation-form/installationFormUtils";
 import { provincias } from "@/lib/data/costa-rica-locations";
 
 import {
-  MAX_NOTES_LENGTH,
   type BrowserWindowWithGoogle,
-  type BrowserWindowWithSpeech,
   type Client,
   type NominatimResponse,
-  type SpeechRecognitionErrorEventLike,
-  type SpeechRecognitionLike,
-  type SpeechRecognitionResultEventLike,
 } from "./config/newInstallationPageConfig";
 import {
   findBestLocationMatch,
   getClientDisplayName,
   getMapsCountryRestriction,
-  getSpeechRecognitionLocale,
   isCostaRicaPreset,
 } from "./utils/newInstallationPageUtils";
 import { CollapsibleSection } from "./components/CollapsibleSection";
 
 export default function NewInstallationPage() {
   const addressRef = useRef<HTMLInputElement | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-
   const { businessCountryMeta, settingsError } = useAppSettings();
 
   const businessCountryPreset = businessCountryMeta.countryPreset;
-  const businessLocale = businessCountryMeta.locale;
   const countryCode = businessCountryMeta.countryCode;
 
   const [clientSearch, setClientSearch] = useState("");
@@ -54,6 +46,9 @@ export default function NewInstallationPage() {
   const [billingStatus, setBillingStatus] = useState("PENDING");
   const [billingNotes, setBillingNotes] = useState("");
   const [technicianName, setTechnicianName] = useState("");
+  const [technicianId, setTechnicianId] = useState("");
+  const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
+  const [loadingTechnicians, setLoadingTechnicians] = useState(false);
   const [operationalZoneId, setOperationalZoneId] = useState("");
   const [allowWithoutOperationalZone, setAllowWithoutOperationalZone] =
     useState(false);
@@ -66,13 +61,11 @@ export default function NewInstallationPage() {
   const [addressLine, setAddressLine] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  const [locationNotes, setLocationNotes] = useState("");
   const [referencePoint, setReferencePoint] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
   const [loadingClients, setLoadingClients] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -81,12 +74,8 @@ export default function NewInstallationPage() {
     commercial: true,
     location: false,
     coordinates: false,
-    notes: false,
   });
 
-  const speechRecognitionLocale = getSpeechRecognitionLocale(
-    businessCountryPreset,
-  );
   const mapsCountryRestriction = getMapsCountryRestriction(
     businessCountryPreset,
   );
@@ -128,6 +117,19 @@ export default function NewInstallationPage() {
 
   const serviceSummary = serviceTypeName || "Sin definir";
 
+  const selectedTechnician = useMemo(() => {
+    if (!technicianId) return null;
+
+    return (
+      technicians.find((technician) => technician.user_id === technicianId) ??
+      null
+    );
+  }, [technicianId, technicians]);
+
+  const technicianSummary = selectedTechnician
+    ? formatTechnicianName(selectedTechnician)
+    : technicianName || "Sin asignar";
+
   const locationSummary =
     adminLevel1 || adminLevel2 || adminLevel3
       ? [adminLevel1, adminLevel2, adminLevel3].filter(Boolean).join(" · ")
@@ -145,6 +147,10 @@ export default function NewInstallationPage() {
     {
       label: "Fecha",
       value: installationDate || "Sin definir",
+    },
+    {
+      label: "Técnico",
+      value: technicianSummary,
     },
     {
       label: "Ubicación",
@@ -207,79 +213,6 @@ export default function NewInstallationPage() {
         ? String(client.longitude)
         : "",
     );
-  }
-
-  function addTimestampedText(text: string) {
-    const timestamp = new Date().toLocaleString(businessLocale);
-    const newEntry = `[${timestamp}] ${text}`.trim();
-
-    setLocationNotes((prev) => {
-      const nextValue = prev ? `${prev}\n${newEntry}` : newEntry;
-      return nextValue.slice(0, MAX_NOTES_LENGTH);
-    });
-  }
-
-  function startVoiceRecognition() {
-    const browserWindow = window as BrowserWindowWithSpeech;
-    const SpeechRecognition =
-      browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setError("El navegador no soporta reconocimiento de voz");
-      return;
-    }
-
-    setError("");
-    setMessage("");
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = speechRecognitionLocale;
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setMessage("Escuchando nota por voz...");
-    };
-
-    recognition.onresult = (event: SpeechRecognitionResultEventLike) => {
-      const text = event.results?.[0]?.[0]?.transcript || "";
-
-      if (text.trim()) {
-        addTimestampedText(text);
-        setMessage("Nota agregada por voz correctamente.");
-      }
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
-      console.error("Error de voz:", event?.error);
-      setError("No se pudo capturar la nota por voz");
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
-    recognitionRef.current = recognition;
-  }
-
-  function stopVoiceRecognition() {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  }
-
-  function clearNotes() {
-    setLocationNotes("");
-    setMessage("Notas limpiadas.");
-    setError("");
-  }
-
-  function addManualNote() {
-    addTimestampedText("Nueva nota");
-    setMessage("Se agregó una nota con fecha y hora.");
-    setError("");
   }
 
   useEffect(() => {
@@ -372,16 +305,37 @@ export default function NewInstallationPage() {
   }, [clientSearch, selectedClient, countryCode]);
 
   useEffect(() => {
+    async function loadTechnicians() {
+      setLoadingTechnicians(true);
+
+      try {
+        const res = await fetch("/api/users?role=TECHNICIAN&is_active=true", {
+          cache: "no-store",
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || !result.success || !Array.isArray(result.data)) {
+          setTechnicians([]);
+          return;
+        }
+
+        setTechnicians(result.data);
+      } catch {
+        setTechnicians([]);
+      } finally {
+        setLoadingTechnicians(false);
+      }
+    }
+
+    void loadTechnicians();
+  }, []);
+
+  useEffect(() => {
     if (selectedClient && useClientAddress) {
       applyClientLocation(selectedClient);
     }
   }, [selectedClient, useClientAddress]);
-
-  useEffect(() => {
-    return () => {
-      recognitionRef.current?.stop();
-    };
-  }, []);
 
   function handleSelectClient(client: Client) {
     setSelectedClient(client);
@@ -408,6 +362,23 @@ export default function NewInstallationPage() {
 
     if (!checked) {
       clearLocationFields();
+    }
+  }
+
+  function handleTechnicianSelect(value: string) {
+    setTechnicianId(value);
+
+    if (!value) {
+      setTechnicianName("");
+      return;
+    }
+
+    const foundTechnician = technicians.find(
+      (technician) => technician.user_id === value,
+    );
+
+    if (foundTechnician) {
+      setTechnicianName(formatTechnicianName(foundTechnician));
     }
   }
 
@@ -556,6 +527,7 @@ export default function NewInstallationPage() {
         cost_amount: costAmount ? Number(costAmount) : null,
         billing_status: billingStatus || "PENDING",
         billing_notes: billingNotes || null,
+        technician_id: technicianId || null,
         technician_name: technicianName || null,
         operational_zone_id: operationalZoneId || null,
         allow_without_operational_zone:
@@ -566,7 +538,6 @@ export default function NewInstallationPage() {
         admin_level_3: adminLevel3 || null,
         latitude: latitude || null,
         longitude: longitude || null,
-        location_notes: locationNotes || null,
         reference_point: referencePoint || null,
       };
 
@@ -617,7 +588,7 @@ export default function NewInstallationPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-900 md:p-6 xl:p-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
             <div className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 shadow-sm">
@@ -651,7 +622,7 @@ export default function NewInstallationPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-5">
           {summaryCards.map((card) => (
             <div
               key={card.label}
@@ -668,7 +639,7 @@ export default function NewInstallationPage() {
         </div>
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <form onSubmit={handleSubmit} className="p-4 md:p-5">
+          <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-3">
               <CollapsibleSection
                 title="Datos principales"
@@ -715,14 +686,51 @@ export default function NewInstallationPage() {
 
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Técnico
+                      Técnico asignado
+                    </label>
+                    <select
+                      value={technicianId}
+                      onChange={(e) => handleTechnicianSelect(e.target.value)}
+                      disabled={loadingTechnicians}
+                      className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                    >
+                      <option value="">
+                        {loadingTechnicians
+                          ? "Cargando técnicos..."
+                          : technicians.length === 0
+                            ? "No hay técnicos disponibles"
+                            : "Sin técnico real / usar respaldo manual"}
+                      </option>
+
+                      {technicians.map((technician) => (
+                        <option
+                          key={technician.user_id}
+                          value={technician.user_id}
+                        >
+                          {formatTechnicianName(technician)}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Si seleccionás un técnico real, la instalación queda
+                      ligada al usuario activo.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      Respaldo manual
                     </label>
                     <input
                       value={technicianName}
                       onChange={(e) => setTechnicianName(e.target.value)}
-                      placeholder="Seleccionar técnico"
+                      placeholder="Nombre visible del técnico"
                       className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                     />
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Se guarda como respaldo visible aunque no haya técnico
+                      enlazado.
+                    </p>
                   </div>
 
                   <div>
@@ -850,24 +858,6 @@ export default function NewInstallationPage() {
                   handleUseCurrentLocation={handleUseCurrentLocation}
                   setLatitude={setLatitude}
                   setLongitude={setLongitude}
-                />
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="Notas técnicas"
-                description="Observaciones internas del trabajo."
-                isOpen={openSections.notes}
-                onToggle={() => toggleSection("notes")}
-              >
-                <NotesSection
-                  locationNotes={locationNotes}
-                  setLocationNotes={setLocationNotes}
-                  isListening={isListening}
-                  startVoiceRecognition={startVoiceRecognition}
-                  stopVoiceRecognition={stopVoiceRecognition}
-                  addManualNote={addManualNote}
-                  clearNotes={clearNotes}
-                  maxNotesLength={MAX_NOTES_LENGTH}
                 />
               </CollapsibleSection>
             </div>

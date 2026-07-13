@@ -197,6 +197,8 @@ export default function EntityFilesSection({
 
   const previewFilesRef = useRef<PreviewFile[]>([]);
 
+  const isCompactInstallation = entityType === "installation";
+
   const fileCountLabel = useMemo(() => {
     if (files.length === 1) return "1 archivo";
 
@@ -561,7 +563,7 @@ export default function EntityFilesSection({
   return (
     <>
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="px-6 pt-5">
+        <div className={isCompactInstallation ? "px-6 pt-5" : "px-6 pt-5"}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <p className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
@@ -583,43 +585,160 @@ export default function EntityFilesSection({
           </div>
         </div>
 
-        <div className="space-y-5 px-6 pb-6 pt-5">
+        <div
+          className={
+            isCompactInstallation
+              ? "space-y-4 px-6 pb-6 pt-4"
+              : "space-y-5 px-6 pb-6 pt-5"
+          }
+        >
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`rounded-md border border-dashed p-5 transition ${
+            className={`rounded-md border border-dashed transition ${
+              isCompactInstallation ? "p-4" : "p-5"
+            } ${
               isDragging
                 ? "border-slate-500 bg-slate-100"
                 : "border-slate-300 bg-slate-50"
             }`}
           >
             {previewFiles.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
-                <div className="text-3xl" aria-hidden="true">
-                  📁
+              isCompactInstallation ? (
+                <div className="flex min-h-[128px] flex-col items-center justify-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+                  <div className="flex flex-col items-center gap-3 sm:flex-row">
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-xl"
+                      aria-hidden="true"
+                    >
+                      📁
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Arrastre uno o varios archivos aquí
+                      </p>
+
+                      <p className="mt-1 text-sm leading-5 text-slate-500">
+                        También puede seleccionarlos desde su dispositivo.
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
+                    Seleccionar archivos
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
+                  <div className="text-3xl" aria-hidden="true">
+                    📁
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Arrastre uno o varios archivos aquí
+                    </p>
+
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      También puede seleccionarlos desde su dispositivo.
+                    </p>
+                  </div>
+
+                  <label className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
+                    Seleccionar archivos
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              )
+            ) : isCompactInstallation ? (
+              <div className="space-y-4">
+                <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+                  {previewFiles.map((previewFile, index) => (
+                    <article
+                      key={`${previewFile.file.name}-${index}`}
+                      className="flex flex-col gap-3 border-t border-slate-100 px-3 py-3 first:border-t-0 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        {isPreviewImage(previewFile.file) ? (
+                          <img
+                            src={previewFile.previewUrl}
+                            alt={previewFile.file.name}
+                            className="h-12 w-12 shrink-0 rounded-md border border-slate-200 object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-xl">
+                            {isPreviewPdf(previewFile.file) ? "📄" : "📎"}
+                          </div>
+                        )}
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {previewFile.file.name}
+                          </p>
+
+                          <p className="mt-0.5 text-xs font-medium text-slate-500">
+                            {getPreviewLabel(previewFile.file)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removePreviewFile(index)}
+                        disabled={uploading}
+                        className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        Quitar
+                      </button>
+                    </article>
+                  ))}
                 </div>
 
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Arrastre uno o varios archivos aquí
-                  </p>
-
-                  <p className="mt-1 text-sm leading-6 text-slate-500">
-                    También puede seleccionarlos desde su dispositivo.
-                  </p>
-                </div>
-
-                <label className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
-                  Seleccionar archivos
-                  <input
-                    type="file"
-                    multiple
-                    onChange={handleUpload}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void uploadSelectedFiles()}
                     disabled={uploading}
-                    className="hidden"
-                  />
-                </label>
+                    className="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {uploading
+                      ? `Subiendo ${uploadProgress.current}/${uploadProgress.total}`
+                      : previewFiles.length === 1
+                        ? "Subir archivo"
+                        : "Subir archivos"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={clearPreviewFiles}
+                    disabled={uploading}
+                    className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+
+                {uploading ? (
+                  <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Procesando archivo {uploadProgress.current} de{" "}
+                    {uploadProgress.total}.
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="space-y-4">
@@ -729,6 +848,73 @@ export default function EntityFilesSection({
           ) : sortedFiles.length === 0 ? (
             <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
               {emptyMessage}
+            </div>
+          ) : isCompactInstallation ? (
+            <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+              {sortedFiles.map((file, index) => (
+                <article
+                  key={file.file_id}
+                  onClick={() => openFileModal(index)}
+                  className="flex cursor-pointer flex-col gap-3 border-t border-slate-100 px-3 py-3 transition first:border-t-0 hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    {isImage(file) ? (
+                      <img
+                        src={file.file_url}
+                        alt={file.file_name}
+                        className="h-12 w-12 shrink-0 rounded-md border border-slate-200 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-xl">
+                        {isPdf(file) ? "📄" : "📎"}
+                      </div>
+                    )}
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {file.file_name}
+                      </p>
+
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="text-xs font-medium text-slate-500">
+                          {getFileLabel(file)}
+                        </span>
+
+                        <span className="text-xs text-slate-400">
+                          {formatFileDate(file.created_at, locale, timeZone)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openFileModal(index);
+                      }}
+                      className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Ver
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleDelete(file.file_id);
+                      }}
+                      disabled={deletingId === file.file_id}
+                      className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {deletingId === file.file_id
+                        ? "Eliminando..."
+                        : "Eliminar"}
+                    </button>
+                  </div>
+                </article>
+              ))}
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

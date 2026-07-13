@@ -253,7 +253,6 @@ export default function InstallationForm({
   initialData = null,
 }: InstallationFormProps) {
   const router = useRouter();
-
   const [businessCountryPreset, setBusinessCountryPreset] =
     useState<CountryPreset>(fallbackCountryPreset);
 
@@ -852,7 +851,7 @@ export default function InstallationForm({
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-900 md:p-6 xl:p-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
             <div className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 shadow-sm">
@@ -885,7 +884,7 @@ export default function InstallationForm({
           {summaryCards.map((card) => (
             <div
               key={card.label}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm"
             >
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 {card.label}
@@ -898,7 +897,7 @@ export default function InstallationForm({
         </div>
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="p-6">
             <FormSection
               title="Información general"
               description="Datos básicos, fecha, garantía y estado de la instalación."
@@ -909,10 +908,11 @@ export default function InstallationForm({
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
                   Descripción
                 </label>
-                <input
+                <textarea
+                  rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={inputClass}
+                  className={textareaClass}
                   placeholder="Descripción de la instalación"
                 />
               </div>
@@ -936,39 +936,19 @@ export default function InstallationForm({
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Meses de garantía
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={warrantyMonths}
-                      onChange={(e) => setWarrantyMonths(e.target.value)}
-                      className={inputClass}
-                      placeholder="Ej: 12"
-                    />
-                  </div>
-
-                  <div className="flex items-end">
-                    <div
-                      className={getWarrantyPreviewClass(warrantyPreview.tone)}
-                    >
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em]">
-                        Garantía
-                      </p>
-                      <p className="mt-1 text-sm font-semibold">
-                        {warrantyPreview.title}
-                      </p>
-                      <p className="mt-1 text-xs leading-5">
-                        {warrantyPreview.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Meses de garantía
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={warrantyMonths}
+                  onChange={(e) => setWarrantyMonths(e.target.value)}
+                  className={inputClass}
+                  placeholder="Ej: 12"
+                />
               </div>
 
               {mode === "edit" ? (
@@ -988,6 +968,26 @@ export default function InstallationForm({
                   </select>
                 </div>
               ) : null}
+
+              <div className="md:col-span-2">
+                <div
+                  className={`${getWarrantyPreviewClass(
+                    warrantyPreview.tone,
+                  )} w-full`}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em]">
+                    Garantía
+                  </p>
+                  <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <p className="text-sm font-semibold">
+                      {warrantyPreview.title}
+                    </p>
+                    <p className="text-xs leading-5 sm:text-right">
+                      {warrantyPreview.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </FormSection>
 
             <FormSection
@@ -1288,11 +1288,11 @@ export default function InstallationForm({
               ) : null}
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:justify-end">
+            <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={handleBack}
-                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
                 Cancelar
               </button>
@@ -1300,7 +1300,7 @@ export default function InstallationForm({
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving
                   ? "Guardando..."

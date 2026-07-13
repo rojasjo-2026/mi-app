@@ -22,22 +22,27 @@ export function CollapsibleCard({
   description,
 }: CollapsibleCardProps) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
-        <div className="flex items-start gap-3">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div
+        className={[
+          "flex flex-col gap-2.5 px-4 py-3 md:flex-row md:items-center md:justify-between",
+          isOpen ? "border-b border-slate-100" : "",
+        ].join(" ")}
+      >
+        <div className="flex items-start gap-2.5">
           {icon && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
               {icon}
             </div>
           )}
 
-          <div>
-            <h2 className="text-lg font-black tracking-tight text-slate-950">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold tracking-tight text-slate-950">
               {title}
             </h2>
 
             {description && (
-              <p className="mt-1 text-sm leading-5 text-slate-500">
+              <p className="mt-0.5 text-xs leading-5 text-slate-500">
                 {description}
               </p>
             )}
@@ -50,7 +55,7 @@ export function CollapsibleCard({
           <button
             type="button"
             onClick={onToggle}
-            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50"
+            className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             {isOpen ? "Ocultar" : "Mostrar"}
             <span className="ml-1 text-slate-400">{isOpen ? "⌃" : "⌄"}</span>
@@ -58,7 +63,7 @@ export function CollapsibleCard({
         </div>
       </div>
 
-      {isOpen && <div className="p-5 md:p-6">{children}</div>}
+      {isOpen && <div className="p-4">{children}</div>}
     </section>
   );
 }

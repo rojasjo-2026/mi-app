@@ -81,7 +81,7 @@ export default function ClientBasicInfoSection({
       : "Número de identificación fiscal o legal";
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <ClientFormSectionHeader
         icon="👤"
         title="Información del cliente"
@@ -94,7 +94,7 @@ export default function ClientBasicInfoSection({
         <div className="p-5 md:p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Tipo de cliente *
               </label>
 
@@ -113,14 +113,14 @@ export default function ClientBasicInfoSection({
               </select>
             </div>
 
-            <div className="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3">
+            <div className="rounded-md border border-blue-100 bg-blue-50/70 px-4 py-3">
               <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-base shadow-sm">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-base shadow-sm">
                   🛡️
                 </div>
 
                 <div>
-                  <p className="text-sm font-bold text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900">
                     Perfil de validación aplicado
                   </p>
 
@@ -218,7 +218,7 @@ export default function ClientBasicInfoSection({
             )}
 
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Tipo de identificación *
               </label>
 
@@ -246,7 +246,7 @@ export default function ClientBasicInfoSection({
                 placeholder={identificationPlaceholder}
               />
 
-              <p className="mt-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-xs leading-5 text-slate-500">
                 {getIdentificationHelpText(identificationType)}
               </p>
             </div>

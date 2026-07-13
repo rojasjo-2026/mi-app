@@ -82,6 +82,8 @@ export default function ClientDetailPage() {
   const [selectedHistoryInstallationId, setSelectedHistoryInstallationId] =
     useState("all");
 
+  const [selectedHistoryCategory, setSelectedHistoryCategory] = useState("ALL");
+
   const { client, loading, error } = useClientDetail(clientId);
 
   const clientCountryPreset = useMemo(() => {
@@ -101,21 +103,30 @@ export default function ClientDetailPage() {
 
   const clientLocale = clientCountryPreset.locale || businessCountryMeta.locale;
 
-  const activityLogFilters =
-    selectedHistoryInstallationId !== "all"
+  const activityLogFilters = {
+    ...(selectedHistoryInstallationId !== "all"
       ? {
           entityType: "INSTALLATION",
           entityId: selectedHistoryInstallationId,
         }
-      : {};
+      : {}),
+    ...(selectedHistoryCategory !== "ALL"
+      ? {
+          category: selectedHistoryCategory,
+        }
+      : {}),
+  };
 
   const {
     activityLogs,
     activityLogsLoading,
     activityLogsError,
+    activityLogsPage,
     reloadActivityLogs,
-    loadMoreActivityLogs,
-    hasMore: hasMoreActivityLogs,
+    goToPreviousActivityLogsPage,
+    goToNextActivityLogsPage,
+    hasPreviousActivityLogsPage,
+    hasNextActivityLogsPage,
   } = useClientActivityLogs(clientId, activityLogFilters);
 
   const {
@@ -181,9 +192,9 @@ export default function ClientDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
+      <main className="min-h-screen bg-slate-50 p-4 md:p-6 xl:p-8">
         <div className="mx-auto w-full max-w-[1500px]">
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-slate-600">
               Cargando cliente...
             </p>
@@ -195,9 +206,9 @@ export default function ClientDetailPage() {
 
   if (error || !client) {
     return (
-      <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
+      <main className="min-h-screen bg-slate-50 p-4 md:p-6 xl:p-8">
         <div className="mx-auto w-full max-w-[1500px]">
-          <section className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
+          <section className="rounded-lg border border-red-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-red-600">
               {error || "Cliente no encontrado"}
             </p>
@@ -208,8 +219,8 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-      <div className="mx-auto w-full max-w-[1500px] space-y-6">
+    <main className="min-h-screen bg-slate-50 p-4 md:p-6 xl:p-8">
+      <div className="mx-auto w-full max-w-[1500px] space-y-4">
         <ClientDetailHeader
           client={client}
           installationsCount={installations.length}
@@ -281,7 +292,7 @@ export default function ClientDetailPage() {
         <CollapsibleCard
           title="Historial del cliente"
           description="Actividad y eventos relacionados con este cliente."
-          icon={<History className="h-5 w-5" />}
+          icon={<History className="h-4 w-4" />}
           rightContent={
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <label className="sr-only" htmlFor="history-installation-filter">
@@ -295,7 +306,7 @@ export default function ClientDetailPage() {
                   setSelectedHistoryInstallationId(event.target.value)
                 }
                 disabled={activityLogsLoading || installations.length === 0}
-                className="min-w-[260px] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 outline-none transition hover:bg-slate-50 focus:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-8 min-w-[240px] rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 outline-none transition hover:bg-slate-50 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="all">Historial completo del cliente</option>
 
@@ -313,7 +324,7 @@ export default function ClientDetailPage() {
                 type="button"
                 onClick={() => void reloadActivityLogs()}
                 disabled={activityLogsLoading}
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Refrescar
               </button>
@@ -326,8 +337,13 @@ export default function ClientDetailPage() {
             activityLogs={activityLogs}
             loading={activityLogsLoading}
             error={activityLogsError}
-            hasMore={hasMoreActivityLogs}
-            onLoadMore={() => void loadMoreActivityLogs()}
+            selectedCategory={selectedHistoryCategory}
+            currentPage={activityLogsPage}
+            hasPreviousPage={hasPreviousActivityLogsPage}
+            hasNextPage={hasNextActivityLogsPage}
+            onCategoryChange={setSelectedHistoryCategory}
+            onPreviousPage={goToPreviousActivityLogsPage}
+            onNextPage={goToNextActivityLogsPage}
             locale={clientLocale}
           />
         </CollapsibleCard>

@@ -33,6 +33,7 @@ export async function findActivityLogs(params: {
   category?: ActivityLogCategory;
   allowed_visibilities?: ActivityLogVisibility[];
   take?: number;
+  skip?: number;
 }) {
   return prisma.activityLog.findMany({
     where: {
@@ -52,5 +53,6 @@ export async function findActivityLogs(params: {
       created_at: "desc",
     },
     take: params.take ?? 50,
+    skip: params.skip ?? 0,
   });
 }

@@ -9,7 +9,10 @@ import type {
 type ActivityLogFilters = {
   entityType?: string;
   entityId?: string;
+  category?: string;
 };
+
+const ACTIVITY_LOGS_PAGE_SIZE = 6;
 
 export function useClientActivityLogs(
   id?: string,
@@ -18,18 +21,23 @@ export function useClientActivityLogs(
   const [activityLogs, setActivityLogs] = useState<ClientActivityLog[]>([]);
   const [activityLogsLoading, setActivityLogsLoading] = useState(true);
   const [activityLogsError, setActivityLogsError] = useState("");
-  const [take, setTake] = useState(12);
-  const [hasMore, setHasMore] = useState(false);
+  const [activityLogsPage, setActivityLogsPage] = useState(1);
+  const [hasNextActivityLogsPage, setHasNextActivityLogsPage] = useState(false);
 
   const entityType = filters.entityType?.trim() || "";
   const entityId = filters.entityId?.trim() || "";
+  const category = filters.category?.trim().toUpperCase() || "";
 
   const loadActivityLogs = useCallback(
-    async (requestedTake: number) => {
+    async (requestedPage: number) => {
+      const normalizedPage = Math.max(Math.trunc(requestedPage), 1);
+
       if (!id) {
         setActivityLogs([]);
         setActivityLogsLoading(false);
-        setHasMore(false);
+        setActivityLogsError("");
+        setActivityLogsPage(1);
+        setHasNextActivityLogsPage(false);
         return;
       }
 
@@ -39,12 +47,17 @@ export function useClientActivityLogs(
 
         const params = new URLSearchParams({
           client_id: id,
-          take: String(requestedTake),
+          take: String(ACTIVITY_LOGS_PAGE_SIZE + 1),
+          skip: String((normalizedPage - 1) * ACTIVITY_LOGS_PAGE_SIZE),
         });
 
         if (entityType && entityId) {
           params.set("entity_type", entityType);
           params.set("entity_id", entityId);
+        }
+
+        if (category && category !== "ALL") {
+          params.set("category", category);
         }
 
         const activityRes = await fetch(`/api/activity-logs?${params}`, {
@@ -61,32 +74,57 @@ export function useClientActivityLogs(
 
         const logs = activityResult.data ?? [];
 
-        setActivityLogs(logs);
-        setHasMore(logs.length === requestedTake);
-        setTake(requestedTake);
+        setActivityLogs(logs.slice(0, ACTIVITY_LOGS_PAGE_SIZE));
+        setHasNextActivityLogsPage(logs.length > ACTIVITY_LOGS_PAGE_SIZE);
+        setActivityLogsPage(normalizedPage);
       } catch {
         setActivityLogsError("No se pudo cargar el historial del cliente");
       } finally {
         setActivityLogsLoading(false);
       }
     },
-    [id, entityType, entityId],
+    [id, entityType, entityId, category],
   );
 
   useEffect(() => {
-    void loadActivityLogs(12);
-  }, [id, entityType, entityId, loadActivityLogs]);
+    void loadActivityLogs(1);
+  }, [loadActivityLogs]);
 
-  const loadMoreActivityLogs = useCallback(() => {
-    void loadActivityLogs(take + 12);
-  }, [loadActivityLogs, take]);
+  const reloadActivityLogs = useCallback(() => {
+    void loadActivityLogs(activityLogsPage);
+  }, [activityLogsPage, loadActivityLogs]);
+
+  const goToPreviousActivityLogsPage = useCallback(() => {
+    if (activityLogsLoading || activityLogsPage <= 1) {
+      return;
+    }
+
+    void loadActivityLogs(activityLogsPage - 1);
+  }, [activityLogsLoading, activityLogsPage, loadActivityLogs]);
+
+  const goToNextActivityLogsPage = useCallback(() => {
+    if (activityLogsLoading || !hasNextActivityLogsPage) {
+      return;
+    }
+
+    void loadActivityLogs(activityLogsPage + 1);
+  }, [
+    activityLogsLoading,
+    activityLogsPage,
+    hasNextActivityLogsPage,
+    loadActivityLogs,
+  ]);
 
   return {
     activityLogs,
     activityLogsLoading,
     activityLogsError,
-    reloadActivityLogs: () => void loadActivityLogs(12),
-    loadMoreActivityLogs,
-    hasMore,
+    activityLogsPage,
+    reloadActivityLogs,
+    goToPreviousActivityLogsPage,
+    goToNextActivityLogsPage,
+    hasPreviousActivityLogsPage: activityLogsPage > 1,
+    hasNextActivityLogsPage,
+    activityLogsPageSize: ACTIVITY_LOGS_PAGE_SIZE,
   };
 }

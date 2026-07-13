@@ -35,7 +35,7 @@ export default function ClientBillingSection({
   inputClass,
 }: ClientBillingSectionProps) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <ClientFormSectionHeader
         icon="🧾"
         title="Datos de facturación"
@@ -48,9 +48,9 @@ export default function ClientBillingSection({
         <div className="p-5 md:p-6">
           <div
             className={[
-              "mb-5 rounded-2xl border px-4 py-4 transition",
+              "mb-5 rounded-md border px-3 py-2.5 transition",
               billingSameAsClient
-                ? "border-blue-100 bg-blue-50/70"
+                ? "border-blue-200 bg-blue-50/70"
                 : "border-slate-200 bg-slate-50",
             ].join(" ")}
           >
@@ -65,18 +65,18 @@ export default function ClientBillingSection({
                 onChange={(event) =>
                   setBillingSameAsClient(event.target.checked)
                 }
-                className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-slate-100"
               />
 
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-bold text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900">
                     Usar la misma información del cliente para facturación
                   </p>
 
                   <span
                     className={[
-                      "rounded-full px-2.5 py-1 text-xs font-bold",
+                      "rounded-full px-2.5 py-1 text-xs font-semibold",
                       billingSameAsClient
                         ? "bg-blue-100 text-blue-700"
                         : "bg-slate-200 text-slate-600",
@@ -134,14 +134,14 @@ export default function ClientBillingSection({
           )}
 
           {billingSameAsClient && (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-base shadow-sm">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-base shadow-sm">
                   ✅
                 </div>
 
                 <div>
-                  <p className="text-sm font-bold text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900">
                     Facturación sincronizada con el cliente
                   </p>
 

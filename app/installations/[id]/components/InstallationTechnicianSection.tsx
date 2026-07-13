@@ -30,7 +30,7 @@ export default function InstallationTechnicianSection({
   const technicianIsMissing = technicianDisplayName === "Sin asignar";
 
   return (
-    <section className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+    <section className="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-2">
       <Card title="Técnico y garantía">
         <div className="space-y-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

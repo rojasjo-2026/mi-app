@@ -106,14 +106,14 @@ function FinanceMetric({
           : "text-slate-950";
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+    <div className="rounded-md border border-slate-200 bg-white px-3 py-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </p>
 
-      <p className={`mt-2 text-xl font-black ${valueClass}`}>{value}</p>
+      <p className={`mt-1.5 text-lg font-semibold ${valueClass}`}>{value}</p>
 
-      <p className="mt-1 text-xs font-medium text-slate-500">{helper}</p>
+      <p className="mt-1 text-xs leading-5 text-slate-500">{helper}</p>
     </div>
   );
 }
@@ -150,7 +150,7 @@ export function ClientFinanceHistorySection({
             onRefresh();
           }}
           disabled={loading}
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Refrescar
         </button>
@@ -159,13 +159,13 @@ export function ClientFinanceHistorySection({
       onToggle={onToggle}
     >
       {loading ? (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-6">
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-5">
           <p className="text-sm font-semibold text-slate-600">
             Cargando facturas...
           </p>
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-6">
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-5">
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       ) : (
@@ -219,53 +219,53 @@ export function ClientFinanceHistorySection({
             />
           </div>
 
-          <div className="mt-5">
-            <h3 className="mb-3 text-sm font-black uppercase tracking-[0.16em] text-slate-400">
+          <div className="mt-4">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
               Historial de facturas
             </h3>
 
             {!hasInvoices ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-5 py-6 text-center">
+              <div className="rounded-md border border-dashed border-slate-300 bg-slate-50/60 px-4 py-5 text-center">
                 <p className="text-sm font-semibold text-slate-600">
                   Sin facturas registradas.
                 </p>
 
-                <p className="mt-1 text-xs font-medium text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-slate-500">
                   Cuando existan facturas, pagos o saldos, aparecerán aquí.
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {invoices.map((invoice) => (
                   <div
                     key={invoice.invoice_id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3"
+                    className="rounded-md border border-slate-200 bg-slate-50/70 px-3 py-2.5"
                   >
-                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                       <div className="min-w-0">
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+                        <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                             {invoice.invoice_number || "Sin número"}
                           </span>
 
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${getInvoiceStatusClass(
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${getInvoiceStatusClass(
                               invoice.status,
                             )}`}
                           >
                             {getInvoiceStatusLabel(invoice.status)}
                           </span>
 
-                          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                             {invoice.source_type || "MANUAL"}
                           </span>
                         </div>
 
-                        <p className="truncate text-sm font-black text-slate-900">
+                        <p className="truncate text-sm font-semibold text-slate-900">
                           {getInvoiceDescription(invoice)}
                         </p>
 
-                        <p className="mt-1 text-xs font-medium text-slate-500">
+                        <p className="mt-1 text-xs text-slate-500">
                           Factura:{" "}
                           {formatInvoiceDate(invoice.invoice_date, locale)}
                           {" · "}
@@ -273,7 +273,7 @@ export function ClientFinanceHistorySection({
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:min-w-[460px]">
                         <FinanceMetric
                           label="Total"
                           value={formatMoney(

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   BadgeCheck,
   Building2,
@@ -31,6 +32,18 @@ type ClientInformationSectionsProps = {
   openSections: Record<DetailSectionKey, boolean>;
   onToggle: (section: DetailSectionKey) => void;
 };
+
+type InfoGridProps = {
+  children: ReactNode;
+};
+
+function InfoGrid({ children }: InfoGridProps) {
+  return (
+    <div className="grid gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 sm:grid-cols-2">
+      {children}
+    </div>
+  );
+}
 
 function getClientDisplayName(client: ClientDetail) {
   return (
@@ -78,11 +91,11 @@ export function ClientInformationSections({
         <CollapsibleCard
           title="Información principal"
           description="Datos de contacto y clasificación del cliente."
-          icon={<UserRound className="h-5 w-5" />}
+          icon={<UserRound className="h-4 w-4" />}
           isOpen={openSections.main}
           onToggle={() => onToggle("main")}
         >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InfoGrid>
             <InfoRow
               label="Tipo de cliente"
               value={getClientTypeLabel(client.client_type)}
@@ -100,20 +113,22 @@ export function ClientInformationSections({
               value={client.phone_secondary || "-"}
             />
 
-            <div className="sm:col-span-2">
-              <InfoRow label="Correo electrónico" value={client.email || "-"} />
-            </div>
-          </div>
+            <InfoRow
+              label="Correo electrónico"
+              value={client.email || "-"}
+              className="sm:col-span-2"
+            />
+          </InfoGrid>
         </CollapsibleCard>
 
         <CollapsibleCard
           title="Ubicación"
           description="Dirección operativa principal del cliente."
-          icon={<MapPin className="h-5 w-5" />}
+          icon={<MapPin className="h-4 w-4" />}
           isOpen={openSections.location}
           onToggle={() => onToggle("location")}
         >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InfoGrid>
             <InfoRow label="País" value={countryPreset.countryName} />
 
             <InfoRow
@@ -131,10 +146,12 @@ export function ClientInformationSections({
               value={client.admin_level_3 || "-"}
             />
 
-            <div className="sm:col-span-2">
-              <InfoRow label="Dirección" value={client.address_line || "-"} />
-            </div>
-          </div>
+            <InfoRow
+              label="Dirección"
+              value={client.address_line || "-"}
+              className="sm:col-span-2"
+            />
+          </InfoGrid>
         </CollapsibleCard>
       </div>
 
@@ -142,11 +159,11 @@ export function ClientInformationSections({
         <CollapsibleCard
           title="Identificación"
           description="Documento principal del cliente."
-          icon={<BadgeCheck className="h-5 w-5" />}
+          icon={<BadgeCheck className="h-4 w-4" />}
           isOpen={openSections.identification}
           onToggle={() => onToggle("identification")}
         >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InfoGrid>
             <InfoRow
               label="País de identificación"
               value={
@@ -159,24 +176,23 @@ export function ClientInformationSections({
               value={getIdentificationTypeLabel(client.identification_type)}
             />
 
-            <div className="sm:col-span-2">
-              <InfoRow
-                label="Número de identificación"
-                value={getIdentificationValue(client)}
-              />
-            </div>
-          </div>
+            <InfoRow
+              label="Número de identificación"
+              value={getIdentificationValue(client)}
+              className="sm:col-span-2"
+            />
+          </InfoGrid>
         </CollapsibleCard>
 
         {businessDataAvailable ? (
           <CollapsibleCard
             title="Datos empresariales"
             description="Información comercial adicional."
-            icon={<Building2 className="h-5 w-5" />}
+            icon={<Building2 className="h-4 w-4" />}
             isOpen={openSections.business}
             onToggle={() => onToggle("business")}
           >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <InfoGrid>
               <InfoRow
                 label="Razón social / nombre legal"
                 value={client.legal_name || "-"}
@@ -196,18 +212,18 @@ export function ClientInformationSections({
                 label="Contacto principal"
                 value={client.main_contact_name || "-"}
               />
-            </div>
+            </InfoGrid>
           </CollapsibleCard>
         ) : null}
 
         <CollapsibleCard
           title="Configuración financiera"
           description="Condiciones comerciales específicas del cliente."
-          icon={<CreditCard className="h-5 w-5" />}
+          icon={<CreditCard className="h-4 w-4" />}
           isOpen={openSections.finance}
           onToggle={() => onToggle("finance")}
         >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InfoGrid>
             <InfoRow
               label="Tipo de pago"
               value={getPaymentTermLabel(client.default_payment_term)}
@@ -234,29 +250,29 @@ export function ClientInformationSections({
               label={`Exento de ${taxLabel}`}
               value={formatYesNo(client.tax_exempt)}
             />
-          </div>
+          </InfoGrid>
         </CollapsibleCard>
 
         <CollapsibleCard
           title="Datos de facturación"
           description="Datos usados para generar facturas."
-          icon={<ReceiptText className="h-5 w-5" />}
+          icon={<ReceiptText className="h-4 w-4" />}
           isOpen={openSections.billing}
           onToggle={() => onToggle("billing")}
         >
           {billingSameAsClient ? (
-            <div className="rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-4">
-              <p className="text-sm font-bold text-slate-900">
+            <div className="rounded-md border border-blue-100 bg-blue-50/60 px-3 py-2.5">
+              <p className="text-sm font-semibold text-slate-900">
                 Usa la información principal del cliente
               </p>
 
-              <p className="mt-1 text-sm leading-6 text-slate-500">
+              <p className="mt-1 text-xs leading-5 text-slate-500">
                 Las facturas utilizarán el nombre, teléfono, correo y dirección
                 principal registrados en el cliente.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <InfoGrid>
               <InfoRow
                 label="Nombre de facturación"
                 value={client.billing_name || "-"}
@@ -272,13 +288,12 @@ export function ClientInformationSections({
                 value={client.billing_phone || "-"}
               />
 
-              <div className="sm:col-span-2">
-                <InfoRow
-                  label="Dirección de facturación"
-                  value={client.billing_address || "-"}
-                />
-              </div>
-            </div>
+              <InfoRow
+                label="Dirección de facturación"
+                value={client.billing_address || "-"}
+                className="sm:col-span-2"
+              />
+            </InfoGrid>
           )}
         </CollapsibleCard>
       </div>

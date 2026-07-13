@@ -76,7 +76,7 @@ export default function ClientLocationSection({
     countryPreset.adminLevel3Label ?? "Nivel administrativo 3";
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <ClientFormSectionHeader
         icon="📍"
         title="Ubicación"
@@ -89,7 +89,7 @@ export default function ClientLocationSection({
         <div className="p-5 md:p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 País
               </label>
 
@@ -105,7 +105,7 @@ export default function ClientLocationSection({
                 ))}
               </select>
 
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs leading-5 text-slate-500">
                 El país define los campos administrativos, formato de contacto y
                 moneda sugerida para el cliente.
               </p>
@@ -114,7 +114,7 @@ export default function ClientLocationSection({
             {isCostaRica ? (
               <>
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     {countryPreset.adminLevel1Label}
                   </label>
 
@@ -136,7 +136,7 @@ export default function ClientLocationSection({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     {countryPreset.adminLevel2Label}
                   </label>
 
@@ -163,7 +163,7 @@ export default function ClientLocationSection({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="mb-1 block text-sm font-semibold text-slate-700">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     {adminLevel3Label}
                   </label>
 

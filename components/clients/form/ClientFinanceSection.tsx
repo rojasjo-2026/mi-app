@@ -56,7 +56,7 @@ export default function ClientFinanceSection({
   );
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <ClientFormSectionHeader
         icon="💳"
         title="Configuración financiera"
@@ -69,7 +69,7 @@ export default function ClientFinanceSection({
         <div className="p-5 md:p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Tipo de pago
               </label>
 
@@ -85,12 +85,12 @@ export default function ClientFinanceSection({
               </select>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Regla actual
               </p>
 
-              <p className="mt-1 text-sm font-bold text-slate-900">
+              <p className="mt-1 text-sm font-semibold text-slate-900">
                 {paymentTerm === "CREDIT"
                   ? "Cliente con crédito"
                   : "Cliente de contado"}
@@ -136,7 +136,7 @@ export default function ClientFinanceSection({
             />
 
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Moneda preferida
               </label>
 
@@ -152,7 +152,7 @@ export default function ClientFinanceSection({
                 ))}
               </select>
 
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs leading-5 text-slate-500">
                 {selectedCurrencyOption
                   ? `Moneda seleccionada: ${selectedCurrencyOption.label}.`
                   : `Moneda seleccionada: ${activeCurrency}.`}
@@ -161,9 +161,9 @@ export default function ClientFinanceSection({
 
             <div
               className={[
-                "rounded-2xl border px-4 py-4 transition md:col-span-2",
+                "rounded-md border px-3 py-2.5 transition md:col-span-2",
                 taxExempt
-                  ? "border-orange-100 bg-orange-50/70"
+                  ? "border-orange-200 bg-orange-50/70"
                   : "border-slate-200 bg-slate-50",
               ].join(" ")}
             >
@@ -176,18 +176,18 @@ export default function ClientFinanceSection({
                   type="checkbox"
                   checked={taxExempt}
                   onChange={(event) => setTaxExempt(event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-slate-100"
                 />
 
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-bold text-slate-900">
+                    <p className="text-sm font-semibold text-slate-900">
                       Exento de {countryPreset.taxLabel}
                     </p>
 
                     <span
                       className={[
-                        "rounded-full px-2.5 py-1 text-xs font-bold",
+                        "rounded-full px-2.5 py-1 text-xs font-semibold",
                         taxExempt
                           ? "bg-orange-100 text-orange-700"
                           : "bg-slate-200 text-slate-600",

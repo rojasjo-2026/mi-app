@@ -33,6 +33,16 @@ function normalizeTake(value: string | null) {
   return Math.min(Math.max(Math.trunc(parsedValue), 1), 100);
 }
 
+function normalizeSkip(value: string | null) {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return 0;
+  }
+
+  return Math.max(Math.trunc(parsedValue), 0);
+}
+
 function normalizeCategory(
   value: string | null,
 ): ActivityLogCategory | undefined {
@@ -56,6 +66,7 @@ export async function GET(req: Request) {
     const entityId = searchParams.get("entity_id")?.trim() || undefined;
     const category = normalizeCategory(searchParams.get("category"));
     const take = normalizeTake(searchParams.get("take"));
+    const skip = normalizeSkip(searchParams.get("skip"));
 
     if (!clientId) {
       return NextResponse.json(
@@ -74,6 +85,7 @@ export async function GET(req: Request) {
       entity_id: entityId,
       category,
       take,
+      skip,
 
       // El historial vive en Cliente.
       // Por eso el cliente debe poder cargar todos los eventos asociados a su client_id:
