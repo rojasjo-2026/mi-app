@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import OperationalZonePlaceAutocomplete from "@/app/settings/components/OperationalZonePlaceAutocomplete";
+import OperationalZoneVisitDatesManager from "@/app/settings/components/OperationalZoneVisitDatesManager";
 
 type OperationalZone = {
   operational_zone_id: string;
@@ -134,6 +135,9 @@ export default function OperationalZonesManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingForm, setEditingForm] =
     useState<OperationalZoneForm>(emptyForm);
+  const [expandedVisitDatesZoneId, setExpandedVisitDatesZoneId] = useState<
+    string | null
+  >(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -231,6 +235,14 @@ export default function OperationalZonesManager({
   function handleStartEdit(zone: OperationalZone) {
     setEditingId(zone.operational_zone_id);
     setEditingForm(buildFormFromZone(zone));
+    setExpandedVisitDatesZoneId(null);
+    clearMessages();
+  }
+
+  function handleToggleVisitDates(zoneId: string) {
+    setExpandedVisitDatesZoneId((currentZoneId) =>
+      currentZoneId === zoneId ? null : zoneId,
+    );
     clearMessages();
   }
 
@@ -330,6 +342,7 @@ export default function OperationalZonesManager({
     setForm(emptyForm);
     setEditingId(null);
     setEditingForm(emptyForm);
+    setExpandedVisitDatesZoneId(null);
     void loadZones();
   }, [countryCode]);
 
@@ -509,6 +522,8 @@ export default function OperationalZonesManager({
 
   function renderZoneCard(zone: OperationalZone) {
     const isEditing = editingId === zone.operational_zone_id;
+    const isVisitDatesOpen =
+      expandedVisitDatesZoneId === zone.operational_zone_id;
     const hasGps = Boolean(zone.latitude && zone.longitude);
 
     return (
@@ -543,82 +558,102 @@ export default function OperationalZonesManager({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-slate-900">
-                  {zone.name}
-                </p>
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {zone.name}
+                  </p>
 
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                  {zone.country_code}
-                </span>
-
-                {zone.color_label ? (
-                  <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
-                    {zone.color_label}
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                    {zone.country_code}
                   </span>
+
+                  {zone.color_label ? (
+                    <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                      {zone.color_label}
+                    </span>
+                  ) : null}
+
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                      zone.is_active
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {zone.is_active ? "Activa" : "Inactiva"}
+                  </span>
+                </div>
+
+                {zone.description ? (
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    {zone.description}
+                  </p>
                 ) : null}
 
-                <span
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                    zone.is_active
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-slate-200 bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {zone.is_active ? "Activa" : "Inactiva"}
-                </span>
+                {zone.reference_address ? (
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Referencia: {zone.reference_address}
+                  </p>
+                ) : null}
+
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  GPS:{" "}
+                  {hasGps
+                    ? `${zone.latitude}, ${zone.longitude}`
+                    : "No configurado"}
+                </p>
+
+                {zone.radius_km ? (
+                  <p className="text-xs leading-5 text-slate-500">
+                    Radio aproximado: {zone.radius_km} km
+                  </p>
+                ) : null}
               </div>
 
-              {zone.description ? (
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  {zone.description}
-                </p>
-              ) : null}
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                <button
+                  type="button"
+                  onClick={() => handleStartEdit(zone)}
+                  className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"
+                >
+                  Editar
+                </button>
 
-              {zone.reference_address ? (
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  Referencia: {zone.reference_address}
-                </p>
-              ) : null}
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleToggleVisitDates(zone.operational_zone_id)
+                  }
+                  aria-expanded={isVisitDatesOpen}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-100 hover:shadow-sm"
+                >
+                  {isVisitDatesOpen ? "Cerrar visitas" : "Programar visitas"}
+                </button>
 
-              <p className="mt-2 text-xs leading-5 text-slate-500">
-                GPS:{" "}
-                {hasGps
-                  ? `${zone.latitude}, ${zone.longitude}`
-                  : "No configurado"}
-              </p>
-
-              {zone.radius_km ? (
-                <p className="text-xs leading-5 text-slate-500">
-                  Radio aproximado: {zone.radius_km} km
-                </p>
-              ) : null}
+                <button
+                  type="button"
+                  onClick={() => void handleToggleZone(zone)}
+                  disabled={updatingId === zone.operational_zone_id}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {updatingId === zone.operational_zone_id
+                    ? "Procesando..."
+                    : zone.is_active
+                      ? "Desactivar"
+                      : "Activar"}
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 md:justify-end">
-              <button
-                type="button"
-                onClick={() => handleStartEdit(zone)}
-                className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"
-              >
-                Editar
-              </button>
-
-              <button
-                type="button"
-                onClick={() => void handleToggleZone(zone)}
-                disabled={updatingId === zone.operational_zone_id}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {updatingId === zone.operational_zone_id
-                  ? "Procesando..."
-                  : zone.is_active
-                    ? "Desactivar"
-                    : "Activar"}
-              </button>
-            </div>
+            {isVisitDatesOpen ? (
+              <OperationalZoneVisitDatesManager
+                operationalZoneId={zone.operational_zone_id}
+                operationalZoneName={zone.name}
+              />
+            ) : null}
           </div>
         )}
       </div>
