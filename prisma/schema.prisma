@@ -879,11 +879,30 @@ model OperationalZone {
   clients       Client[]
   installations Installation[]
   follow_ups    FollowUp[]
+  visit_dates   OperationalZoneVisitDate[]
 
   @@unique([country_code, name])
   @@index([country_code])
   @@index([name])
   @@index([is_active])
+}
+
+model OperationalZoneVisitDate {
+  operational_zone_visit_date_id String   @id @default(uuid()) @db.Uuid
+  operational_zone_id            String   @db.Uuid
+  visit_date                     DateTime @db.Date
+  is_active                      Boolean  @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  operational_zone OperationalZone @relation(fields: [operational_zone_id], references: [operational_zone_id], onDelete: Cascade)
+
+  @@unique([operational_zone_id, visit_date])
+  @@index([operational_zone_id])
+  @@index([visit_date])
+  @@index([is_active])
+  @@index([operational_zone_id, is_active, visit_date])
 }
 
 // ======================================================

@@ -14,49 +14,43 @@ export default function FollowUpInstallationSection({
   onViewInstallation,
 }: FollowUpInstallationSectionProps) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <section className="space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Instalación origen
-          </p>
-
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-sm font-semibold tracking-tight text-slate-950">
             Instalación relacionada
           </h2>
 
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            El mantenimiento nace de esta instalación. Esta relación permite dar
-            seguimiento, programar visitas, registrar contacto y mantener la
-            trazabilidad operativa.
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Instalación de origen y referencia operativa del mantenimiento.
           </p>
         </div>
 
-        {hasInstallation && onViewInstallation && (
+        {hasInstallation && onViewInstallation ? (
           <button
             type="button"
             onClick={onViewInstallation}
-            className="shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             Ver instalación
           </button>
-        )}
+        ) : null}
       </div>
 
       {hasInstallation ? (
-        <div className="grid gap-3">
-          <InfoCard label="Descripción" value={description} />
-          <InfoCard label="Fecha de instalación" value={installationDate} />
-          <InfoCard label="Técnico de instalación" value={technician} />
+        <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-200">
+          <InfoRow label="Descripción" value={description} />
+          <InfoRow label="Fecha" value={installationDate} />
+          <InfoRow label="Técnico" value={technician} last />
         </div>
       ) : (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-800">
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5">
+          <p className="text-sm font-semibold text-amber-800">
             Este mantenimiento no está ligado a una instalación.
           </p>
-          <p className="mt-1 text-sm leading-6 text-amber-700">
-            Para mantener una trazabilidad más fuerte, lo ideal es que cada
-            mantenimiento esté asociado a una instalación cuando aplique.
+
+          <p className="mt-1 text-xs leading-5 text-amber-700">
+            Asociarlo a una instalación mejora la trazabilidad operativa.
           </p>
         </div>
       )}
@@ -64,14 +58,28 @@ export default function FollowUpInstallationSection({
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: React.ReactNode }) {
+function InfoRow({
+  label,
+  value,
+  last = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  last?: boolean;
+}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+    <div
+      className={`grid gap-1 bg-white px-3 py-2.5 sm:grid-cols-[110px_minmax(0,1fr)] sm:items-start ${
+        last ? "" : "border-b border-slate-200"
+      }`}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </p>
 
-      <p className="mt-2 text-sm font-medium text-slate-800">{value || "-"}</p>
+      <p className="break-words text-sm font-medium leading-5 text-slate-800">
+        {value || "-"}
+      </p>
     </div>
   );
 }

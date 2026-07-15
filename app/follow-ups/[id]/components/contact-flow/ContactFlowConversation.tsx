@@ -60,35 +60,36 @@ export default function ContactFlowConversation({
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 bg-[#f0f2f5] px-5 py-4">
-          <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+      <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
+        <header className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Conversación completa
               </p>
-              <p className="mt-1 text-sm text-slate-500">
+
+              <p className="mt-0.5 text-xs leading-5 text-slate-500">
                 Mensajes asociados a esta gestión de contacto.
               </p>
             </div>
 
-            <span className="text-xs font-semibold text-slate-400">
+            <span className="text-xs font-medium text-slate-500">
               {messages.length} mensaje{messages.length === 1 ? "" : "s"}
             </span>
           </div>
-        </div>
+        </header>
 
-        <div className="max-h-[360px] min-h-[260px] overflow-y-auto bg-[#efeae2] px-4 py-6">
+        <div className="max-h-[360px] min-h-[240px] overflow-y-auto bg-[#efeae2] px-3 py-4">
           {messagesLoading ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+            <div className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-500">
               Cargando conversación...
             </div>
           ) : messagesError ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-700">
               {messagesError}
             </div>
           ) : messages.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+            <div className="rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-500">
               No hay mensajes registrados para esta gestión.
             </div>
           ) : (
@@ -98,15 +99,15 @@ export default function ContactFlowConversation({
               return (
                 <div
                   key={message.message_id}
-                  className={`mb-3 flex ${
+                  className={`mb-2.5 flex ${
                     isOutbound ? "justify-end" : "justify-start"
                   }`}
                 >
                   <div
-                    className={`relative max-w-[280px] rounded-2xl px-3 py-2 shadow-sm ${
+                    className={`relative max-w-[300px] rounded-md px-3 py-2 shadow-sm ${
                       isOutbound
-                        ? "rounded-br-md bg-[#d9fdd3] text-slate-900"
-                        : "rounded-bl-md bg-white text-slate-900"
+                        ? "bg-[#d9fdd3] text-slate-900"
+                        : "bg-white text-slate-900"
                     }`}
                   >
                     <MessageContent
@@ -123,11 +124,11 @@ export default function ContactFlowConversation({
                         )}
                       </span>
 
-                      {message.direction === "OUTBOUND" && (
+                      {message.direction === "OUTBOUND" ? (
                         <span className="ml-1 text-[10px] text-slate-500">
                           {getDeliveryLabel(message.delivery_status)}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -138,13 +139,13 @@ export default function ContactFlowConversation({
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-slate-200 bg-[#f0f2f5] p-3">
+        <footer className="border-t border-slate-200 bg-slate-50 p-3">
           <div className="mb-3 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => void onSendMessage(initialMessage)}
               disabled={sending || sendingMedia}
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Mensaje inicial
             </button>
@@ -153,15 +154,15 @@ export default function ContactFlowConversation({
               type="button"
               onClick={() => void onSendMessage(reminderMessage)}
               disabled={sending || sendingMedia}
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Recordatorio
             </button>
           </div>
 
           <div className="flex flex-col gap-3">
-            {selectedFile && (
-              <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+            {selectedFile ? (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700">
                 <span className="min-w-0 truncate">
                   Archivo seleccionado:{" "}
                   <span className="font-semibold">{selectedFile.name}</span>
@@ -176,10 +177,10 @@ export default function ContactFlowConversation({
                   Quitar
                 </button>
               </div>
-            )}
+            ) : null}
 
-            <div className="flex flex-col gap-3 md:flex-row">
-              <label className="flex cursor-pointer items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <label className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
                 📎
                 <input
                   type="file"
@@ -200,7 +201,7 @@ export default function ContactFlowConversation({
                     ? "Agregar descripción opcional..."
                     : "Escribe un mensaje..."
                 }
-                className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                className="h-9 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
               />
 
               {selectedFile ? (
@@ -208,7 +209,7 @@ export default function ContactFlowConversation({
                   type="button"
                   onClick={() => void onSendMedia()}
                   disabled={sendingMedia}
-                  className="rounded-full bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-9 items-center justify-center rounded-md bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {sendingMedia ? "..." : "Enviar archivo"}
                 </button>
@@ -217,23 +218,23 @@ export default function ContactFlowConversation({
                   type="button"
                   onClick={() => void onSendMessage()}
                   disabled={!inputMessage.trim() || sending}
-                  className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-9 items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {sending ? "..." : "Enviar"}
                 </button>
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </footer>
+      </section>
 
-      {previewImageUrl && (
+      {previewImageUrl ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
           <div className="relative max-h-[90vh] w-full max-w-5xl">
             <button
               type="button"
               onClick={() => setPreviewImageUrl(null)}
-              className="absolute right-0 top-0 z-10 -translate-y-12 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+              className="absolute right-0 top-0 z-10 -translate-y-11 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
             >
               Cerrar
             </button>
@@ -241,11 +242,11 @@ export default function ContactFlowConversation({
             <img
               src={previewImageUrl}
               alt="Vista ampliada"
-              className="max-h-[90vh] w-full rounded-2xl object-contain shadow-2xl"
+              className="max-h-[90vh] w-full rounded-md object-contain shadow-2xl"
             />
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

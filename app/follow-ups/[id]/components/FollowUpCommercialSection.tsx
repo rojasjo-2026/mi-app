@@ -46,6 +46,12 @@ const maintenanceTypeOptions = [
   { value: "OTHER", label: "Otro" },
 ];
 
+const controlClassName =
+  "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
+
+const textareaClassName =
+  "min-h-20 w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm leading-5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100";
+
 function getTechnicianName(technician?: TechnicianOption | null) {
   const composedName = [
     technician?.first_name,
@@ -141,39 +147,28 @@ export default function FollowUpCommercialSection({
     !technicians.some((item) => item.user_id === form.technician_id);
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Operación y facturación
-          </p>
+    <section className="space-y-4">
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+          Operación y facturación
+        </p>
 
-          <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-            Información comercial
-          </h2>
-
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Define el tipo de mantenimiento, técnico responsable, montos y
-            estado financiero. Esta información conecta el mantenimiento con la
-            operación diaria y el módulo de finanzas.
-          </p>
-        </div>
-
-        <span className="w-fit rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700">
-          Finanzas
-        </span>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          Define el tipo de mantenimiento, técnico responsable, montos y estado
+          financiero.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FieldCard
+      <div className="grid gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 md:grid-cols-2">
+        <FieldCell
           label="Tipo de mantenimiento"
-          helperText="Clasifica el trabajo para entender si es preventivo, correctivo, garantía u otro."
+          helperText="Clasifica el trabajo como preventivo, correctivo, garantía u otro."
         >
           {isEditing ? (
             <select
               value={form.maintenance_type}
               onChange={(e) => onChange("maintenance_type", e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              className={controlClassName}
             >
               {maintenanceTypeOptions.map((option) => (
                 <option key={option.value || "empty"} value={option.value}>
@@ -184,9 +179,9 @@ export default function FollowUpCommercialSection({
           ) : (
             <FieldValue value={maintenanceTypeLabel} />
           )}
-        </FieldCard>
+        </FieldCell>
 
-        <FieldCard
+        <FieldCell
           label="Técnico asignado"
           helperText="Responsable operativo del mantenimiento."
         >
@@ -195,7 +190,7 @@ export default function FollowUpCommercialSection({
               value={form.technician_id}
               onChange={(e) => onChange("technician_id", e.target.value)}
               disabled={loadingTechnicians}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+              className={controlClassName}
             >
               <option value="">
                 {loadingTechnicians
@@ -220,9 +215,9 @@ export default function FollowUpCommercialSection({
           ) : (
             <FieldValue value={technicianLabel} />
           )}
-        </FieldCard>
+        </FieldCell>
 
-        <FieldCard
+        <FieldCell
           label="Monto estimado"
           helperText="Valor esperado antes de cerrar el trabajo."
         >
@@ -235,11 +230,11 @@ export default function FollowUpCommercialSection({
           ) : (
             <FieldValue value={estimatedAmountLabel} />
           )}
-        </FieldCard>
+        </FieldCell>
 
-        <FieldCard
+        <FieldCell
           label="Monto final"
-          helperText="Valor real que se utilizará para facturación cuando aplique."
+          helperText="Valor real utilizado para facturación cuando aplique."
         >
           {isEditing ? (
             <MoneyInput
@@ -250,11 +245,11 @@ export default function FollowUpCommercialSection({
           ) : (
             <FieldValue value={finalAmountLabel} />
           )}
-        </FieldCard>
+        </FieldCell>
 
-        <FieldCard
+        <FieldCell
           label="Costo interno"
-          helperText="Costo estimado o real del trabajo para controlar margen."
+          helperText="Costo del trabajo para controlar el margen."
         >
           {isEditing ? (
             <MoneyInput
@@ -265,17 +260,17 @@ export default function FollowUpCommercialSection({
           ) : (
             <FieldValue value={costAmountLabel} />
           )}
-        </FieldCard>
+        </FieldCell>
 
-        <FieldCard
+        <FieldCell
           label="Estado de facturación"
-          helperText="Indica si el mantenimiento está pendiente, facturado, pagado o no facturable."
+          helperText="Indica si está pendiente, facturado, pagado o no facturable."
         >
           {isEditing ? (
             <select
               value={form.billing_status}
               onChange={(e) => onChange("billing_status", e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              className={controlClassName}
             >
               {billingStatusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -286,11 +281,11 @@ export default function FollowUpCommercialSection({
           ) : (
             <FieldValue value={billingStatusLabel} />
           )}
-        </FieldCard>
+        </FieldCell>
 
-        <FieldCard
+        <FieldCell
           label="Notas de facturación"
-          helperText="Información interna para cobro, condiciones especiales o seguimiento financiero."
+          helperText="Información interna para cobro y condiciones comerciales."
           className="md:col-span-2"
         >
           {isEditing ? (
@@ -298,15 +293,13 @@ export default function FollowUpCommercialSection({
               rows={3}
               value={form.billing_notes}
               onChange={(e) => onChange("billing_notes", e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              className={textareaClassName}
               placeholder="Notas internas para facturación, cobro o condiciones comerciales."
             />
           ) : (
-            <p className="mt-2 text-sm font-medium leading-6 text-slate-700">
-              {billingNotesLabel || "-"}
-            </p>
+            <FieldValue value={billingNotesLabel} />
           )}
-        </FieldCard>
+        </FieldCell>
       </div>
     </section>
   );
@@ -328,13 +321,13 @@ function MoneyInput({
       inputMode="decimal"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+      className={controlClassName}
       placeholder={placeholder}
     />
   );
 }
 
-function FieldCard({
+function FieldCell({
   label,
   helperText,
   className = "",
@@ -346,22 +339,22 @@ function FieldCard({
   children: ReactNode;
 }) {
   return (
-    <div
-      className={`rounded-2xl border border-slate-200 bg-slate-50/70 p-4 ${className}`}
-    >
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+    <div className={`min-w-0 bg-white px-3 py-2.5 ${className}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </p>
 
-      {children}
+      <div className="mt-1.5">{children}</div>
 
-      <p className="mt-2 text-xs leading-5 text-slate-500">{helperText}</p>
+      <p className="mt-1.5 text-xs leading-5 text-slate-500">{helperText}</p>
     </div>
   );
 }
 
 function FieldValue({ value }: { value?: string }) {
   return (
-    <p className="mt-2 text-sm font-semibold text-slate-800">{value || "-"}</p>
+    <p className="break-words text-sm font-medium leading-5 text-slate-800">
+      {value || "-"}
+    </p>
   );
 }

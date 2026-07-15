@@ -16,26 +16,25 @@ export default function FollowUpCollapsibleSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left md:px-6"
+        className={[
+          "flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50",
+          isOpen ? "border-b border-slate-100" : "",
+        ].join(" ")}
       >
-        <h2 className="text-base font-semibold tracking-tight text-slate-900">
+        <h2 className="text-sm font-semibold tracking-tight text-slate-950">
           {title}
         </h2>
 
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+        <span className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 shadow-sm">
           {isOpen ? "Ocultar" : "Mostrar"}
         </span>
       </button>
 
-      {isOpen && (
-        <div className="border-t border-slate-100 px-5 pb-5 pt-4 md:px-6 md:pb-6">
-          {children}
-        </div>
-      )}
+      {isOpen ? <div className="p-4">{children}</div> : null}
     </section>
   );
 }

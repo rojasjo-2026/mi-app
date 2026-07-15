@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import type {
+  ActivityLogAction,
   ActivityLogCategory,
   ActivityLogVisibility,
 } from "@prisma/client";
 
-import { findActivityLogs } from "@/lib/repositories/activityLogRepository";
+import {
+  countActivityLogs,
+  findActivityLogs,
+} from "@/lib/repositories/activityLogRepository";
 
 const VALID_CATEGORIES = [
   "CLIENT",
@@ -15,6 +19,22 @@ const VALID_CATEGORIES = [
   "FINANCE",
   "SYSTEM",
 ] as const;
+
+const VALID_ACTIONS: readonly ActivityLogAction[] = [
+  "CREATED",
+  "UPDATED",
+  "DELETED",
+  "STATUS_CHANGED",
+  "NOTE_ADDED",
+  "FILE_ADDED",
+  "FILE_REMOVED",
+  "CONTACT_REGISTERED",
+  "CONTACT_MESSAGE_SENT",
+  "INVOICE_CREATED",
+  "INVOICE_UPDATED",
+  "PAYMENT_REGISTERED",
+  "SYSTEM_EVENT",
+];
 
 const CLIENT_HISTORY_VISIBILITIES: ActivityLogVisibility[] = [
   "PUBLIC_INTERNAL",
@@ -57,6 +77,44 @@ function normalizeCategory(
   return normalizedValue as ActivityLogCategory;
 }
 
+function normalizeAction(value: string | null): ActivityLogAction | undefined {
+  if (!value) return undefined;
+
+  const normalizedValue = value.trim().toUpperCase();
+
+  if (!VALID_ACTIONS.includes(normalizedValue as ActivityLogAction)) {
+    return undefined;
+  }
+
+  return normalizedValue as ActivityLogAction;
+}
+
+function normalizeSearch(value: string | null) {
+  const normalizedValue = value?.trim();
+
+  if (!normalizedValue) return undefined;
+
+  return normalizedValue.slice(0, 120);
+}
+
+function normalizeDate(value: string | null, endOfDay = false) {
+  if (!value) return undefined;
+
+  const normalizedValue = value.trim();
+
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)
+    ? new Date(
+        `${normalizedValue}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}Z`,
+      )
+    : new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+
+  return date;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -65,6 +123,10 @@ export async function GET(req: Request) {
     const entityType = searchParams.get("entity_type")?.trim() || undefined;
     const entityId = searchParams.get("entity_id")?.trim() || undefined;
     const category = normalizeCategory(searchParams.get("category"));
+    const action = normalizeAction(searchParams.get("action"));
+    const search = normalizeSearch(searchParams.get("search"));
+    const dateFrom = normalizeDate(searchParams.get("date_from"));
+    const dateTo = normalizeDate(searchParams.get("date_to"), true);
     const take = normalizeTake(searchParams.get("take"));
     const skip = normalizeSkip(searchParams.get("skip"));
 
@@ -79,27 +141,41 @@ export async function GET(req: Request) {
       );
     }
 
-    const activityLogs = await findActivityLogs({
+    const filters = {
       client_id: clientId,
       entity_type: entityType,
       entity_id: entityId,
       category,
-      take,
-      skip,
-
-      // El historial vive en Cliente.
-      // Por eso el cliente debe poder cargar todos los eventos asociados a su client_id:
-      // cliente, instalación, mantenimiento, contacto, archivos, finanzas y sistema.
-      //
-      // Más adelante, cuando conectemos permisos reales por rol,
-      // aquí se puede filtrar según TECHNICIAN, SUPERVISOR, ADMINISTRATION o ADMIN.
+      action,
+      search,
+      date_from: dateFrom,
+      date_to: dateTo,
       allowed_visibilities: CLIENT_HISTORY_VISIBILITIES,
-    });
+    };
+
+    const [activityLogs, total] = await Promise.all([
+      findActivityLogs({
+        ...filters,
+        take,
+        skip,
+      }),
+      countActivityLogs(filters),
+    ]);
+
+    const page = Math.floor(skip / take) + 1;
+    const totalPages = Math.max(1, Math.ceil(total / take));
 
     return NextResponse.json(
       {
         success: true,
         data: activityLogs,
+        pagination: {
+          total,
+          take,
+          skip,
+          page,
+          totalPages,
+        },
       },
       { status: 200 },
     );

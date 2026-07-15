@@ -12,50 +12,60 @@ export default function FollowUpClientSection({
   onViewClient,
 }: FollowUpClientSectionProps) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <section className="space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Cliente principal
-          </p>
+          <h2 className="text-sm font-semibold tracking-tight text-slate-950">
+            Cliente
+          </h2>
 
-          <h2 className="text-lg font-semibold text-slate-900">Cliente</h2>
-
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            Este mantenimiento pertenece a este cliente. Toda gestión, contacto,
-            archivo, facturación e historial debe mantenerse asociado a este
-            contexto.
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Datos principales del cliente asociado al mantenimiento.
           </p>
         </div>
 
-        {onViewClient && (
+        {onViewClient ? (
           <button
             type="button"
             onClick={onViewClient}
-            className="shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             Ver cliente
           </button>
-        )}
+        ) : null}
       </div>
 
-      <div className="grid gap-3">
-        <InfoCard label="Nombre" value={name} />
-        <InfoCard label="Teléfono" value={phone} />
-        <InfoCard label="Email" value={email} />
+      <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-200">
+        <InfoRow label="Nombre" value={name} />
+        <InfoRow label="Teléfono" value={phone} />
+        <InfoRow label="Email" value={email} last />
       </div>
     </section>
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: React.ReactNode }) {
+function InfoRow({
+  label,
+  value,
+  last = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  last?: boolean;
+}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+    <div
+      className={`grid gap-1 bg-white px-3 py-2.5 sm:grid-cols-[110px_minmax(0,1fr)] sm:items-start ${
+        last ? "" : "border-b border-slate-200"
+      }`}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </p>
 
-      <p className="mt-2 text-sm font-medium text-slate-800">{value || "-"}</p>
+      <p className="break-words text-sm font-medium leading-5 text-slate-800">
+        {value || "-"}
+      </p>
     </div>
   );
 }

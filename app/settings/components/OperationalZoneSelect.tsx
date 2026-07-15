@@ -98,14 +98,20 @@ export default function OperationalZoneSelect({
   }, [normalizedCountryCode]);
 
   return (
-    <label className="space-y-2">
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+    <div>
+      <label
+        htmlFor="operational-zone-select"
+        className="mb-1.5 block text-sm font-medium text-slate-700"
+      >
+        {label}
+      </label>
 
       <select
+        id="operational-zone-select"
         value={value}
         disabled={disabled || loading}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+        className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
       >
         <option value="">
           {loading ? "Cargando zonas operativas..." : placeholder}
@@ -131,12 +137,12 @@ export default function OperationalZoneSelect({
       </select>
 
       {helperText ? (
-        <p className="text-xs leading-5 text-slate-400">{helperText}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">{helperText}</p>
       ) : null}
 
       {error ? (
-        <p className="text-xs leading-5 text-amber-600">{error}</p>
+        <p className="mt-1 text-xs leading-5 text-amber-600">{error}</p>
       ) : null}
-    </label>
+    </div>
   );
 }

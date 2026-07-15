@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAppSettings } from "@/app/hooks/useAppSettings";
-import FollowUpActionsSection from "./components/FollowUpActionsSection";
 import FollowUpClientSection from "./components/FollowUpClientSection";
 import FollowUpContactFlowSection from "./components/FollowUpContactFlowSection";
 import FollowUpContactHistorySection from "./components/FollowUpContactHistorySection";
@@ -381,9 +380,9 @@ export default function FollowUpDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <main className="min-h-screen bg-slate-50/60 p-4 md:p-6 xl:p-8">
+        <div className="mx-auto w-full max-w-[1280px]">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-slate-600">
               Cargando mantenimiento...
             </p>
@@ -395,9 +394,9 @@ export default function FollowUpDetailPage() {
 
   if (error || !followUp) {
     return (
-      <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
+      <main className="min-h-screen bg-slate-50/60 p-4 md:p-6 xl:p-8">
+        <div className="mx-auto w-full max-w-[1280px]">
+          <div className="rounded-lg border border-red-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-red-600">
               {error || "Mantenimiento no encontrado"}
             </p>
@@ -414,8 +413,8 @@ export default function FollowUpDetailPage() {
   const technicianLabel = getFollowUpTechnicianLabel(followUp);
 
   return (
-    <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="min-h-screen bg-slate-50/60 p-4 md:p-6 xl:p-8">
+      <div className="mx-auto w-full max-w-[1280px] space-y-4">
         <FollowUpHeader
           title={followUp.reason || "Mantenimiento"}
           clientName={clientName}
@@ -429,14 +428,20 @@ export default function FollowUpDetailPage() {
           isEditing={isEditing}
           savingEdit={savingEdit}
           canViewInstallation={Boolean(followUp.installation?.installation_id)}
+          postponing={postponing}
+          updatingStatus={updatingStatus}
+          isCompleted={followUp.follow_up_status?.code === "completed"}
           onEdit={() => setIsEditing(true)}
           onSave={handleSaveEdit}
           onCancel={handleCancelEdit}
           onViewInstallation={goToInstallation}
           onBack={() => window.history.back()}
+          onNewContact={goToNewContact}
+          onPostpone={handlePostponeFollowUp}
+          onComplete={handleCompleteFollowUp}
         />
 
-        <FollowUpCollapsibleSection title="Información general">
+        <FollowUpCollapsibleSection title="Información general" defaultOpen>
           <FollowUpInfoSection
             isEditing={isEditing}
             form={editForm}
@@ -488,7 +493,7 @@ export default function FollowUpDetailPage() {
         </FollowUpCollapsibleSection>
 
         <FollowUpCollapsibleSection title="Cliente e instalación">
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <FollowUpClientSection
               name={clientName}
               phone={followUp.client?.phone_primary || "-"}
@@ -507,17 +512,6 @@ export default function FollowUpDetailPage() {
               onViewInstallation={goToInstallation}
             />
           </section>
-        </FollowUpCollapsibleSection>
-
-        <FollowUpCollapsibleSection title="Acciones">
-          <FollowUpActionsSection
-            postponing={postponing}
-            updatingStatus={updatingStatus}
-            isCompleted={followUp.follow_up_status?.code === "completed"}
-            onNewContact={goToNewContact}
-            onPostpone={handlePostponeFollowUp}
-            onComplete={handleCompleteFollowUp}
-          />
         </FollowUpCollapsibleSection>
 
         <FollowUpCollapsibleSection title="Notas">

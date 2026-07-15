@@ -562,24 +562,30 @@ export default function EntityFilesSection({
 
   return (
     <>
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className={isCompactInstallation ? "px-6 pt-5" : "px-6 pt-5"}>
+      <section
+        className={
+          isCompactInstallation
+            ? "overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+            : "space-y-4"
+        }
+      >
+        <div className={isCompactInstallation ? "px-4 pt-4" : ""}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 {eyebrow}
               </p>
 
-              <h2 className="mt-3 text-sm font-semibold text-slate-950">
+              <h2 className="mt-1 text-sm font-semibold text-slate-950">
                 {title}
               </h2>
 
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
                 {description}
               </p>
             </div>
 
-            <span className="inline-flex w-fit shrink-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
+            <span className="inline-flex h-8 w-fit shrink-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-medium text-slate-600">
               {fileCountLabel}
             </span>
           </div>
@@ -587,18 +593,14 @@ export default function EntityFilesSection({
 
         <div
           className={
-            isCompactInstallation
-              ? "space-y-4 px-6 pb-6 pt-4"
-              : "space-y-5 px-6 pb-6 pt-5"
+            isCompactInstallation ? "space-y-4 px-4 pb-4 pt-3" : "space-y-4"
           }
         >
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`rounded-md border border-dashed transition ${
-              isCompactInstallation ? "p-4" : "p-5"
-            } ${
+            className={`rounded-md border border-dashed p-4 transition ${
               isDragging
                 ? "border-slate-500 bg-slate-100"
                 : "border-slate-300 bg-slate-50"
@@ -638,8 +640,8 @@ export default function EntityFilesSection({
                   </label>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
-                  <div className="text-3xl" aria-hidden="true">
+                <div className="flex flex-col items-center justify-center gap-3 py-5 text-center">
+                  <div className="text-2xl" aria-hidden="true">
                     📁
                   </div>
 
@@ -648,7 +650,7 @@ export default function EntityFilesSection({
                       Arrastre uno o varios archivos aquí
                     </p>
 
-                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
                       También puede seleccionarlos desde su dispositivo.
                     </p>
                   </div>
@@ -742,7 +744,7 @@ export default function EntityFilesSection({
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {previewFiles.map((previewFile, index) => (
                     <article
                       key={`${previewFile.file.name}-${index}`}
@@ -752,10 +754,10 @@ export default function EntityFilesSection({
                         <img
                           src={previewFile.previewUrl}
                           alt={previewFile.file.name}
-                          className="h-40 w-full object-cover"
+                          className="h-36 w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-40 items-center justify-center bg-slate-50">
+                        <div className="flex h-36 items-center justify-center bg-slate-50">
                           <div className="text-center">
                             <p className="text-3xl">
                               {isPreviewPdf(previewFile.file) ? "📄" : "📎"}
@@ -768,7 +770,7 @@ export default function EntityFilesSection({
                         </div>
                       )}
 
-                      <div className="space-y-3 p-4">
+                      <div className="space-y-3 p-3">
                         <p className="line-clamp-2 text-sm font-semibold text-slate-900">
                           {previewFile.file.name}
                         </p>
@@ -917,7 +919,7 @@ export default function EntityFilesSection({
               ))}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {sortedFiles.map((file, index) => (
                 <article
                   key={file.file_id}
@@ -928,10 +930,10 @@ export default function EntityFilesSection({
                     <img
                       src={file.file_url}
                       alt={file.file_name}
-                      className="h-44 w-full object-cover"
+                      className="h-40 w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-44 w-full items-center justify-center bg-slate-50">
+                    <div className="flex h-40 w-full items-center justify-center bg-slate-50">
                       <div className="text-center">
                         <p className="text-3xl">
                           {getFileLabel(file) === "PDF" ? "📄" : "📎"}
@@ -944,7 +946,7 @@ export default function EntityFilesSection({
                     </div>
                   )}
 
-                  <div className="space-y-3 p-4">
+                  <div className="space-y-3 p-3">
                     <div>
                       <p className="line-clamp-2 text-sm font-semibold text-slate-900">
                         {file.file_name}
@@ -1011,7 +1013,7 @@ export default function EntityFilesSection({
               <button
                 type="button"
                 onClick={closeFileModal}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-lg font-semibold text-slate-700 transition hover:bg-slate-200"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-slate-100 text-lg font-semibold text-slate-700 transition hover:bg-slate-200"
                 aria-label="Cerrar vista previa"
               >
                 ×
@@ -1024,7 +1026,7 @@ export default function EntityFilesSection({
                   <button
                     type="button"
                     onClick={goToPreviousFile}
-                    className="absolute left-3 top-1/2 z-10 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-2xl font-semibold text-slate-700 shadow transition hover:bg-white"
+                    className="absolute left-3 top-1/2 z-10 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md bg-white/90 text-2xl font-semibold text-slate-700 shadow transition hover:bg-white"
                     aria-label="Archivo anterior"
                   >
                     ‹
@@ -1033,7 +1035,7 @@ export default function EntityFilesSection({
                   <button
                     type="button"
                     onClick={goToNextFile}
-                    className="absolute right-3 top-1/2 z-10 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-2xl font-semibold text-slate-700 shadow transition hover:bg-white"
+                    className="absolute right-3 top-1/2 z-10 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md bg-white/90 text-2xl font-semibold text-slate-700 shadow transition hover:bg-white"
                     aria-label="Archivo siguiente"
                   >
                     ›
@@ -1061,7 +1063,7 @@ export default function EntityFilesSection({
                     Vista previa no disponible
                   </p>
 
-                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
                     Este tipo de archivo puede abrirse en una nueva pestaña.
                   </p>
 

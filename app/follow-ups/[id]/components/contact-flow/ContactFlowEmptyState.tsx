@@ -47,43 +47,43 @@ export default function ContactFlowEmptyState({
   return (
     <section className="space-y-4">
       <div
-        className={`rounded-2xl border p-5 ${automationSummary.cardClasses}`}
+        className={`rounded-md border px-3 py-3 ${automationSummary.cardClasses}`}
       >
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-xl shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="flex min-w-0 gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-base shadow-sm">
               {automationSummary.icon}
             </div>
 
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p
-                  className={`text-sm font-bold ${automationSummary.textClasses}`}
+                  className={`text-sm font-semibold ${automationSummary.textClasses}`}
                 >
                   {automationSummary.title}
                 </p>
 
                 <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${automationSummary.badgeClasses}`}
+                  className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${automationSummary.badgeClasses}`}
                 >
                   {automationSummary.badge}
                 </span>
               </div>
 
               <p
-                className={`mt-2 max-w-3xl text-sm leading-6 ${automationSummary.textClasses}`}
+                className={`mt-1.5 text-xs leading-5 ${automationSummary.textClasses}`}
               >
                 {automationSummary.description}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <button
               type="button"
               onClick={() => void onCreateManualFlow()}
               disabled={!manualFlowAvailability.canStart || creatingFlow}
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 items-center justify-center rounded-md bg-slate-950 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {creatingFlow ? "Iniciando..." : "Iniciar gestión de contacto"}
             </button>
@@ -92,7 +92,7 @@ export default function ContactFlowEmptyState({
               type="button"
               onClick={() => void onRefresh()}
               disabled={creatingFlow}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Refrescar
             </button>
@@ -100,71 +100,71 @@ export default function ContactFlowEmptyState({
         </div>
       </div>
 
-      {actionError && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      {actionError ? (
+        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
           {actionError}
         </div>
-      )}
+      ) : null}
 
-      {!manualFlowAvailability.canStart && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      {!manualFlowAvailability.canStart ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
           {manualFlowAvailability.reason}
         </div>
-      )}
+      ) : null}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            WhatsApp
-          </p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {settings?.whatsapp_enabled ? "Activo" : "Inactivo"}
-          </p>
-        </div>
+      <div className="grid gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
+        <InfoCell
+          label="WhatsApp"
+          value={settings?.whatsapp_enabled ? "Activo" : "Inactivo"}
+        />
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Contacto automático
-          </p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {settings?.auto_contact_enabled ? "Activo" : "Inactivo"}
-          </p>
-        </div>
+        <InfoCell
+          label="Contacto automático"
+          value={settings?.auto_contact_enabled ? "Activo" : "Inactivo"}
+        />
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Cliente permite WhatsApp
-          </p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {followUpContext?.client?.whatsapp_opt_in === undefined ||
+        <InfoCell
+          label="Cliente permite WhatsApp"
+          value={
+            followUpContext?.client?.whatsapp_opt_in === undefined ||
             followUpContext?.client?.whatsapp_opt_in === null
               ? "Sin validar"
               : followUpContext.client.whatsapp_opt_in
                 ? "Sí"
-                : "No"}
-          </p>
-        </div>
+                : "No"
+          }
+        />
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Fecha estimada
-          </p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {formatDate(estimatedTriggerDate)}
-          </p>
-        </div>
+        <InfoCell
+          label="Fecha estimada"
+          value={formatDate(estimatedTriggerDate)}
+        />
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
         <p className="text-sm font-semibold text-slate-800">
           No hay conversación asociada.
         </p>
-        <p className="mt-1 text-sm leading-6 text-slate-500">
-          Cuando inicie una gestión de contacto automática o manual, aquí se
-          mostrarán el estado, la fecha de activación, los mensajes y la
-          conversación completa.
+
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          Cuando inicie una gestión automática o manual, aquí se mostrarán el
+          estado, las fechas y la conversación completa.
         </p>
       </div>
     </section>
+  );
+}
+
+function InfoCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 bg-white px-3 py-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-1 break-words text-sm font-medium leading-5 text-slate-800">
+        {value || "-"}
+      </p>
+    </div>
   );
 }

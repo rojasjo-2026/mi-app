@@ -32,6 +32,38 @@ type TechnicianOption = {
   is_active?: boolean;
 };
 
+type SummaryRowProps = {
+  label: string;
+  value: string;
+  last?: boolean;
+};
+
+const controlClassName =
+  "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
+
+const textareaClassName =
+  "w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm leading-5 text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100";
+
+const labelClassName = "mb-1.5 block text-sm font-medium text-slate-700";
+
+function SummaryRow({ label, value, last = false }: SummaryRowProps) {
+  return (
+    <div
+      className={`grid gap-1 px-3 py-2.5 sm:grid-cols-[132px_minmax(0,1fr)] sm:items-start ${
+        last ? "" : "border-b border-slate-200"
+      }`}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="break-words text-sm font-medium leading-5 text-slate-800">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 const billingStatusOptions = [
   { value: "PENDING", label: "Pendiente por facturar" },
   { value: "INVOICED", label: "Facturado" },
@@ -323,58 +355,54 @@ export default function FollowUpNewClientPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/60 p-6 md:p-8">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
-            <div className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+    <main className="min-h-screen bg-slate-50 p-4 md:p-6 xl:p-8">
+      <div className="mx-auto w-full max-w-[1280px] space-y-4">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
               Gestión de mantenimientos
-            </div>
+            </p>
 
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-                Nuevo mantenimiento
-              </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                Crea un mantenimiento a partir de una instalación existente.
-              </p>
-            </div>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+              Nuevo mantenimiento
+            </h1>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Crea un mantenimiento a partir de una instalación existente.
+            </p>
           </div>
 
-          <div className="flex gap-2">
-            <Link
-              href="/follow-ups"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Volver
-            </Link>
-          </div>
-        </section>
+          <Link
+            href="/follow-ups"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            Volver
+          </Link>
+        </header>
 
-        <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <section className="space-y-5">
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <section className="space-y-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                     Información general
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
                     Define la instalación, fecha, prioridad, técnico y motivo
                     del mantenimiento.
                   </p>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Instalación
-                  </label>
+                  <label className={labelClassName}>Instalación</label>
 
                   <select
                     value={installationId}
                     onChange={(e) => setInstallationId(e.target.value)}
                     disabled={loadingInstallations}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    className={controlClassName}
                   >
                     <option value="">
                       {loadingInstallations
@@ -394,27 +422,25 @@ export default function FollowUpNewClientPage() {
                   </select>
                 </div>
 
-                <div className="grid gap-5 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Fecha objetivo
-                    </label>
+                    <label className={labelClassName}>Fecha objetivo</label>
+
                     <input
                       type="date"
                       value={targetDate}
                       onChange={(e) => setTargetDate(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                      className={controlClassName}
                     />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Prioridad
-                    </label>
+                    <label className={labelClassName}>Prioridad</label>
+
                     <select
                       value={priority}
                       onChange={(e) => setPriority(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                      className={controlClassName}
                     >
                       <option value="1">1 - Alta</option>
                       <option value="2">2 - Media</option>
@@ -423,34 +449,34 @@ export default function FollowUpNewClientPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Técnico asignado
-                  </label>
-                  <select
-                    value={technicianId}
-                    onChange={(e) => setTechnicianId(e.target.value)}
-                    disabled={loadingTechnicians}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                  >
-                    <option value="">
-                      {loadingTechnicians
-                        ? "Cargando técnicos..."
-                        : "Sin técnico asignado"}
-                    </option>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className={labelClassName}>Técnico asignado</label>
 
-                    {technicians.map((item) => (
-                      <option key={item.user_id} value={item.user_id}>
-                        {getTechnicianName(item)}
+                    <select
+                      value={technicianId}
+                      onChange={(e) => setTechnicianId(e.target.value)}
+                      disabled={loadingTechnicians}
+                      className={controlClassName}
+                    >
+                      <option value="">
+                        {loadingTechnicians
+                          ? "Cargando técnicos..."
+                          : "Sin técnico asignado"}
                       </option>
-                    ))}
-                  </select>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Este campo es opcional y puede ajustarse después.
-                  </p>
-                </div>
 
-                <div>
+                      {technicians.map((item) => (
+                        <option key={item.user_id} value={item.user_id}>
+                          {getTechnicianName(item)}
+                        </option>
+                      ))}
+                    </select>
+
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Este campo es opcional y puede ajustarse después.
+                    </p>
+                  </div>
+
                   <OperationalZoneSelect
                     value={operationalZoneId}
                     countryCode={businessCountryCode}
@@ -461,39 +487,40 @@ export default function FollowUpNewClientPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Motivo o detalle
-                  </label>
+                  <label className={labelClassName}>Motivo o detalle</label>
+
                   <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    rows={5}
+                    rows={4}
                     placeholder="Ejemplo: revisión preventiva, limpieza, ajuste o control de garantía"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    className={`${textareaClassName} min-h-24`}
                   />
                 </div>
               </section>
 
-              <section className="space-y-5 rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+              <section className="space-y-4 border-t border-slate-200 pt-5">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                     Información comercial
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
                     Campos opcionales para preparar el mantenimiento para
                     facturación.
                   </p>
                 </div>
 
-                <div className="grid gap-5 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className={labelClassName}>
                       Tipo de mantenimiento
                     </label>
+
                     <select
                       value={maintenanceType}
                       onChange={(e) => setMaintenanceType(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                      className={controlClassName}
                     >
                       {maintenanceTypeOptions.map((option) => (
                         <option
@@ -507,13 +534,14 @@ export default function FollowUpNewClientPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className={labelClassName}>
                       Estado de facturación
                     </label>
+
                     <select
                       value={billingStatus}
                       onChange={(e) => setBillingStatus(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                      className={controlClassName}
                     >
                       {billingStatusOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -524,70 +552,67 @@ export default function FollowUpNewClientPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-5 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Monto estimado
-                    </label>
+                    <label className={labelClassName}>Monto estimado</label>
+
                     <input
                       type="number"
                       min="0"
                       value={estimatedAmount}
                       onChange={(e) => setEstimatedAmount(e.target.value)}
                       placeholder="Ej: 50000"
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                      className={controlClassName}
                     />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Costo interno
-                    </label>
+                    <label className={labelClassName}>Costo interno</label>
+
                     <input
                       type="number"
                       min="0"
                       value={costAmount}
                       onChange={(e) => setCostAmount(e.target.value)}
                       placeholder="Ej: 30000"
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                      className={controlClassName}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Notas de facturación
-                  </label>
+                  <label className={labelClassName}>Notas de facturación</label>
+
                   <textarea
                     value={billingNotes}
                     onChange={(e) => setBillingNotes(e.target.value)}
                     rows={3}
                     placeholder="Notas internas para facturación, cobro o condiciones comerciales."
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    className={`${textareaClassName} min-h-20`}
                   />
                 </div>
               </section>
 
               {error ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700">
                   {error}
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
                 <button
                   type="submit"
                   disabled={
                     loadingSubmit || loadingInstallations || loadingTechnicians
                   }
-                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-9 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loadingSubmit ? "Guardando..." : "Crear mantenimiento"}
                 </button>
 
                 <Link
                   href="/follow-ups"
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                 >
                   Cancelar
                 </Link>
@@ -595,123 +620,108 @@ export default function FollowUpNewClientPage() {
             </form>
           </div>
 
-          <aside className="space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+          <aside className="space-y-4 xl:sticky xl:top-6">
+            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Resumen
               </p>
 
               {selectedInstallation ? (
-                <div className="mt-4 space-y-4">
+                <div className="mt-3 space-y-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">
+                    <p className="text-sm font-semibold text-slate-900">
                       {getClientName(selectedInstallation.client)}
                     </p>
-                    <p className="mt-1 text-sm text-slate-600">
+
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
                       {selectedInstallation.description ||
                         "Instalación sin descripción"}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Fecha de instalación
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-800">
-                      {formatDateLabel(
+                  <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+                    <SummaryRow
+                      label="Fecha de instalación"
+                      value={formatDateLabel(
                         selectedInstallation.installation_date,
                         businessLocale,
                       )}
-                    </p>
-                  </div>
+                    />
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Zona operativa
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-800">
-                      {operationalZoneId
-                        ? "Zona asignada"
-                        : "Sin zona operativa"}
-                    </p>
-                  </div>
+                    <SummaryRow
+                      label="Zona operativa"
+                      value={
+                        operationalZoneId
+                          ? "Zona asignada"
+                          : "Sin zona operativa"
+                      }
+                    />
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Técnico asignado
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-800">
-                      {selectedTechnician
-                        ? getTechnicianName(selectedTechnician)
-                        : "Sin técnico asignado"}
-                    </p>
-                  </div>
+                    <SummaryRow
+                      label="Técnico asignado"
+                      value={
+                        selectedTechnician
+                          ? getTechnicianName(selectedTechnician)
+                          : "Sin técnico asignado"
+                      }
+                    />
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Tipo de mantenimiento
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-800">
-                      {getOptionLabel(maintenanceTypeOptions, maintenanceType)}
-                    </p>
-                  </div>
+                    <SummaryRow
+                      label="Tipo"
+                      value={getOptionLabel(
+                        maintenanceTypeOptions,
+                        maintenanceType,
+                      )}
+                    />
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Estado de facturación
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-800">
-                      {getOptionLabel(billingStatusOptions, billingStatus)}
-                    </p>
-                  </div>
+                    <SummaryRow
+                      label="Facturación"
+                      value={getOptionLabel(
+                        billingStatusOptions,
+                        billingStatus,
+                      )}
+                    />
 
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                        Monto estimado
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-slate-800">
-                        {formatMoneyPreview(
-                          estimatedAmount,
-                          businessCurrency,
-                          businessLocale,
-                        )}
-                      </p>
-                    </div>
+                    <SummaryRow
+                      label="Monto estimado"
+                      value={formatMoneyPreview(
+                        estimatedAmount,
+                        businessCurrency,
+                        businessLocale,
+                      )}
+                    />
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                        Costo interno
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-slate-800">
-                        {formatMoneyPreview(
-                          costAmount,
-                          businessCurrency,
-                          businessLocale,
-                        )}
-                      </p>
-                    </div>
+                    <SummaryRow
+                      label="Costo interno"
+                      value={formatMoneyPreview(
+                        costAmount,
+                        businessCurrency,
+                        businessLocale,
+                      )}
+                      last
+                    />
                   </div>
                 </div>
               ) : (
-                <p className="mt-4 text-sm text-slate-600">
+                <p className="mt-3 text-xs leading-5 text-slate-500">
                   Selecciona una instalación para ver el resumen del
                   mantenimiento.
                 </p>
               )}
-            </div>
+            </section>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Nota
               </p>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
+
+              <p className="mt-2 text-xs leading-5 text-slate-500">
                 Este formulario crea el mantenimiento directamente en el listado
                 general. Los datos comerciales y el técnico asignado son
                 opcionales y pueden ajustarse después desde el detalle del
                 mantenimiento.
               </p>
-            </div>
+            </section>
           </aside>
         </section>
       </div>
