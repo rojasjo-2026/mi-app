@@ -8,7 +8,9 @@ import FollowUpContactFlowSection from "./components/FollowUpContactFlowSection"
 import FollowUpContactHistorySection from "./components/FollowUpContactHistorySection";
 import FollowUpFilesSection from "./components/FollowUpFilesSection";
 import FollowUpHeader from "./components/FollowUpHeader";
-import FollowUpInfoSection from "./components/FollowUpInfoSection";
+import FollowUpInfoSection, {
+  type OperationalZoneVisitDateSuggestion,
+} from "./components/FollowUpInfoSection";
 import FollowUpInstallationSection from "./components/FollowUpInstallationSection";
 import FollowUpNotesSection from "./components/FollowUpNotesSection";
 import FollowUpCollapsibleSection from "./components/FollowUpCollapsibleSection";
@@ -33,6 +35,12 @@ type TechnicianOption = {
   last_name_1?: string | null;
   last_name_2?: string | null;
   email?: string | null;
+};
+
+type OperationalZoneVisitDateSuggestionsApiResponse = {
+  success: boolean;
+  data?: OperationalZoneVisitDateSuggestion[];
+  message?: string;
 };
 
 function toSafeNumber(value?: number | string | null) {
@@ -148,6 +156,15 @@ export default function FollowUpDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [visitDateSuggestions, setVisitDateSuggestions] = useState<
+    OperationalZoneVisitDateSuggestion[]
+  >([]);
+  const [loadingVisitDateSuggestions, setLoadingVisitDateSuggestions] =
+    useState(false);
+  const [visitDateSuggestionsMessage, setVisitDateSuggestionsMessage] =
+    useState("");
+  const [visitDateSuggestionsError, setVisitDateSuggestionsError] =
+    useState("");
   const [editForm, setEditForm] = useState<FollowUpEditForm>({
     reason: "",
     priority: 3,
@@ -229,6 +246,77 @@ export default function FollowUpDetailPage() {
 
     setEditForm(buildEditFormFromFollowUp(followUp));
   }, [followUp]);
+
+  const operationalZoneId =
+    followUp?.operational_zone_id ||
+    followUp?.installation?.operational_zone_id ||
+    "";
+
+  useEffect(() => {
+    if (!isEditing || !operationalZoneId) {
+      setVisitDateSuggestions([]);
+      setVisitDateSuggestionsMessage("");
+      setVisitDateSuggestionsError("");
+      setLoadingVisitDateSuggestions(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadVisitDateSuggestions() {
+      try {
+        setLoadingVisitDateSuggestions(true);
+        setVisitDateSuggestions([]);
+        setVisitDateSuggestionsMessage("");
+        setVisitDateSuggestionsError("");
+
+        const response = await fetch(
+          `/api/operational-zones/${encodeURIComponent(
+            operationalZoneId,
+          )}/visit-date-suggestions`,
+          {
+            method: "GET",
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
+
+        const result: OperationalZoneVisitDateSuggestionsApiResponse =
+          await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message || "No se pudieron cargar las fechas sugeridas.",
+          );
+        }
+
+        setVisitDateSuggestions(Array.isArray(result.data) ? result.data : []);
+        setVisitDateSuggestionsMessage(result.message || "");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setVisitDateSuggestions([]);
+        setVisitDateSuggestionsMessage("");
+        setVisitDateSuggestionsError(
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error al cargar las fechas sugeridas.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingVisitDateSuggestions(false);
+        }
+      }
+    }
+
+    void loadVisitDateSuggestions();
+
+    return () => {
+      controller.abort();
+    };
+  }, [isEditing, operationalZoneId]);
 
   async function handleCompleteFollowUp() {
     if (!followUp) return;
@@ -457,6 +545,11 @@ export default function FollowUpDetailPage() {
             dueDateLabel={formatBusinessDate(followUp.due_date, businessLocale)}
             reasonLabel={followUp.reason || "Mantenimiento programado"}
             priorityLabel={String(followUp.priority ?? "-")}
+            visitDateSuggestions={visitDateSuggestions}
+            loadingVisitDateSuggestions={loadingVisitDateSuggestions}
+            visitDateSuggestionsMessage={visitDateSuggestionsMessage}
+            visitDateSuggestionsError={visitDateSuggestionsError}
+            locale={businessLocale}
             onChange={updateEditField}
           />
         </FollowUpCollapsibleSection>

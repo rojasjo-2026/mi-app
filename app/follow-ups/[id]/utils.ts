@@ -7,6 +7,7 @@ export type FollowUpDetail = {
   notes?: string | null;
   created_from?: string | null;
   completed_at?: string | null;
+  operational_zone_id?: string | null;
 
   estimated_amount?: number | null;
   final_amount?: number | null;
@@ -30,6 +31,7 @@ export type FollowUpDetail = {
     description?: string | null;
     installation_date?: string | null;
     technician_name?: string | null;
+    operational_zone_id?: string | null;
   } | null;
 
   technician?: {

@@ -34,6 +34,21 @@ function formatDateForInput(value?: string | null) {
   return parsedDate.toISOString().slice(0, 10);
 }
 
+function formatSuggestedVisitDate(value: string) {
+  const parsedDate = new Date(`${value}T00:00:00.000Z`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parsedDate);
+}
+
 function normalizeSensitiveValue(value?: string | number | null) {
   if (value === null || value === undefined) return "";
 
@@ -64,6 +79,20 @@ function buildSensitiveChangeDescription(
     previousValue,
   )} → ${getConfirmDisplayValue(nextValue)}`;
 }
+
+type OperationalZoneVisitDateSuggestion = {
+  operational_zone_visit_date_id: string;
+  operational_zone_id: string;
+  visit_date: string;
+  can_offer_day: true;
+  reason: string;
+};
+
+type OperationalZoneVisitDateSuggestionsApiResponse = {
+  success: boolean;
+  data?: OperationalZoneVisitDateSuggestion[];
+  message?: string;
+};
 
 type WarrantyPreview = {
   title: string;
@@ -269,6 +298,15 @@ export default function InstallationForm({
   const [billingNotes, setBillingNotes] = useState("");
   const [installationStatus, setInstallationStatus] = useState("OPEN");
   const [operationalZoneId, setOperationalZoneId] = useState("");
+  const [visitDateSuggestions, setVisitDateSuggestions] = useState<
+    OperationalZoneVisitDateSuggestion[]
+  >([]);
+  const [loadingVisitDateSuggestions, setLoadingVisitDateSuggestions] =
+    useState(false);
+  const [visitDateSuggestionsMessage, setVisitDateSuggestionsMessage] =
+    useState("");
+  const [visitDateSuggestionsError, setVisitDateSuggestionsError] =
+    useState("");
 
   const [addressLine, setAddressLine] = useState("");
   const [adminLevel1, setAdminLevel1] = useState("");
@@ -396,6 +434,72 @@ export default function InstallationForm({
     setLocationNotes(initialData.location_notes ?? "");
     setReferencePoint(initialData.reference_point ?? "");
   }, [initialData]);
+
+  useEffect(() => {
+    if (mode !== "edit" || !operationalZoneId) {
+      setVisitDateSuggestions([]);
+      setVisitDateSuggestionsMessage("");
+      setVisitDateSuggestionsError("");
+      setLoadingVisitDateSuggestions(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadVisitDateSuggestions() {
+      try {
+        setLoadingVisitDateSuggestions(true);
+        setVisitDateSuggestions([]);
+        setVisitDateSuggestionsMessage("");
+        setVisitDateSuggestionsError("");
+
+        const response = await fetch(
+          `/api/operational-zones/${encodeURIComponent(
+            operationalZoneId,
+          )}/visit-date-suggestions`,
+          {
+            method: "GET",
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
+
+        const result: OperationalZoneVisitDateSuggestionsApiResponse =
+          await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message || "No se pudieron cargar las fechas sugeridas.",
+          );
+        }
+
+        setVisitDateSuggestions(Array.isArray(result.data) ? result.data : []);
+        setVisitDateSuggestionsMessage(result.message || "");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setVisitDateSuggestions([]);
+        setVisitDateSuggestionsMessage("");
+        setVisitDateSuggestionsError(
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error al cargar las fechas sugeridas.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingVisitDateSuggestions(false);
+        }
+      }
+    }
+
+    void loadVisitDateSuggestions();
+
+    return () => {
+      controller.abort();
+    };
+  }, [mode, operationalZoneId]);
 
   useEffect(() => {
     async function loadTechnicians() {
@@ -934,6 +1038,62 @@ export default function InstallationForm({
                   onChange={(e) => setInstallationDate(e.target.value)}
                   className={inputClass}
                 />
+
+                {mode === "edit" && loadingVisitDateSuggestions ? (
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Consultando fechas sugeridas para la zona...
+                  </p>
+                ) : mode === "edit" && visitDateSuggestions.length > 0 ? (
+                  <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs font-semibold text-slate-700">
+                      Fechas sugeridas para la zona seleccionada
+                    </p>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {visitDateSuggestions.map((suggestion) => {
+                        const isSelected =
+                          installationDate === suggestion.visit_date;
+
+                        return (
+                          <button
+                            key={suggestion.operational_zone_visit_date_id}
+                            type="button"
+                            title={suggestion.reason}
+                            onClick={() =>
+                              setInstallationDate(suggestion.visit_date)
+                            }
+                            className={`inline-flex h-8 items-center rounded-md border px-3 text-xs font-semibold transition ${
+                              isSelected
+                                ? "border-slate-900 bg-slate-900 text-white"
+                                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            {formatSuggestedVisitDate(suggestion.visit_date)}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      La fecha guardada se conserva hasta que seleccione otra.
+                      Las sugerencias reflejan la planificación de la zona y la
+                      disponibilidad actual.
+                    </p>
+                  </div>
+                ) : mode === "edit" &&
+                  operationalZoneId &&
+                  visitDateSuggestionsMessage ? (
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    {visitDateSuggestionsMessage}
+                  </p>
+                ) : null}
+
+                {mode === "edit" && visitDateSuggestionsError ? (
+                  <p className="mt-2 text-xs leading-5 text-amber-700">
+                    {visitDateSuggestionsError} Puede continuar usando la fecha
+                    actual o seleccionar otra manualmente.
+                  </p>
+                ) : null}
               </div>
 
               <div>
