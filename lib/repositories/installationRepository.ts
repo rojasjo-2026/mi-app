@@ -14,12 +14,22 @@ const clientNameSelect = {
   country_code: true,
 } as const;
 
+const operationalZoneSelect = {
+  operational_zone_id: true,
+  name: true,
+  color_label: true,
+  is_active: true,
+} as const;
+
 const installationBaseInclude = {
   client: {
     select: clientNameSelect,
   },
   service_type: true,
   technician: true,
+  operational_zone: {
+    select: operationalZoneSelect,
+  },
 } as const;
 
 const installationDetailInclude = {
@@ -105,6 +115,7 @@ export type InstallationSortKey =
   | "date"
   | "technician"
   | "location"
+  | "operationalZone"
   | "amount"
   | "status";
 
@@ -153,39 +164,69 @@ function getInstallationOrderBy(
   const direction = sortDirection === "asc" ? "asc" : "desc";
 
   if (sortKey === "installation") {
-    return { description: direction };
+    return {
+      description: direction,
+    };
   }
 
   if (sortKey === "client") {
-    return { client: { first_name: direction } };
+    return {
+      client: {
+        first_name: direction,
+      },
+    };
   }
 
   if (sortKey === "service") {
-    return { service_type: { name: direction } };
+    return {
+      service_type: {
+        name: direction,
+      },
+    };
   }
 
   if (sortKey === "technician") {
-    return { technician_name: direction };
+    return {
+      technician_name: direction,
+    };
   }
 
   if (sortKey === "location") {
-    return { city: direction };
+    return {
+      city: direction,
+    };
+  }
+
+  if (sortKey === "operationalZone") {
+    return {
+      operational_zone: {
+        name: direction,
+      },
+    };
   }
 
   if (sortKey === "amount") {
-    return { estimated_amount: direction };
+    return {
+      estimated_amount: direction,
+    };
   }
 
   if (sortKey === "status") {
-    return { installation_status: direction };
+    return {
+      installation_status: direction,
+    };
   }
 
-  return { installation_date: direction };
+  return {
+    installation_date: direction,
+  };
 }
 
 function buildInstallationWhere(
   params: FindInstallationsParams,
-  options?: { includeStatus?: boolean },
+  options?: {
+    includeStatus?: boolean;
+  },
 ): Prisma.InstallationWhereInput {
   const {
     country_code,
@@ -217,12 +258,38 @@ function buildInstallationWhere(
           },
         }
       : {}),
-    ...(client_id ? { client_id } : {}),
-    ...(includeStatus && isInstallationStatus(status)
-      ? { installation_status: status }
+
+    ...(client_id
+      ? {
+          client_id,
+        }
       : {}),
-    ...(zone ? { zone: { contains: zone, mode: "insensitive" } } : {}),
-    ...(operational_zone_id ? { operational_zone_id } : {}),
+
+    ...(includeStatus && isInstallationStatus(status)
+      ? {
+          installation_status: status,
+        }
+      : {}),
+
+    ...(zone
+      ? {
+          zone: {
+            contains: zone,
+            mode: "insensitive",
+          },
+        }
+      : {}),
+
+    ...(operational_zone_id === "without"
+      ? {
+          operational_zone_id: null,
+        }
+      : operational_zone_id
+        ? {
+            operational_zone_id,
+          }
+        : {}),
+
     ...(admin_level_1
       ? {
           admin_level_1: {
@@ -231,6 +298,7 @@ function buildInstallationWhere(
           },
         }
       : {}),
+
     ...(admin_level_2
       ? {
           admin_level_2: {
@@ -239,6 +307,7 @@ function buildInstallationWhere(
           },
         }
       : {}),
+
     ...(admin_level_3
       ? {
           admin_level_3: {
@@ -300,6 +369,16 @@ function buildInstallationWhere(
         },
       },
       {
+        operational_zone: {
+          is: {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+      },
+      {
         service_type: {
           is: {
             name: {
@@ -354,7 +433,9 @@ function buildInstallationWhere(
 
 export async function findInstallationById(id: string) {
   return prisma.installation.findUnique({
-    where: { installation_id: id },
+    where: {
+      installation_id: id,
+    },
     include: installationDetailInclude,
   });
 }
@@ -364,7 +445,9 @@ export async function updateInstallation(
   data: UpdateInstallationData,
 ) {
   return prisma.installation.update({
-    where: { installation_id: id },
+    where: {
+      installation_id: id,
+    },
     data,
     include: installationBaseInclude,
   });
@@ -379,10 +462,17 @@ export async function createInstallation(data: CreateInstallationData) {
 
 export async function findInstallations(params: FindInstallationsParams) {
   const page = normalizePaginationValue(params.page, 1);
-  const pageSize = Math.min(normalizePaginationValue(params.pageSize, 25), 100);
+
+  const pageSize = Math.min(normalizePaginationValue(params.pageSize, 15), 100);
+
   const skip = (page - 1) * pageSize;
+
   const where = buildInstallationWhere(params);
-  const metricsWhere = buildInstallationWhere(params, { includeStatus: false });
+
+  const metricsWhere = buildInstallationWhere(params, {
+    includeStatus: false,
+  });
+
   const orderBy = getInstallationOrderBy(params.sortKey, params.sortDirection);
 
   const [data, totalItems, total, open, inProgress, closed, cancelled] =
@@ -394,26 +484,36 @@ export async function findInstallations(params: FindInstallationsParams) {
         skip,
         take: pageSize,
       }),
-      prisma.installation.count({ where }),
-      prisma.installation.count({ where: metricsWhere }),
+
+      prisma.installation.count({
+        where,
+      }),
+
+      prisma.installation.count({
+        where: metricsWhere,
+      }),
+
       prisma.installation.count({
         where: {
           ...metricsWhere,
           installation_status: InstallationStatus.OPEN,
         },
       }),
+
       prisma.installation.count({
         where: {
           ...metricsWhere,
           installation_status: InstallationStatus.IN_PROGRESS,
         },
       }),
+
       prisma.installation.count({
         where: {
           ...metricsWhere,
           installation_status: InstallationStatus.CLOSED,
         },
       }),
+
       prisma.installation.count({
         where: {
           ...metricsWhere,
@@ -442,7 +542,9 @@ export async function findInstallations(params: FindInstallationsParams) {
 
 export async function findClientById(client_id: string) {
   return prisma.client.findUnique({
-    where: { client_id },
+    where: {
+      client_id,
+    },
     select: {
       client_id: true,
       country_code: true,
@@ -452,7 +554,11 @@ export async function findClientById(client_id: string) {
 
 export async function findServiceTypeById(service_type_id: number) {
   return prisma.serviceType.findUnique({
-    where: { service_type_id },
-    select: { service_type_id: true },
+    where: {
+      service_type_id,
+    },
+    select: {
+      service_type_id: true,
+    },
   });
 }

@@ -25,6 +25,7 @@ function normalizeSortKey(value: string | null) {
     "date",
     "technician",
     "location",
+    "operationalZone",
     "amount",
     "status",
   ] as const;
@@ -52,11 +53,18 @@ function normalizeBoolean(value: unknown) {
   return value === true;
 }
 
+function normalizeOperationalZoneFilter(value: string | null) {
+  const operationalZoneId = String(value || "").trim();
+
+  return operationalZoneId || undefined;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
     const operationalZoneId = normalizeOptionalString(body.operational_zone_id);
+
     const allowWithoutOperationalZone = normalizeBoolean(
       body.allow_without_operational_zone,
     );
@@ -150,13 +158,15 @@ export async function GET(req: Request) {
       client_id: searchParams.get("client_id") || undefined,
       status: searchParams.get("status") || undefined,
       zone: searchParams.get("zone") || undefined,
-      operational_zone_id: searchParams.get("operational_zone_id") || undefined,
+      operational_zone_id: normalizeOperationalZoneFilter(
+        searchParams.get("operational_zone_id"),
+      ),
       admin_level_1: searchParams.get("admin_level_1") || undefined,
       admin_level_2: searchParams.get("admin_level_2") || undefined,
       admin_level_3: searchParams.get("admin_level_3") || undefined,
       page: parsePositiveInteger(searchParams.get("page"), 1),
       pageSize: Math.min(
-        parsePositiveInteger(searchParams.get("pageSize"), 25),
+        parsePositiveInteger(searchParams.get("pageSize"), 15),
         100,
       ),
       sortKey: normalizeSortKey(searchParams.get("sortKey")),

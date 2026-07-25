@@ -7,6 +7,7 @@ import type {
   SetStateAction,
 } from "react";
 import { CalendarDays, MapPin, UserRound } from "lucide-react";
+
 import {
   COLUMN_LABELS,
   type ColumnKey,
@@ -75,12 +76,17 @@ export function InstallationTable({
   setCurrentPage,
 }: InstallationTableProps) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <div style={{ minWidth: tableMinWidth }}>
+    <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div
+          style={{
+            minWidth: tableMinWidth,
+            width: "100%",
+          }}
+        >
           <div
             style={{ gridTemplateColumns }}
-            className="grid border-b border-slate-200 bg-slate-50"
+            className="sticky top-0 z-30 grid border-b border-slate-200 bg-slate-50"
           >
             {displayedColumns.map((column) => (
               <TableHeaderCell
@@ -100,11 +106,17 @@ export function InstallationTable({
             {installations.map((item, index) => {
               const installationName =
                 item.description || "Instalación sin descripción";
+
               const clientName = getClientName(item.client);
+
               const installationCode = getInstallationCode(
                 item,
                 pageStartIndex + index - 1,
               );
+
+              const operationalZoneName =
+                item.operational_zone?.name?.trim() || "Sin zona operativa";
+
               const isSelected =
                 item.installation_id === selectedInstallationId;
 
@@ -123,7 +135,7 @@ export function InstallationTable({
                   }}
                   style={{ gridTemplateColumns }}
                   className={[
-                    "group grid min-h-[76px] cursor-pointer transition hover:bg-blue-50/70",
+                    "group grid min-h-[76px] cursor-pointer transition hover:bg-blue-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300",
                     isSelected
                       ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
                       : "bg-white",
@@ -203,6 +215,7 @@ export function InstallationTable({
                     <TableBodyCell columnKey="date">
                       <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-700">
                         <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
+
                         <span
                           title={formatDateLabel(
                             item.installation_date,
@@ -223,6 +236,7 @@ export function InstallationTable({
                     <TableBodyCell columnKey="technician">
                       <div className="flex min-w-0 items-center gap-2">
                         <UserRound className="h-4 w-4 shrink-0 text-slate-400" />
+
                         <span
                           title={item.technician_name || "Técnico no asignado"}
                           className="truncate text-sm font-medium text-slate-700"
@@ -237,11 +251,32 @@ export function InstallationTable({
                     <TableBodyCell columnKey="location">
                       <div className="flex min-w-0 items-center gap-2">
                         <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+
                         <span
                           title={getLocationLabel(item)}
                           className="truncate text-sm font-medium text-slate-700"
                         >
                           {getLocationLabel(item)}
+                        </span>
+                      </div>
+                    </TableBodyCell>
+                  )}
+
+                  {displayedColumns.includes("operationalZone") && (
+                    <TableBodyCell columnKey="operationalZone">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+
+                        <span
+                          title={operationalZoneName}
+                          className={[
+                            "truncate text-sm font-medium",
+                            item.operational_zone
+                              ? "text-slate-700"
+                              : "text-slate-400",
+                          ].join(" ")}
+                        >
+                          {operationalZoneName}
                         </span>
                       </div>
                     </TableBodyCell>

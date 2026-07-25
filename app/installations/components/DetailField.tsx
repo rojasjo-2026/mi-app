@@ -9,13 +9,15 @@ export function DetailField({
   value?: ReactNode;
   children?: ReactNode;
 }) {
-  const title =
-    typeof value === "string" || typeof value === "number"
-      ? String(value)
-      : label;
+  const displayValue = children ?? value ?? "-";
+
+  const valueTitle =
+    typeof displayValue === "string" || typeof displayValue === "number"
+      ? String(displayValue)
+      : undefined;
 
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+    <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
       <p
         title={label}
         className="truncate text-[11px] font-black uppercase tracking-[0.16em] text-slate-400"
@@ -24,12 +26,11 @@ export function DetailField({
       </p>
 
       <div
-        title={title}
+        title={valueTitle}
         className="mt-1 min-w-0 truncate text-sm font-bold text-slate-800"
       >
-        {children ?? value ?? "-"}
+        {displayValue}
       </div>
     </div>
   );
 }
-

@@ -2,10 +2,13 @@
 
 import { Search } from "lucide-react";
 import type { RefObject } from "react";
+
 import {
   STATUS_FILTERS,
   type FilterType,
   type InstallationMetrics,
+  type OperationalZoneFilter,
+  type OperationalZoneOption,
   type OptionalColumnKey,
   type SortType,
   type VisibleColumns,
@@ -16,6 +19,8 @@ type InstallationFiltersPanelProps = {
   search: string;
   filter: FilterType;
   sortBy: SortType;
+  operationalZoneFilter: OperationalZoneFilter;
+  operationalZones: OperationalZoneOption[];
   metrics: InstallationMetrics;
   visibleColumns: VisibleColumns;
   isColumnMenuOpen: boolean;
@@ -26,13 +31,14 @@ type InstallationFiltersPanelProps = {
   onSearchChange: (value: string) => void;
   onFilterChange: (value: FilterType) => void;
   onSortChange: (value: SortType) => void;
+  onOperationalZoneFilterChange: (value: OperationalZoneFilter) => void;
   onToggleColumnMenu: () => void;
   onToggleColumn: (columnKey: OptionalColumnKey) => void;
 };
 
 function getStatusButtonClass(isActive: boolean) {
   return [
-    "inline-flex h-9 items-center justify-center rounded-md border px-3 text-sm font-semibold transition",
+    "inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-3 text-sm font-semibold transition",
     isActive
       ? "border-slate-950 bg-slate-950 text-white shadow-sm"
       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
@@ -50,6 +56,8 @@ export function InstallationFiltersPanel({
   search,
   filter,
   sortBy,
+  operationalZoneFilter,
+  operationalZones,
   metrics,
   visibleColumns,
   isColumnMenuOpen,
@@ -60,6 +68,7 @@ export function InstallationFiltersPanel({
   onSearchChange,
   onFilterChange,
   onSortChange,
+  onOperationalZoneFilterChange,
   onToggleColumnMenu,
   onToggleColumn,
 }: InstallationFiltersPanelProps) {
@@ -76,7 +85,7 @@ export function InstallationFiltersPanel({
   return (
     <section className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
       <div className="flex flex-col gap-3">
-        <div className="grid gap-3 xl:grid-cols-[minmax(360px,1fr)_auto] xl:items-center">
+        <div className="grid gap-3 xl:grid-cols-[minmax(320px,1fr)_auto] xl:items-center">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
@@ -90,6 +99,30 @@ export function InstallationFiltersPanel({
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
+            <select
+              value={operationalZoneFilter}
+              onChange={(event) =>
+                onOperationalZoneFilterChange(
+                  event.target.value as OperationalZoneFilter,
+                )
+              }
+              aria-label="Filtrar por zona operativa"
+              className="h-9 min-w-[210px] cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+            >
+              <option value="all">Zona operativa: Todas</option>
+
+              {operationalZones.map((zone) => (
+                <option
+                  key={zone.operational_zone_id}
+                  value={zone.operational_zone_id}
+                >
+                  {zone.name}
+                </option>
+              ))}
+
+              <option value="without">Sin zona operativa</option>
+            </select>
+
             <InstallationColumnMenu
               isOpen={isColumnMenuOpen}
               columnMenuRef={columnMenuRef}
@@ -101,7 +134,8 @@ export function InstallationFiltersPanel({
             <select
               value={sortBy}
               onChange={(event) => onSortChange(event.target.value as SortType)}
-              className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              aria-label="Ordenar instalaciones"
+              className="h-9 cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
             >
               <option value="recent">Más recientes</option>
               <option value="oldest">Más antiguas</option>
@@ -122,6 +156,7 @@ export function InstallationFiltersPanel({
                   className={getStatusButtonClass(isActive)}
                 >
                   {statusFilter.label}
+
                   <span className={getStatusCountClass(isActive)}>
                     {getStatusFilterCount(statusFilter.value)}
                   </span>

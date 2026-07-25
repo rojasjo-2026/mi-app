@@ -1,4 +1,5 @@
 ﻿import type { MouseEvent as ReactMouseEvent } from "react";
+
 import type {
   ColumnKey,
   SortDirection,
@@ -28,19 +29,27 @@ export function TableHeaderCell({
 }) {
   const isLockedColumn =
     columnKey === "installation" || columnKey === "actions";
+
   const isSortable = Boolean(sortKey && columnKey !== "actions");
+
   const isActiveSort = sortKey === activeSortKey;
+
   const sortIndicator = isActiveSort
     ? sortDirection === "asc"
       ? "↑"
       : "↓"
     : "↕";
 
+  const stickyClass =
+    columnKey === "installation"
+      ? "sticky left-0 z-20 bg-slate-50"
+      : getStickyHeaderClass(columnKey);
+
   return (
     <div
       className={[
         "relative flex h-full items-center border-r border-slate-200 px-4 py-3 last:border-r-0",
-        getStickyHeaderClass(columnKey),
+        stickyClass,
         columnKey === "actions" ? "justify-end text-right" : "",
       ].join(" ")}
     >
@@ -62,7 +71,8 @@ export function TableHeaderCell({
         ].join(" ")}
       >
         <span className="truncate">{label}</span>
-        {isSortable && (
+
+        {isSortable ? (
           <span
             className={[
               "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] leading-none",
@@ -73,18 +83,17 @@ export function TableHeaderCell({
           >
             {sortIndicator}
           </span>
-        )}
+        ) : null}
       </button>
 
-      {!isLockedColumn && (
+      {!isLockedColumn ? (
         <span
           role="separator"
           aria-label={`Cambiar ancho de ${label}`}
           onMouseDown={(event) => onResizeStart(event, columnKey)}
           className="absolute right-0 top-0 h-full w-2 cursor-col-resize transition hover:bg-blue-200/70"
         />
-      )}
+      ) : null}
     </div>
   );
 }
-
