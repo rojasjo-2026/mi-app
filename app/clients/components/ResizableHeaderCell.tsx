@@ -40,10 +40,7 @@ export function ResizableHeaderCell({
         ? "justify-center text-center"
         : "justify-start text-left";
 
-  const stickyClass =
-    sticky === "left"
-      ? "sticky left-0 z-30 border-r border-slate-200 bg-slate-50 shadow-[10px_0_18px_-18px_rgba(15,23,42,0.35)]"
-      : "";
+  const stickyClass = sticky === "left" ? "sticky left-0 z-30 bg-slate-50" : "";
 
   const isSortable = Boolean(sortKey && onSort);
   const isActiveSort = sortKey === activeSortKey;

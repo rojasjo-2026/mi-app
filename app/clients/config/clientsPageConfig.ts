@@ -1,5 +1,14 @@
 ﻿import type { ClientStatus } from "@/lib/clients/clientStatus";
 
+export type OperationalZoneOption = {
+  operational_zone_id: string;
+  name: string;
+  color_label?: string | null;
+  is_active?: boolean;
+};
+
+export type OperationalZoneFilter = "all" | "without" | string;
+
 export type Client = {
   client_id: string;
 
@@ -26,6 +35,9 @@ export type Client = {
   admin_level_3?: string | null;
   address_line?: string | null;
   zone?: string | null;
+
+  operational_zone_id?: string | null;
+  operational_zone?: OperationalZoneOption | null;
 
   identification_country?: string | null;
   identification_type?: string | null;
@@ -80,6 +92,7 @@ export type SortKey =
   | "client"
   | "contact"
   | "location"
+  | "operationalZone"
   | "operation"
   | "activity"
   | "status";
@@ -108,6 +121,7 @@ export const DEFAULT_COLUMN_WIDTHS = {
   client: 330,
   contact: 260,
   location: 240,
+  operationalZone: 210,
   operation: 180,
   activity: 180,
   status: 125,
@@ -120,25 +134,32 @@ export const MIN_COLUMN_WIDTHS: Record<
   client: 300,
   contact: 230,
   location: 210,
+  operationalZone: 180,
   operation: 165,
   activity: 165,
   status: 115,
 };
 
 export type ClientTableColumnKey = keyof typeof DEFAULT_COLUMN_WIDTHS;
+
 export type ToggleableColumnKey = Exclude<ClientTableColumnKey, "client">;
 
 export const DEFAULT_VISIBLE_COLUMNS: Record<ToggleableColumnKey, boolean> = {
   contact: true,
   location: true,
+  operationalZone: true,
   operation: false,
   activity: false,
   status: true,
 };
 
-export const OPTIONAL_COLUMNS: { key: ToggleableColumnKey; label: string }[] = [
+export const OPTIONAL_COLUMNS: {
+  key: ToggleableColumnKey;
+  label: string;
+}[] = [
   { key: "contact", label: "Contacto" },
   { key: "location", label: "Ubicación" },
+  { key: "operationalZone", label: "Zona operativa" },
   { key: "status", label: "Estado" },
   { key: "operation", label: "Operación" },
   { key: "activity", label: "Actividad" },

@@ -118,6 +118,7 @@ export async function getClientsService({
   status,
   whatsapp = "all",
   countryCode,
+  operationalZoneId,
   page = 1,
   pageSize = 25,
   sortKey = "client",
@@ -127,6 +128,7 @@ export async function getClientsService({
   status?: ClientStatusInput;
   whatsapp?: FindClientsWhatsAppFilter | string | null;
   countryCode?: string | null;
+  operationalZoneId?: string | null;
   page?: number;
   pageSize?: number;
   sortKey?: FindClientsSortKey | string | null;
@@ -139,6 +141,7 @@ export async function getClientsService({
     status,
     whatsapp,
     countryCode: businessCountryMeta.countryCode,
+    operationalZoneId,
     page,
     pageSize,
     sortKey,

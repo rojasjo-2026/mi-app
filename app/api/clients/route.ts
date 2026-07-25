@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+
 import {
   getClientsService,
   createClientService,
@@ -32,6 +33,12 @@ function getCountryCodeParam(value: string | null) {
   return countryCode || undefined;
 }
 
+function getOperationalZoneIdParam(value: string | null) {
+  const operationalZoneId = String(value || "").trim();
+
+  return operationalZoneId || undefined;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -40,6 +47,10 @@ export async function GET(req: Request) {
     const status = normalizeClientStatusFilter(searchParams.get("status"));
     const whatsapp = searchParams.get("whatsapp") || "all";
     const countryCode = getCountryCodeParam(searchParams.get("country_code"));
+
+    const operationalZoneId = getOperationalZoneIdParam(
+      searchParams.get("operational_zone_id"),
+    );
 
     const page = getNumberParam(searchParams.get("page"), DEFAULT_PAGE);
     const pageSize = getPageSize(searchParams.get("pageSize"));
@@ -53,6 +64,7 @@ export async function GET(req: Request) {
       status,
       whatsapp,
       countryCode,
+      operationalZoneId,
       page,
       pageSize,
       sortKey,

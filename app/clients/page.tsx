@@ -28,6 +28,8 @@ import {
   type Client,
   type ClientMetrics,
   type ClientTableColumnKey,
+  type OperationalZoneFilter,
+  type OperationalZoneOption,
   type PaginationState,
   type SortDirection,
   type SortKey,
@@ -43,36 +45,51 @@ import { ResizableHeaderCell } from "./components/ResizableHeaderCell";
 import { ColumnPicker } from "./components/ColumnPicker";
 
 export default function ClientsPage() {
-  const { businessCountryMeta, countryCode, isLoadingSettings, settingsError } =
-    useAppSettings();
+  const { countryCode, isLoadingSettings, settingsError } = useAppSettings();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [whatsFilter, setWhatsFilter] = useState<WhatsAppFilter>("all");
+
+  const [operationalZoneFilter, setOperationalZoneFilter] =
+    useState<OperationalZoneFilter>("all");
+
+  const [operationalZones, setOperationalZones] = useState<
+    OperationalZoneOption[]
+  >([]);
+
   const [sort, setSort] = useState<SortType>("name");
   const [sortKey, setSortKey] = useState<SortKey>("client");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
+
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
     totalItems: 0,
     totalPages: 1,
   });
+
   const [metrics, setMetrics] = useState<ClientMetrics>({
     total: 0,
     active: 0,
     withWhatsApp: 0,
     attention: 0,
   });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState<ToastState>(null);
+
   const [columnWidths, setColumnWidths] = useState(DEFAULT_COLUMN_WIDTHS);
+
   const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
+
   const [visibleColumns, setVisibleColumns] = useState<
     Record<ToggleableColumnKey, boolean>
   >(DEFAULT_VISIBLE_COLUMNS);
@@ -97,6 +114,70 @@ export default function ClientsPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isColumnPickerOpen]);
+
+  useEffect(() => {
+    if (isLoadingSettings) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadOperationalZones() {
+      try {
+        const params = new URLSearchParams();
+
+        params.set("country_code", countryCode);
+        params.set("active_only", "true");
+
+        const response = await fetch(
+          `/api/operational-zones?${params.toString()}`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error("Error loading operational zones");
+        }
+
+        const nextOperationalZones: OperationalZoneOption[] = Array.isArray(
+          result.data,
+        )
+          ? result.data
+          : [];
+
+        setOperationalZones(nextOperationalZones);
+
+        setOperationalZoneFilter((currentFilter) => {
+          if (currentFilter === "all" || currentFilter === "without") {
+            return currentFilter;
+          }
+
+          const zoneStillExists = nextOperationalZones.some(
+            (zone) => zone.operational_zone_id === currentFilter,
+          );
+
+          return zoneStillExists ? currentFilter : "all";
+        });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+
+        console.error("No se pudieron cargar las zonas operativas:", err);
+
+        setOperationalZones([]);
+        setOperationalZoneFilter("all");
+      }
+    }
+
+    void loadOperationalZones();
+
+    return () => controller.abort();
+  }, [countryCode, isLoadingSettings]);
 
   useEffect(() => {
     if (isLoadingSettings) {
@@ -131,6 +212,10 @@ export default function ClientsPage() {
           params.set("whatsapp", whatsFilter);
         }
 
+        if (operationalZoneFilter !== "all") {
+          params.set("operational_zone_id", operationalZoneFilter);
+        }
+
         const res = await fetch(`/api/clients?${params.toString()}`, {
           cache: "no-store",
           signal: controller.signal,
@@ -155,6 +240,7 @@ export default function ClientsPage() {
 
         setClients(nextClients);
         setPagination(nextPagination);
+
         setMetrics({
           total: Number(
             result.metrics?.total ?? nextPagination.totalItems ?? 0,
@@ -172,7 +258,7 @@ export default function ClientsPage() {
             return currentSelectedId;
           }
 
-          return nextClients[0]?.client_id ?? null;
+          return null;
         });
 
         if (
@@ -204,6 +290,7 @@ export default function ClientsPage() {
     search,
     statusFilter,
     whatsFilter,
+    operationalZoneFilter,
     sortKey,
     sortDirection,
     isLoadingSettings,
@@ -226,6 +313,7 @@ export default function ClientsPage() {
     search,
     statusFilter,
     whatsFilter,
+    operationalZoneFilter,
     sort,
     sortKey,
     sortDirection,
@@ -235,11 +323,29 @@ export default function ClientsPage() {
   const activeColumnKeys = useMemo<ClientTableColumnKey[]>(() => {
     const columns: ClientTableColumnKey[] = ["client"];
 
-    if (visibleColumns.contact) columns.push("contact");
-    if (visibleColumns.location) columns.push("location");
-    if (visibleColumns.operation) columns.push("operation");
-    if (visibleColumns.activity) columns.push("activity");
-    if (visibleColumns.status) columns.push("status");
+    if (visibleColumns.contact) {
+      columns.push("contact");
+    }
+
+    if (visibleColumns.location) {
+      columns.push("location");
+    }
+
+    if (visibleColumns.operationalZone) {
+      columns.push("operationalZone");
+    }
+
+    if (visibleColumns.operation) {
+      columns.push("operation");
+    }
+
+    if (visibleColumns.activity) {
+      columns.push("activity");
+    }
+
+    if (visibleColumns.status) {
+      columns.push("status");
+    }
 
     return columns;
   }, [visibleColumns]);
@@ -302,12 +408,15 @@ export default function ClientsPage() {
     function handleMouseUp() {
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
+
       window.removeEventListener("mousemove", handleMouseMove);
+
       window.removeEventListener("mouseup", handleMouseUp);
     }
 
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
+
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
   }
@@ -325,10 +434,12 @@ export default function ClientsPage() {
         setSortDirection((currentDirection) =>
           currentDirection === "asc" ? "desc" : "asc",
         );
+
         return currentSortKey;
       }
 
       setSortDirection(nextSortKey === "activity" ? "desc" : "asc");
+
       return nextSortKey;
     });
   }
@@ -348,18 +459,24 @@ export default function ClientsPage() {
 
   const visibleTotal = pagination.totalItems;
   const totalPages = Math.max(1, pagination.totalPages);
+
   const safeCurrentPage = Math.min(pagination.page || currentPage, totalPages);
 
   async function toggleStatus(client: Client) {
     const currentStatus = normalizeClientStatus(client.client_status);
+
     const newStatus: ClientStatus =
       currentStatus === "INACTIVE" ? "ACTIVE" : "INACTIVE";
 
     try {
       const res = await fetch(`/api/clients/${client.client_id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client_status: newStatus }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client_status: newStatus,
+        }),
       });
 
       const result = await res.json();
@@ -368,11 +485,14 @@ export default function ClientsPage() {
         throw new Error("No se pudo actualizar el estado");
       }
 
-      setClients((prev) =>
-        prev.map((c) =>
-          c.client_id === client.client_id
-            ? { ...c, client_status: newStatus }
-            : c,
+      setClients((previousClients) =>
+        previousClients.map((currentClient) =>
+          currentClient.client_id === client.client_id
+            ? {
+                ...currentClient,
+                client_status: newStatus,
+              }
+            : currentClient,
         ),
       );
 
@@ -401,16 +521,15 @@ export default function ClientsPage() {
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <ClientListToast toast={toast} />
 
-      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
               Clientes
             </h1>
 
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-              Administra clientes, contactos, ubicaciones y actividad operativa
-              para {businessCountryMeta.countryName}.
+              Administra clientes, contactos y actividad operativa.
             </p>
 
             {settingsError ? (
@@ -424,7 +543,7 @@ export default function ClientsPage() {
           <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
             <Link
               href="/clients/new"
-              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
             >
               + Nuevo cliente
             </Link>
@@ -435,7 +554,7 @@ export default function ClientsPage() {
           <ClientMetricCard
             title="Clientes totales"
             value={metrics.total}
-            detail={`Registros de ${businessCountryMeta.countryName}`}
+            detail="Registros disponibles"
             icon="👥"
             accentClass="text-slate-950"
             bgClass="bg-blue-50"
@@ -473,11 +592,16 @@ export default function ClientsPage() {
           search={search}
           statusFilter={statusFilter}
           whatsFilter={whatsFilter}
+          operationalZoneFilter={operationalZoneFilter}
+          operationalZones={operationalZones}
           sort={sort}
-          resultText={`${visibleTotal} resultado${visibleTotal === 1 ? "" : "s"} · ${businessCountryMeta.countryName}`}
+          resultText={`${visibleTotal} resultado${
+            visibleTotal === 1 ? "" : "s"
+          }`}
           onSearchChange={setSearch}
           onStatusFilterChange={setStatusFilter}
           onWhatsFilterChange={setWhatsFilter}
+          onOperationalZoneFilterChange={setOperationalZoneFilter}
           onSortChange={handleSortSelectChange}
           rightContent={
             <>
@@ -485,7 +609,7 @@ export default function ClientsPage() {
                 <button
                   type="button"
                   onClick={() => setIsColumnPickerOpen((current) => !current)}
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                 >
                   Columnas
                 </button>
@@ -503,7 +627,7 @@ export default function ClientsPage() {
                   setPageSize(Number(event.target.value));
                   setCurrentPage(1);
                 }}
-                className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+                className="h-9 cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
               >
                 {PAGE_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -515,7 +639,7 @@ export default function ClientsPage() {
           }
         />
 
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0">
           {clients.length === 0 ? (
             <ClientListEmptyState />
           ) : (
@@ -562,6 +686,18 @@ export default function ClientsPage() {
                         activeSortKey={sortKey}
                         sortDirection={sortDirection}
                         sortKey="location"
+                        onSort={handleHeaderSort}
+                        onResizeStart={startColumnResize}
+                      />
+                    )}
+
+                    {visibleColumns.operationalZone && (
+                      <ResizableHeaderCell
+                        label="Zona operativa"
+                        columnKey="operationalZone"
+                        activeSortKey={sortKey}
+                        sortDirection={sortDirection}
+                        sortKey="operationalZone"
                         onSort={handleHeaderSort}
                         onResizeStart={startColumnResize}
                       />
@@ -632,7 +768,7 @@ export default function ClientsPage() {
                       setCurrentPage((page) => Math.max(1, page - 1))
                     }
                     disabled={safeCurrentPage <= 1 || loading}
-                    className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Anterior
                   </button>
@@ -643,7 +779,7 @@ export default function ClientsPage() {
                       setCurrentPage((page) => Math.min(totalPages, page + 1))
                     }
                     disabled={safeCurrentPage >= totalPages || loading}
-                    className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Siguiente
                   </button>
@@ -651,12 +787,13 @@ export default function ClientsPage() {
               </div>
             </div>
           )}
-
-          <ClientPreviewPanel
-            client={selectedClient}
-            onToggleStatus={toggleStatus}
-          />
         </div>
+
+        <ClientPreviewPanel
+          client={selectedClient}
+          onToggleStatus={toggleStatus}
+          onClose={() => setSelectedClientId(null)}
+        />
       </section>
     </main>
   );

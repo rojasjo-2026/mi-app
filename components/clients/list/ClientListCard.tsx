@@ -18,6 +18,7 @@ import type { Client } from "@/app/clients/config/clientsPageConfig";
 type VisibleClientColumns = {
   contact: boolean;
   location: boolean;
+  operationalZone: boolean;
   operation: boolean;
   activity: boolean;
   status: boolean;
@@ -138,7 +139,7 @@ function TableCell({
   const stickyClass =
     sticky === "left"
       ? [
-          "sticky left-0 z-20 border-r border-slate-100 shadow-[10px_0_18px_-18px_rgba(15,23,42,0.35)]",
+          "sticky left-0 z-20",
           selected ? "bg-blue-50" : "bg-white group-hover:bg-slate-50",
         ].join(" ")
       : "";
@@ -169,6 +170,10 @@ export function ClientListCard({
   const helperLabel = getClientHelperLabel(client);
   const initials = getInitials(displayName);
   const locationLabel = getLocationLabel(client);
+
+  const operationalZoneName =
+    client.operational_zone?.name?.trim() || "Sin zona operativa";
+
   const status: ClientStatus =
     normalizeClientStatus(client.client_status) ?? "ACTIVE";
 
@@ -187,6 +192,8 @@ export function ClientListCard({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
+      aria-label={`Abrir perfil de ${displayName}`}
+      title={`Abrir perfil de ${displayName}`}
       onClick={onSelect}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -196,7 +203,7 @@ export function ClientListCard({
       }}
       style={{ gridTemplateColumns }}
       className={[
-        "group grid min-h-[60px] cursor-pointer border-b border-l-2 border-slate-100 transition last:border-b-0 hover:bg-slate-50",
+        "group grid min-h-[60px] cursor-pointer border-b border-l-2 border-slate-100 transition last:border-b-0 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500",
         isSelected
           ? "border-l-blue-600 bg-blue-50"
           : "border-l-transparent bg-white",
@@ -215,7 +222,7 @@ export function ClientListCard({
             {initials}
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h2
               title={displayName}
               className="truncate text-sm font-semibold tracking-tight text-slate-950"
@@ -223,22 +230,16 @@ export function ClientListCard({
               {displayName}
             </h2>
 
-            <div className="mt-1 flex flex-wrap items-center gap-2">
+            <div className="mt-1 flex min-w-0 items-center gap-2">
               <span
                 title={helperLabel}
-                className="max-w-[170px] truncate text-xs font-medium text-slate-500"
+                className="min-w-0 truncate text-xs font-medium text-slate-500"
               >
                 {helperLabel}
               </span>
 
-              {client.country_code ? (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                  {client.country_code}
-                </span>
-              ) : null}
-
               {client.whatsapp_opt_in ? (
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                   WhatsApp
                 </span>
               ) : null}
@@ -271,6 +272,16 @@ export function ClientListCard({
             icon={<MapPin className="h-3.5 w-3.5" />}
             value={locationLabel || "Sin ubicación"}
             muted={!locationLabel}
+          />
+        </TableCell>
+      )}
+
+      {visibleColumns.operationalZone && (
+        <TableCell>
+          <ClientMetaItem
+            icon={<MapPin className="h-3.5 w-3.5" />}
+            value={operationalZoneName}
+            muted={!client.operational_zone}
           />
         </TableCell>
       )}

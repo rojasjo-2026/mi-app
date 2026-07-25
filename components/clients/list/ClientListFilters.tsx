@@ -1,50 +1,62 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Search } from "lucide-react";
 
-type StatusFilter = "all" | "ACTIVE" | "PROSPECT" | "ON_HOLD" | "INACTIVE";
-type WhatsAppFilter = "all" | "with" | "without";
-type SortType = "name" | "recent";
+import type {
+  OperationalZoneFilter,
+  OperationalZoneOption,
+  SortType,
+  StatusFilter,
+  WhatsAppFilter,
+} from "@/app/clients/config/clientsPageConfig";
 
 type ClientListFiltersProps = {
   search: string;
   statusFilter: StatusFilter;
   whatsFilter: WhatsAppFilter;
+  operationalZoneFilter: OperationalZoneFilter;
+  operationalZones: OperationalZoneOption[];
   sort: SortType;
   resultText?: string;
   rightContent?: ReactNode;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: StatusFilter) => void;
   onWhatsFilterChange: (value: WhatsAppFilter) => void;
+  onOperationalZoneFilterChange: (value: OperationalZoneFilter) => void;
   onSortChange: (value: SortType) => void;
 };
 
 const controlClass =
-  "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50";
+  "h-9 w-full cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50";
 
 export function ClientListFilters({
   search,
   statusFilter,
   whatsFilter,
+  operationalZoneFilter,
+  operationalZones,
   sort,
   resultText,
   rightContent,
   onSearchChange,
   onStatusFilterChange,
   onWhatsFilterChange,
+  onOperationalZoneFilterChange,
   onSortChange,
 }: ClientListFiltersProps) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-      <div className="grid gap-3 xl:grid-cols-[minmax(260px,1fr)_150px_170px_160px_auto] xl:items-center">
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-            🔎
-          </span>
+    <section className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+      <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-[minmax(300px,1fr)_145px_165px_190px_145px_auto] xl:items-center">
+        <div className="relative md:col-span-2 xl:col-span-1">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          />
 
           <input
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Buscar clientes..."
             className="h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           />
@@ -52,7 +64,9 @@ export function ClientListFilters({
 
         <select
           value={statusFilter}
-          onChange={(e) => onStatusFilterChange(e.target.value as StatusFilter)}
+          onChange={(event) =>
+            onStatusFilterChange(event.target.value as StatusFilter)
+          }
           className={controlClass}
         >
           <option value="all">Estado: Todos</option>
@@ -64,31 +78,54 @@ export function ClientListFilters({
 
         <select
           value={whatsFilter}
-          onChange={(e) =>
-            onWhatsFilterChange(e.target.value as WhatsAppFilter)
+          onChange={(event) =>
+            onWhatsFilterChange(event.target.value as WhatsAppFilter)
           }
           className={controlClass}
         >
           <option value="all">WhatsApp: Todos</option>
-          <option value="with">WhatsApp: Con WhatsApp</option>
-          <option value="without">WhatsApp: Sin WhatsApp</option>
+          <option value="with">Con WhatsApp</option>
+          <option value="without">Sin WhatsApp</option>
+        </select>
+
+        <select
+          value={operationalZoneFilter}
+          onChange={(event) =>
+            onOperationalZoneFilterChange(
+              event.target.value as OperationalZoneFilter,
+            )
+          }
+          className={controlClass}
+        >
+          <option value="all">Zona operativa: Todas</option>
+
+          {operationalZones.map((zone) => (
+            <option
+              key={zone.operational_zone_id}
+              value={zone.operational_zone_id}
+            >
+              {zone.name}
+            </option>
+          ))}
+
+          <option value="without">Sin zona operativa</option>
         </select>
 
         <select
           value={sort}
-          onChange={(e) => onSortChange(e.target.value as SortType)}
+          onChange={(event) => onSortChange(event.target.value as SortType)}
           className={controlClass}
         >
           <option value="name">Nombre</option>
           <option value="recent">Más recientes</option>
         </select>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {resultText && (
-            <p className="whitespace-nowrap text-sm font-semibold text-slate-700">
+        <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2 xl:col-span-1">
+          {resultText ? (
+            <span className="inline-flex h-9 items-center whitespace-nowrap rounded-md bg-slate-100 px-3 text-xs font-semibold text-slate-600">
               {resultText}
-            </p>
-          )}
+            </span>
+          ) : null}
 
           {rightContent}
         </div>

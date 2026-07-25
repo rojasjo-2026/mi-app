@@ -17,6 +17,7 @@ export type FindClientsSortKey =
   | "client"
   | "contact"
   | "location"
+  | "operationalZone"
   | "operation"
   | "activity"
   | "status";
@@ -30,6 +31,7 @@ type FindClientsParams = {
   status?: ClientStatusInput;
   whatsapp?: FindClientsWhatsAppFilter | string | null;
   countryCode?: string | null;
+  operationalZoneId?: string | null;
   page?: number;
   pageSize?: number;
   sortKey?: FindClientsSortKey | string | null;
@@ -92,6 +94,12 @@ function getClientOrderBy(
         { admin_level_1: direction },
         { admin_level_2: direction },
         { admin_level_3: direction },
+      ];
+
+    case "operationalZone":
+      return [
+        { operational_zone: { name: direction } },
+        { display_name: "asc" },
       ];
 
     case "status":
@@ -411,6 +419,7 @@ export async function findClients({
   status,
   whatsapp = "all",
   countryCode,
+  operationalZoneId,
   page,
   pageSize,
   sortKey = "client",
@@ -434,6 +443,12 @@ export async function findClients({
           country_code: normalizedCountryCode,
         }
       : {}),
+
+    ...(operationalZoneId === "without"
+      ? { operational_zone_id: null }
+      : operationalZoneId
+        ? { operational_zone_id: operationalZoneId }
+        : {}),
 
     ...(whatsapp === "with"
       ? { whatsapp_opt_in: true }
@@ -505,6 +520,16 @@ export async function findClients({
         skip,
         take: safePageSize,
         orderBy: getClientOrderBy(sortKey, sortDirection),
+        include: {
+          operational_zone: {
+            select: {
+              operational_zone_id: true,
+              name: true,
+              color_label: true,
+              is_active: true,
+            },
+          },
+        },
       }),
     ]);
 
