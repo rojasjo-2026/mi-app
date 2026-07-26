@@ -19,6 +19,9 @@ import GeneralSettingsSection from "@/app/settings/components/GeneralSettingsSec
 import MaintenanceAutomationSettingsSection from "@/app/settings/components/MaintenanceAutomationSettingsSection";
 import OperationAgendaSettingsSection from "@/app/settings/components/OperationAgendaSettingsSection";
 import SettingsHeader from "@/app/settings/components/SettingsHeader";
+import SettingsTabs, {
+  type SettingsTab,
+} from "@/app/settings/components/SettingsTabs";
 
 type CurrencyCode = string;
 
@@ -227,6 +230,7 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [countryPresetMessage, setCountryPresetMessage] = useState("");
+  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [activeOperationSection, setActiveOperationSection] = useState<
     string | null
   >("Horario laboral");
@@ -323,14 +327,14 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
+      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
         Cargando configuración...
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <SettingsHeader
         settingsId={settingsId}
         saving={saving}
@@ -339,32 +343,51 @@ export default function SettingsPage() {
         onSave={() => void handleSave()}
       />
 
-      <section className="grid gap-5 xl:grid-cols-2">
-        <GeneralSettingsSection
-          form={form}
-          selectedCountryPreset={selectedCountryPreset}
-          timezoneOptions={timezoneOptions}
-          countryPresetMessage={countryPresetMessage}
-          countryOptions={COUNTRY_PRESET_OPTIONS}
-          currencyOptions={currencyOptions}
-          currencyNames={currencyNames}
-          taxModeLabels={taxModeLabels}
-          onFormChange={setForm}
-          onCountryChange={handleCountryChange}
-        />
+      <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <MaintenanceAutomationSettingsSection
-          form={form}
-          onFormChange={setForm}
-        />
+      <section role="tabpanel">
+        {activeTab === "general" ? (
+          <GeneralSettingsSection
+            form={form}
+            selectedCountryPreset={selectedCountryPreset}
+            timezoneOptions={timezoneOptions}
+            countryPresetMessage={countryPresetMessage}
+            countryOptions={COUNTRY_PRESET_OPTIONS}
+            currencyOptions={currencyOptions}
+            currencyNames={currencyNames}
+            taxModeLabels={taxModeLabels}
+            onFormChange={setForm}
+            onCountryChange={handleCountryChange}
+          />
+        ) : null}
+
+        {activeTab === "automation" ? (
+          <MaintenanceAutomationSettingsSection
+            form={form}
+            onFormChange={setForm}
+          />
+        ) : null}
+
+        {activeTab === "operations" ? (
+          <OperationAgendaSettingsSection
+            area="operations"
+            activeOperationSection={activeOperationSection}
+            onActiveOperationSectionChange={setActiveOperationSection}
+            countryCode={form.country_code}
+            countryName={form.country_name}
+          />
+        ) : null}
+
+        {activeTab === "access" ? (
+          <OperationAgendaSettingsSection
+            area="access"
+            activeOperationSection={activeOperationSection}
+            onActiveOperationSectionChange={setActiveOperationSection}
+            countryCode={form.country_code}
+            countryName={form.country_name}
+          />
+        ) : null}
       </section>
-
-      <OperationAgendaSettingsSection
-        activeOperationSection={activeOperationSection}
-        onActiveOperationSectionChange={setActiveOperationSection}
-        countryCode={form.country_code}
-        countryName={form.country_name}
-      />
     </div>
   );
 }

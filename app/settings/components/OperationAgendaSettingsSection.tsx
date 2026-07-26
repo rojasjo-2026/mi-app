@@ -8,145 +8,190 @@ import CalendarBlockedDatesManager from "@/app/settings/components/CalendarBlock
 import CalendarNonWorkingDaysManager from "@/app/settings/components/CalendarNonWorkingDaysManager";
 import OperationalAssignmentManager from "@/app/settings/components/OperationalAssignmentManager";
 
+export type SettingsManagementArea = "operations" | "access";
+
 type OperationAgendaSettingsSectionProps = {
+  area: SettingsManagementArea;
   activeOperationSection: string | null;
   onActiveOperationSectionChange: Dispatch<SetStateAction<string | null>>;
   countryCode: string;
   countryName: string;
 };
 
-const futureSections = [
+const operationItems = [
   {
-    title: "Operación y agenda",
-    description:
-      "Controle horarios laborales, días no disponibles y reglas operativas del calendario.",
-    items: [
-      "Horario laboral",
-      "Días no laborables",
-      "Reglas de agenda",
-      "Bloqueos de calendario",
-      "Asignación operativa",
-    ],
+    title: "Horario laboral",
+    description: "Horas y días habituales de operación.",
   },
   {
-    title: "Accesos y permisos",
-    description:
-      "Administre usuarios, roles y permisos relacionados con el uso del sistema.",
-    items: ["Usuarios activos", "Roles", "Permisos", "Accesos administrativos"],
+    title: "Días no laborables",
+    description: "Feriados, cierres especiales y fechas no disponibles.",
+  },
+  {
+    title: "Reglas de agenda",
+    description: "Capacidad diaria y condiciones para ofrecer una fecha.",
+  },
+  {
+    title: "Bloqueos de calendario",
+    description: "Fechas bloqueadas manualmente para nuevas visitas.",
+  },
+  {
+    title: "Asignación operativa",
+    description: "Zonas, rutas y fechas planificadas por región.",
   },
 ];
 
-const manageableOperationItems = [
-  "Horario laboral",
-  "Días no laborables",
-  "Reglas de agenda",
-  "Bloqueos de calendario",
-  "Asignación operativa",
+const accessItems = [
+  "Usuarios activos",
+  "Roles",
+  "Permisos",
+  "Accesos administrativos",
 ];
 
 export default function OperationAgendaSettingsSection({
+  area,
   activeOperationSection,
   onActiveOperationSectionChange,
   countryCode,
   countryName,
 }: OperationAgendaSettingsSectionProps) {
+  if (area === "access") {
+    return (
+      <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-950">
+          Accesos y permisos
+        </h2>
+
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          Administre usuarios, roles y permisos relacionados con el uso del
+          sistema.
+        </p>
+
+        <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-700">
+          La administración avanzada de usuarios, roles y permisos estará
+          disponible en una próxima fase.
+        </div>
+
+        <div className="mt-4 divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200">
+          {accessItems.map((item) => (
+            <div
+              key={item}
+              className="flex cursor-default items-center justify-between gap-4 bg-slate-50 px-4 py-3"
+            >
+              <span className="text-sm font-medium text-slate-600">
+                {item}
+              </span>
+
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                Próximamente
+              </span>
+            </div>
+          ))}
+        </div>
+      </article>
+    );
+  }
+
   return (
-    <section className="grid gap-5 md:grid-cols-2">
-      {futureSections.map((section) => (
-        <article
-          key={section.title}
-          className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md"
-        >
-          <h2 className="text-lg font-bold text-slate-900">{section.title}</h2>
+    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-slate-950">
+        Operación y agenda
+      </h2>
 
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            {section.description}
-          </p>
+      <p className="mt-1 text-sm leading-6 text-slate-500">
+        Controle horarios laborales, días no disponibles y reglas operativas
+        del calendario.
+      </p>
 
-          <div className="mt-5 space-y-2">
-            {section.items.map((item) => {
-              const isOperationSection = section.title === "Operación y agenda";
-              const isManageableOperationItem =
-                isOperationSection && manageableOperationItems.includes(item);
-              const isActive = activeOperationSection === item;
+      <div className="mt-4 divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200">
+        {operationItems.map((item) => {
+          const isActive = activeOperationSection === item.title;
 
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => {
-                    if (!isManageableOperationItem) return;
+          return (
+            <button
+              key={item.title}
+              type="button"
+              onClick={() =>
+                onActiveOperationSectionChange((current) =>
+                  current === item.title ? null : item.title,
+                )
+              }
+              className={[
+                "flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-3 text-left transition",
+                isActive
+                  ? "bg-blue-50"
+                  : "bg-white hover:bg-slate-50",
+              ].join(" ")}
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-800">
+                  {item.title}
+                </span>
 
-                    onActiveOperationSectionChange((current) =>
-                      current === item ? null : item,
-                    );
-                  }}
-                  disabled={!isManageableOperationItem}
-                  className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
-                    isManageableOperationItem
-                      ? "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
-                      : "cursor-not-allowed border-slate-100 bg-slate-50 opacity-75"
-                  }`}
+                <span className="mt-0.5 block text-xs leading-5 text-slate-500">
+                  {item.description}
+                </span>
+              </span>
+
+              <span className="flex shrink-0 items-center gap-3">
+                <span
+                  className={[
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                    isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-slate-100 text-slate-600",
+                  ].join(" ")}
                 >
-                  <span className="text-sm font-medium text-slate-700">
-                    {item}
-                  </span>
+                  {isActive
+                    ? "Abierto"
+                    : item.title === "Horario laboral"
+                      ? "Activo"
+                      : "Configurar"}
+                </span>
 
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      isManageableOperationItem
-                        ? isActive
-                          ? "bg-slate-900 text-white"
-                          : "bg-white text-slate-600"
-                        : "bg-white text-slate-500"
-                    }`}
-                  >
-                    {isManageableOperationItem
-                      ? isActive
-                        ? "Abierto"
-                        : "Gestionar"
-                      : "Próximamente"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "text-lg leading-none text-slate-400 transition",
+                    isActive ? "rotate-90" : "",
+                  ].join(" ")}
+                >
+                  ›
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-          {section.title === "Operación y agenda" &&
-          activeOperationSection === "Horario laboral" ? (
-            <BusinessWorkingHoursManager
-              countryCode={countryCode}
-              countryName={countryName}
-            />
-          ) : null}
+      {activeOperationSection === "Horario laboral" ? (
+        <BusinessWorkingHoursManager
+          countryCode={countryCode}
+          countryName={countryName}
+        />
+      ) : null}
 
-          {section.title === "Operación y agenda" &&
-          activeOperationSection === "Días no laborables" ? (
-            <CalendarNonWorkingDaysManager />
-          ) : null}
+      {activeOperationSection === "Días no laborables" ? (
+        <CalendarNonWorkingDaysManager />
+      ) : null}
 
-          {section.title === "Operación y agenda" &&
-          activeOperationSection === "Reglas de agenda" ? (
-            <AgendaRulesManager
-              countryCode={countryCode}
-              countryName={countryName}
-            />
-          ) : null}
+      {activeOperationSection === "Reglas de agenda" ? (
+        <AgendaRulesManager
+          countryCode={countryCode}
+          countryName={countryName}
+        />
+      ) : null}
 
-          {section.title === "Operación y agenda" &&
-          activeOperationSection === "Bloqueos de calendario" ? (
-            <CalendarBlockedDatesManager />
-          ) : null}
+      {activeOperationSection === "Bloqueos de calendario" ? (
+        <CalendarBlockedDatesManager />
+      ) : null}
 
-          {section.title === "Operación y agenda" &&
-          activeOperationSection === "Asignación operativa" ? (
-            <OperationalAssignmentManager
-              countryCode={countryCode}
-              countryName={countryName}
-            />
-          ) : null}
-        </article>
-      ))}
-    </section>
+      {activeOperationSection === "Asignación operativa" ? (
+        <OperationalAssignmentManager
+          countryCode={countryCode}
+          countryName={countryName}
+        />
+      ) : null}
+    </article>
   );
 }

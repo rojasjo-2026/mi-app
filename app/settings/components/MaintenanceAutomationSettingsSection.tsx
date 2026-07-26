@@ -1,3 +1,5 @@
+"use client";
+
 type SettingsForm = {
   company_name: string | null;
   company_phone: string | null;
@@ -30,18 +32,18 @@ export default function MaintenanceAutomationSettingsSection({
   onFormChange,
 }: MaintenanceAutomationSettingsSectionProps) {
   return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-bold text-slate-900">
+    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-slate-950">
         Automatización de mantenimiento
       </h2>
 
-      <p className="mt-2 text-sm leading-6 text-slate-500">
+      <p className="mt-1 text-sm leading-6 text-slate-500">
         Configure cómo y cuándo el sistema debe contactar clientes por
         mantenimientos próximos.
       </p>
 
-      <div className="mt-6 space-y-4">
-        <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="mt-5 space-y-3">
+        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 transition hover:bg-slate-100/70">
           <div>
             <p className="text-sm font-semibold text-slate-800">
               WhatsApp activo
@@ -61,11 +63,11 @@ export default function MaintenanceAutomationSettingsSection({
                 whatsapp_enabled: event.target.checked,
               })
             }
-            className="h-5 w-5 rounded border-slate-300"
+            className="h-5 w-5 cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500"
           />
         </label>
 
-        <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 transition hover:bg-slate-100/70">
           <div>
             <p className="text-sm font-semibold text-slate-800">
               Contacto automático
@@ -85,12 +87,12 @@ export default function MaintenanceAutomationSettingsSection({
                 auto_contact_enabled: event.target.checked,
               })
             }
-            className="h-5 w-5 rounded border-slate-300"
+            className="h-5 w-5 cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500"
           />
         </label>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2">
+        <div className="grid gap-4 pt-1 md:grid-cols-2">
+          <label className="space-y-1.5">
             <span className="text-sm font-semibold text-slate-700">
               Días antes para contactar
             </span>
@@ -106,16 +108,15 @@ export default function MaintenanceAutomationSettingsSection({
                   maintenance_contact_days_before: Number(event.target.value),
                 })
               }
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
             />
 
-            <p className="text-xs text-slate-400">
-              Este valor aplica de forma general para los clientes que permiten
-              contacto por WhatsApp.
+            <p className="text-xs leading-5 text-slate-400">
+              Aplica a los clientes que permiten contacto por WhatsApp.
             </p>
           </label>
 
-          <label className="space-y-2">
+          <label className="space-y-1.5">
             <span className="text-sm font-semibold text-slate-700">
               Hora automática de envío
             </span>
@@ -131,19 +132,19 @@ export default function MaintenanceAutomationSettingsSection({
                   automatic_send_hour: Number(event.target.value),
                 })
               }
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
             />
 
-            <p className="text-xs text-slate-400">
-              Use formato 24 horas. Ejemplo: 9 = 9:00 a. m.
+            <p className="text-xs leading-5 text-slate-400">
+              Use formato de 24 horas. Ejemplo: 9 equivale a 9:00 a. m.
             </p>
           </label>
         </div>
 
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-800">
-          Estos valores funcionarán como configuración general para la
-          automatización de mantenimientos. Cada cliente seguirá controlando
-          únicamente si permite o no el contacto por WhatsApp.
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+          Estos valores funcionan como configuración general. Cada cliente
+          seguirá controlando individualmente si permite el contacto por
+          WhatsApp.
         </div>
       </div>
     </article>
