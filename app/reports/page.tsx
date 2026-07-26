@@ -28,7 +28,6 @@ import ReportsHeader from "./components/ReportsHeader";
 import ReportsTabs from "./components/ReportsTabs";
 import ReportSourcePanel from "./components/ReportSourcePanel";
 import ReportFiltersPanel from "./components/ReportFiltersPanel";
-import ReportColumnsPanel from "./components/ReportColumnsPanel";
 import ReportPreviewTable from "./components/ReportPreviewTable";
 import ReportImportPanel from "./components/ReportImportPanel";
 import ReportTemplatesPanel from "./components/ReportTemplatesPanel";
@@ -446,24 +445,18 @@ export default function ReportsPage() {
               onFiltersChange={handleFiltersChange}
             />
 
-            <section className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-              <ReportColumnsPanel
-                source={source}
-                columns={availableColumns}
-                selectedColumns={selectedColumns}
-                onSelectedColumnsChange={handleSelectedColumnsChange}
-              />
-
-              <ReportPreviewTable
-                source={source}
-                columns={selectedColumnMeta}
-                rows={rows}
-                loading={loading}
-                pagination={pagination}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-              />
-            </section>
+            <ReportPreviewTable
+              source={source}
+              columns={selectedColumnMeta}
+              availableColumns={availableColumns}
+              selectedColumns={selectedColumns}
+              rows={rows}
+              loading={loading}
+              pagination={pagination}
+              onSelectedColumnsChange={handleSelectedColumnsChange}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
           </>
         )}
 

@@ -11,22 +11,18 @@ type ReportsTabsProps = {
 const tabs: Array<{
   key: ReportMode;
   label: string;
-  description: string;
 }> = [
   {
     key: "builder",
     label: "Generar reporte",
-    description: "Construir reportes con filtros y columnas.",
   },
   {
     key: "import",
     label: "Importar clientes",
-    description: "Subir clientes desde Excel.",
   },
   {
     key: "templates",
     label: "Plantillas",
-    description: "Reportes guardados para futuras fases.",
   },
 ];
 
@@ -36,8 +32,12 @@ export default function ReportsTabs({
   importCount,
 }: ReportsTabsProps) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
-      <div className="grid gap-2 md:grid-cols-3">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div
+        role="tablist"
+        aria-label="Opciones del centro de reportes"
+        className="flex min-w-max items-center px-2"
+      >
         {tabs.map((tab) => {
           const isSelected = mode === tab.key;
 
@@ -45,39 +45,30 @@ export default function ReportsTabs({
             <button
               key={tab.key}
               type="button"
+              role="tab"
+              aria-selected={isSelected}
               onClick={() => onModeChange(tab.key)}
               className={[
-                "rounded-md px-4 py-3 text-left transition",
+                "relative inline-flex h-12 min-w-[180px] items-center justify-center gap-2 border-b-2 px-5 text-sm font-semibold transition",
                 isSelected
-                  ? "bg-slate-950 text-white"
-                  : "bg-white text-slate-700 hover:bg-slate-50",
+                  ? "border-blue-600 text-blue-700"
+                  : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950",
               ].join(" ")}
             >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold">{tab.label}</span>
+              <span>{tab.label}</span>
 
-                {tab.key === "import" && importCount > 0 && (
-                  <span
-                    className={[
-                      "rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                      isSelected
-                        ? "bg-white/15 text-white"
-                        : "bg-slate-100 text-slate-600",
-                    ].join(" ")}
-                  >
-                    {importCount}
-                  </span>
-                )}
-              </div>
-
-              <p
-                className={[
-                  "mt-1 text-xs leading-5",
-                  isSelected ? "text-slate-300" : "text-slate-500",
-                ].join(" ")}
-              >
-                {tab.description}
-              </p>
+              {tab.key === "import" && importCount > 0 && (
+                <span
+                  className={[
+                    "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    isSelected
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-slate-100 text-slate-600",
+                  ].join(" ")}
+                >
+                  {importCount}
+                </span>
+              )}
             </button>
           );
         })}

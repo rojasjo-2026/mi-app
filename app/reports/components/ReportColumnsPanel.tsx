@@ -15,8 +15,9 @@ type ReportColumnsPanelProps = {
 
 function getSourceLabel(source: ActiveReportSource) {
   if (source === "clients") return "Clientes";
+  if (source === "installations") return "Instalaciones";
 
-  return "Instalaciones";
+  return "Mantenimientos";
 }
 
 export default function ReportColumnsPanel({
@@ -74,7 +75,8 @@ export default function ReportColumnsPanel({
         <button
           type="button"
           onClick={selectAllColumns}
-          className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+          disabled={columns.length === 0}
+          className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Todas
         </button>
@@ -82,7 +84,8 @@ export default function ReportColumnsPanel({
         <button
           type="button"
           onClick={clearColumns}
-          className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+          disabled={selectedColumns.length === 0}
+          className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Limpiar
         </button>
