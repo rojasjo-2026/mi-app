@@ -38,6 +38,25 @@ import {
   mapAvailabilityByDate,
 } from "./utils/calendarAvailabilityUtils";
 
+function parseCalendarDateQuery(value: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
 export default function CalendarPage() {
   const today = new Date();
   const todayKey = formatDateKey(today);
@@ -72,6 +91,19 @@ export default function CalendarPage() {
   const [isUpdatingBlockedDate, setIsUpdatingBlockedDate] = useState(false);
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+
+  useEffect(() => {
+    const queryDate = parseCalendarDateQuery(
+      new URLSearchParams(window.location.search).get("date"),
+    );
+
+    if (!queryDate) {
+      return;
+    }
+
+    setSelectedDate(queryDate);
+    setCurrentMonth(new Date(queryDate.getFullYear(), queryDate.getMonth(), 1));
+  }, []);
 
   async function loadCalendarEvents() {
     try {

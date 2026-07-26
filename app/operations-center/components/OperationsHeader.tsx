@@ -19,6 +19,13 @@ export function OperationsHeader({
   onDateChange,
   onViewModeChange,
 }: OperationsHeaderProps) {
+  const periodLabel =
+    viewMode === "week"
+      ? "Semana operativa"
+      : viewMode === "month"
+        ? "Mes operativo"
+        : "Día operativo";
+
   return (
     <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div>
@@ -27,9 +34,9 @@ export function OperationsHeader({
         </h1>
 
         <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-          Planifique los trabajos por fecha, revise la capacidad del día, agrupe
-          visitas por rutas configuradas y prepare una ruta para abrirla en
-          Google Maps.
+          {periodLabel}. Planifique los trabajos por fecha, revise la capacidad
+          del día, agrupe visitas por rutas configuradas y prepare una ruta para
+          abrirla en Google Maps.
         </p>
       </div>
 
@@ -46,7 +53,7 @@ export function OperationsHeader({
                   key={option.value}
                   type="button"
                   onClick={() => onViewModeChange(option.value)}
-                  className={`inline-flex h-7 items-center justify-center rounded px-3 text-sm font-semibold transition ${
+                  className={`inline-flex h-7 cursor-pointer items-center justify-center rounded px-3 text-sm font-semibold transition ${
                     isActive
                       ? "bg-blue-600 text-white shadow-sm"
                       : "text-slate-700 hover:bg-slate-50"
@@ -68,7 +75,7 @@ export function OperationsHeader({
             type="date"
             value={selectedDate}
             onChange={(event) => onDateChange(event.target.value)}
-            className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+            className="h-9 cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
           />
         </label>
       </div>

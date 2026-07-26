@@ -163,16 +163,15 @@ export function OperationsRoutePanel({
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex h-[clamp(420px,58vh,680px)] min-w-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex shrink-0 flex-col gap-2 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-slate-950">
-            Ruta en Google Maps
+            Ruta del día
           </h2>
 
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            CLARIUS prepara las paradas con los datos del sistema. Google Maps
-            se encarga de navegación, tráfico y tiempos reales.
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Prepare las paradas y abra la ruta en Google Maps.
           </p>
         </div>
 
@@ -181,131 +180,135 @@ export function OperationsRoutePanel({
         </span>
       </div>
 
-      <div className="flex flex-col gap-4 px-4 py-4">
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-semibold text-slate-700">
-            Punto de salida
-          </span>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-semibold text-slate-700">
+              Punto de salida
+            </span>
 
-          <OperationalZonePlaceAutocomplete
-            value={origin}
-            countryCode={activeCountryCode}
-            placeholder="Busque un punto de salida. Ej. oficina central o punto de referencia"
-            onValueChange={handleOriginValueChange}
-            onPlaceSelected={handleOriginPlaceSelected}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleUseCurrentLocation}
-          disabled={loadingLocation}
-          className="inline-flex h-9 w-full items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loadingLocation
-            ? "Obteniendo ubicación..."
-            : "Usar mi ubicación actual"}
-        </button>
-
-        {originCoordinate &&
-        allStopsHaveCoordinates &&
-        routeStops.length > 1 ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-700">
-            Las paradas fueron ordenadas automáticamente por cercanía desde el
-            punto de salida.
+            <OperationalZonePlaceAutocomplete
+              value={origin}
+              countryCode={activeCountryCode}
+              placeholder="Busque una dirección o punto de referencia"
+              onValueChange={handleOriginValueChange}
+              onPlaceSelected={handleOriginPlaceSelected}
+            />
           </div>
-        ) : null}
 
-        {!originCoordinate &&
-        allStopsHaveCoordinates &&
-        routeStops.length > 1 ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">
-            Para ordenar automáticamente las paradas por cercanía, use la
-            ubicación actual o seleccione una dirección desde las sugerencias.
-          </div>
-        ) : null}
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={loadingLocation}
+            className="inline-flex h-9 w-full items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingLocation
+              ? "Obteniendo ubicación..."
+              : "Usar mi ubicación actual"}
+          </button>
 
-        {hasRouteStops ? (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-700">
-                  Paradas cargadas
-                </p>
+          {originCoordinate &&
+          allStopsHaveCoordinates &&
+          routeStops.length > 1 ? (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-700">
+              Las paradas fueron ordenadas automáticamente por cercanía desde el
+              punto de salida.
+            </div>
+          ) : null}
 
-                {duplicatedStopsCount > 0 ? (
-                  <p className="mt-1 text-xs text-slate-500">
-                    Se omitieron {duplicatedStopsCount} paradas duplicadas.
+          {!originCoordinate &&
+          allStopsHaveCoordinates &&
+          routeStops.length > 1 ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700">
+              Para ordenar automáticamente las paradas por cercanía, use la
+              ubicación actual o seleccione una dirección desde las sugerencias.
+            </div>
+          ) : null}
+
+          {hasRouteStops ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">
+                    Paradas cargadas
                   </p>
-                ) : null}
 
-                {routePlan.sorted ? (
-                  <p className="mt-1 text-xs text-emerald-700">
-                    Ordenadas por cercanía al punto de salida.
-                  </p>
-                ) : null}
+                  {duplicatedStopsCount > 0 ? (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Se omitieron {duplicatedStopsCount} paradas duplicadas.
+                    </p>
+                  ) : null}
+
+                  {routePlan.sorted ? (
+                    <p className="mt-1 text-xs text-emerald-700">
+                      Ordenadas por cercanía al punto de salida.
+                    </p>
+                  ) : null}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleClearStops}
+                  className="text-xs font-semibold text-rose-600 transition hover:text-rose-700"
+                >
+                  Limpiar
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={handleClearStops}
-                className="text-xs font-semibold text-rose-600 transition hover:text-rose-700"
-              >
-                Limpiar
-              </button>
+              <div className="mt-3 space-y-2">
+                {routeStops.map((stop, index) => (
+                  <div
+                    key={`${stop}-${index}`}
+                    className="rounded-md border border-slate-200 bg-white px-3 py-2"
+                  >
+                    <p className="text-xs font-semibold text-slate-500">
+                      Parada {index + 1}
+                    </p>
+
+                    <p className="mt-1 break-words text-sm font-medium text-slate-800">
+                      {stop}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
+          ) : null}
 
-            <div className="mt-3 space-y-2">
-              {routeStops.map((stop, index) => (
-                <div
-                  key={`${stop}-${index}`}
-                  className="rounded-md border border-slate-200 bg-white px-3 py-2"
-                >
-                  <p className="text-xs font-semibold text-slate-500">
-                    Parada {index + 1}
-                  </p>
+          <details className="rounded-lg border border-slate-200 bg-white">
+            <summary className="cursor-pointer list-none px-3 py-2.5 text-sm font-semibold text-slate-700">
+              Editar paradas manualmente
+            </summary>
 
-                  <p className="mt-1 break-words text-sm font-medium text-slate-800">
-                    {stop}
-                  </p>
-                </div>
-              ))}
+            <div className="border-t border-slate-200 p-3">
+              <textarea
+                rows={4}
+                value={routeStopsText}
+                onChange={(event) => onRouteStopsTextChange(event.target.value)}
+                placeholder={`Seleccione una agrupación operativa o ingrese una parada por línea.\nEj.\nCliente 1, dirección o coordenadas\nCliente 2, dirección o coordenadas`}
+                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              />
             </div>
-          </div>
-        ) : null}
+          </details>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-sm font-semibold text-slate-700">
-            Paradas de la ruta
-          </span>
+          {routeError ? (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {routeError}
+            </div>
+          ) : null}
 
-          <textarea
-            rows={7}
-            value={routeStopsText}
-            onChange={(event) => onRouteStopsTextChange(event.target.value)}
-            placeholder={`Seleccione una agrupación operativa o ingrese una parada por línea.\nEj.\nCliente 1, dirección o coordenadas\nCliente 2, dirección o coordenadas\nCliente 3, dirección o coordenadas`}
-            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
-          />
-        </label>
+          <button
+            type="button"
+            onClick={handleOpenGoogleMapsRoute}
+            className="inline-flex h-9 w-full items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          >
+            Abrir ruta en Google Maps
+          </button>
 
-        {routeError ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {routeError}
-          </div>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={handleOpenGoogleMapsRoute}
-          className="inline-flex h-9 w-full items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-        >
-          Abrir ruta en Google Maps
-        </button>
-
-        <p className="text-xs leading-5 text-slate-400">
-          Las paradas pueden venir desde una agrupación operativa configurada o
-          pueden ajustarse manualmente antes de abrir Google Maps.
-        </p>
+          <p className="text-[11px] leading-5 text-slate-400">
+            Las paradas pueden venir desde una agrupación operativa configurada
+            o pueden ajustarse manualmente antes de abrir Google Maps.
+          </p>
+        </div>
       </div>
     </div>
   );

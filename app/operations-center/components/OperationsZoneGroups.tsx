@@ -61,7 +61,7 @@ export function OperationsZoneGroups({
   const zoneGroups = buildZoneGroups(selectedDateEvents);
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 px-4 py-4">
         <h2 className="text-base font-semibold text-slate-950">
           Agrupaciones operativas del día
@@ -73,7 +73,7 @@ export function OperationsZoneGroups({
         </p>
       </div>
 
-      <div className="divide-y divide-slate-200">
+      <div className="max-h-[clamp(260px,38vh,420px)] divide-y divide-slate-200 overflow-y-auto">
         {zoneGroups.length === 0 ? (
           <div className="px-4 py-5">
             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
@@ -167,7 +167,7 @@ export function OperationsZoneGroups({
                     disabled={
                       !onUseGroupAsRoute || group.route_stops.length === 0
                     }
-                    className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Usar esta agrupación como ruta
                   </button>

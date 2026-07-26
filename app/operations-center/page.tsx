@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import { useAppSettings } from "@/app/hooks/useAppSettings";
 
-import { OperationsAvailabilityPanel } from "./components/OperationsAvailabilityPanel";
 import { OperationsHeader } from "./components/OperationsHeader";
 import { OperationsRangeGroups } from "./components/OperationsRangeGroups";
 import { OperationsRoutePanel } from "./components/OperationsRoutePanel";
@@ -93,11 +92,6 @@ export default function OperationsCenterPage() {
                   routeStopsText={routeStopsText}
                   onRouteStopsTextChange={setRouteStopsText}
                   countryCode={countryCode}
-                />
-
-                <OperationsAvailabilityPanel
-                  availability={availability}
-                  loadingAvailability={loadingAvailability}
                 />
               </div>
             </section>
