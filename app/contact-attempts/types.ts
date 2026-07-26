@@ -10,6 +10,15 @@ export type ContactFlowStatus =
   | "REJECTED"
   | "CLOSED";
 
+export type OperationalZone = {
+  operational_zone_id: string;
+  name: string;
+  description?: string | null;
+  reference_address?: string | null;
+  color_label?: string | null;
+  is_active?: boolean | null;
+};
+
 export type ContactFlowMessageMetadata = {
   mediaUrl?: string;
   mediaType?: string;
@@ -48,10 +57,14 @@ export type ContactFlowItem = {
     last_name_1: string;
     last_name_2: string | null;
     phone_primary: string;
+    operational_zone_id?: string | null;
+    operational_zone?: OperationalZone | null;
   };
   installation: {
     installation_id: string;
     description: string | null;
+    operational_zone_id?: string | null;
+    operational_zone?: OperationalZone | null;
   } | null;
   follow_up: {
     follow_up_id: string;
@@ -59,6 +72,8 @@ export type ContactFlowItem = {
     scheduled_date: string | null;
     reason: string | null;
     priority: number;
+    operational_zone_id?: string | null;
+    operational_zone?: OperationalZone | null;
     follow_up_status: {
       follow_up_status_id: number;
       code: string;

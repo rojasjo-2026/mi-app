@@ -8,6 +8,8 @@ import { ContactAttemptsFilters } from "./components/ContactAttemptsFilters";
 import type {
   DateFilter,
   ObjectiveFilter,
+  OperationalZoneFilter,
+  OperationalZoneOption,
   RiskFilter,
 } from "./components/ContactAttemptsFilters";
 import { ContactAttemptsMetrics } from "./components/ContactAttemptsMetrics";
@@ -18,12 +20,7 @@ import type {
   ContactFlowSortKey,
   SortDirection,
 } from "./components/ContactAttemptsTable";
-import type {
-  ApiResponse,
-  ContactFlowItem,
-  FilterType,
-  ViewMode,
-} from "./types";
+import type { ApiResponse, ContactFlowItem, FilterType } from "./types";
 import {
   getClientFullName,
   getLastMessagePreview,
@@ -45,6 +42,15 @@ type ContactFlowMetrics = {
   manual: number;
 };
 
+type OperationalZoneApiItem = OperationalZoneOption & {
+  is_active?: boolean | null;
+};
+
+type OperationalZonesApiResponse = {
+  success: boolean;
+  data?: OperationalZoneApiItem[];
+};
+
 export default function ContactAttemptsPage() {
   const [flows, setFlows] = useState<ContactFlowItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,9 +60,12 @@ export default function ContactAttemptsPage() {
   const [objectiveFilter, setObjectiveFilter] =
     useState<ObjectiveFilter>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [operationalZoneFilter, setOperationalZoneFilter] =
+    useState<OperationalZoneFilter>("all");
+  const [operationalZoneOptions, setOperationalZoneOptions] = useState<
+    OperationalZoneOption[]
+  >([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [mounted, setMounted] = useState(false);
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
   const [conversationFlow, setConversationFlow] =
     useState<ContactFlowItem | null>(null);
@@ -146,7 +155,7 @@ export default function ContactAttemptsPage() {
           return currentSelectedId;
         }
 
-        return nextFlows[0]?.contact_flow_id ?? null;
+        return null;
       });
     } catch (err) {
       setError(
@@ -161,12 +170,42 @@ export default function ContactAttemptsPage() {
     }
   }
 
+  async function loadOperationalZones() {
+    try {
+      const response = await fetch("/api/operational-zones", {
+        cache: "no-store",
+      });
+
+      const result = (await response.json()) as OperationalZonesApiResponse;
+
+      if (!response.ok || !result.success || !Array.isArray(result.data)) {
+        return;
+      }
+
+      const options = result.data
+        .filter((zone) => zone.is_active !== false)
+        .map((zone) => ({
+          operational_zone_id: zone.operational_zone_id,
+          name: zone.name,
+        }))
+        .sort((first, second) =>
+          first.name.localeCompare(second.name, "es", {
+            sensitivity: "base",
+          }),
+        );
+
+      setOperationalZoneOptions(options);
+    } catch (zoneError) {
+      console.error("No se pudieron cargar las zonas operativas:", zoneError);
+    }
+  }
+
   useEffect(() => {
     void loadFlows(!hasLoadedOnce);
   }, [filter, currentPage, pageSize, sortDirection, sortKey]);
 
   useEffect(() => {
-    setMounted(true);
+    void loadOperationalZones();
   }, []);
 
   function handleRefreshList() {
@@ -212,6 +251,13 @@ export default function ContactAttemptsPage() {
     setCurrentPage(1);
   }
 
+  function handleOperationalZoneFilterChange(
+    nextFilter: OperationalZoneFilter,
+  ) {
+    setOperationalZoneFilter(nextFilter);
+    setCurrentPage(1);
+  }
+
   function handleSort(nextSortKey: ContactFlowSortKey) {
     setCurrentPage(1);
     setSortKey((currentSortKey) => {
@@ -234,7 +280,17 @@ export default function ContactAttemptsPage() {
     setRiskFilter("all");
     setObjectiveFilter("all");
     setDateFilter("all");
+    setOperationalZoneFilter("all");
     setCurrentPage(1);
+  }
+
+  function getOperationalZone(flow: ContactFlowItem) {
+    return (
+      flow.follow_up.operational_zone ??
+      flow.installation?.operational_zone ??
+      flow.client.operational_zone ??
+      null
+    );
   }
 
   function matchesSearch(flow: ContactFlowItem) {
@@ -247,6 +303,7 @@ export default function ContactAttemptsPage() {
       flow.client.phone_primary,
       flow.installation?.description,
       flow.follow_up.reason,
+      getOperationalZone(flow)?.name,
       getLastMessagePreview(flow.last_message),
     ];
 
@@ -298,6 +355,18 @@ export default function ContactAttemptsPage() {
     }
 
     return true;
+  }
+
+  function matchesOperationalZone(flow: ContactFlowItem) {
+    if (operationalZoneFilter === "all") return true;
+
+    const operationalZone = getOperationalZone(flow);
+
+    if (operationalZoneFilter === "unassigned") {
+      return !operationalZone?.operational_zone_id;
+    }
+
+    return operationalZone?.operational_zone_id === operationalZoneFilter;
   }
 
   function matchesDate(flow: ContactFlowItem) {
@@ -357,9 +426,18 @@ export default function ContactAttemptsPage() {
         matchesSearch(flow) &&
         matchesRisk(flow) &&
         matchesObjective(flow) &&
+        matchesOperationalZone(flow) &&
         matchesDate(flow),
     );
-  }, [flows, filter, searchTerm, riskFilter, objectiveFilter, dateFilter]);
+  }, [
+    flows,
+    filter,
+    searchTerm,
+    riskFilter,
+    objectiveFilter,
+    operationalZoneFilter,
+    dateFilter,
+  ]);
 
   useEffect(() => {
     setSelectedFlowId((currentSelectedId) => {
@@ -370,7 +448,7 @@ export default function ContactAttemptsPage() {
         return currentSelectedId;
       }
 
-      return filteredFlows[0]?.contact_flow_id ?? null;
+      return null;
     });
   }, [filteredFlows]);
 
@@ -386,6 +464,7 @@ export default function ContactAttemptsPage() {
     searchTerm.trim() !== "" ||
     riskFilter !== "all" ||
     objectiveFilter !== "all" ||
+    operationalZoneFilter !== "all" ||
     dateFilter !== "all";
 
   const totalPages = usesLocalFilters ? 1 : Math.max(1, pagination.totalPages);
@@ -421,7 +500,7 @@ export default function ContactAttemptsPage() {
 
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
         >
           + Nuevo intento manual
         </button>
@@ -439,17 +518,17 @@ export default function ContactAttemptsPage() {
         riskFilter={riskFilter}
         objectiveFilter={objectiveFilter}
         dateFilter={dateFilter}
+        operationalZoneFilter={operationalZoneFilter}
+        operationalZoneOptions={operationalZoneOptions}
         pageSize={pageSize}
-        viewMode={viewMode}
-        mounted={mounted}
         refreshing={refreshing}
         onSearchTermChange={setSearchTerm}
         onStatusFilterChange={handleFilterChange}
         onRiskFilterChange={setRiskFilter}
         onObjectiveFilterChange={setObjectiveFilter}
         onDateFilterChange={setDateFilter}
+        onOperationalZoneFilterChange={handleOperationalZoneFilterChange}
         onPageSizeChange={handlePageSizeChange}
-        onViewModeChange={setViewMode}
         onClearFilters={clearFilters}
         onRefreshList={handleRefreshList}
       />
@@ -469,24 +548,24 @@ export default function ContactAttemptsPage() {
             : "No hay contactos para mostrar con el filtro seleccionado."}
         </div>
       ) : (
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
-          <ContactAttemptsTable
-            flows={filteredFlows}
-            selectedFlowId={selectedFlowId}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            viewMode={viewMode}
-            onSort={handleSort}
-            onSelectFlow={handleSelectFlow}
-            onOpenConversation={handleOpenConversation}
-          />
-
-          <ContactAttemptPreviewPanel
-            flow={selectedPreviewFlow}
-            onOpenConversation={handleOpenConversation}
-          />
-        </div>
+        <ContactAttemptsTable
+          flows={filteredFlows}
+          selectedFlowId={selectedFlowId}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          onSelectFlow={handleSelectFlow}
+          onOpenConversation={handleOpenConversation}
+        />
       )}
+
+      {selectedPreviewFlow ? (
+        <ContactAttemptPreviewPanel
+          flow={selectedPreviewFlow}
+          onClose={() => setSelectedFlowId(null)}
+          onOpenConversation={handleOpenConversation}
+        />
+      ) : null}
 
       {!loading && !error && filteredFlows.length > 0 && (
         <ContactAttemptsPagination

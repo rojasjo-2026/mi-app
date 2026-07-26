@@ -27,19 +27,26 @@ export function TableHeaderCell({
   onResizeStart,
 }: TableHeaderCellProps) {
   const isLockedColumn = columnKey === "maintenance" || columnKey === "actions";
+
   const isSortable = columnKey !== "actions";
   const isActiveSort = columnKey === activeSortKey;
+
   const sortIndicator = isActiveSort
     ? sortDirection === "asc"
       ? "↑"
       : "↓"
     : "↕";
 
+  const stickyClass =
+    columnKey === "maintenance"
+      ? "sticky left-0 z-40 bg-slate-50"
+      : getStickyHeaderClass(columnKey);
+
   return (
     <div
       className={[
-        "relative flex h-full items-center border-r border-slate-200 px-4 py-3 last:border-r-0",
-        getStickyHeaderClass(columnKey),
+        "relative flex h-full items-center border-r border-slate-200 px-3 py-3 last:border-r-0",
+        stickyClass,
         columnKey === "actions" ? "justify-end text-right" : "",
       ].join(" ")}
     >
@@ -53,16 +60,16 @@ export function TableHeaderCell({
           }
         }}
         className={[
-          "flex min-w-0 items-center gap-2 truncate text-xs font-black uppercase tracking-[0.14em]",
-          isActiveSort ? "text-slate-700" : "text-slate-400",
+          "flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[11px] font-extrabold uppercase tracking-[0.1em]",
+          isActiveSort ? "text-slate-800" : "text-slate-500",
           isSortable
-            ? "cursor-pointer transition hover:text-slate-700"
+            ? "cursor-pointer transition hover:text-slate-800"
             : "cursor-default",
         ].join(" ")}
       >
-        <span className="truncate">{label}</span>
+        <span>{label}</span>
 
-        {isSortable && (
+        {isSortable ? (
           <span
             className={[
               "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] leading-none",
@@ -73,10 +80,10 @@ export function TableHeaderCell({
           >
             {sortIndicator}
           </span>
-        )}
+        ) : null}
       </button>
 
-      {!isLockedColumn && (
+      {!isLockedColumn ? (
         <span
           role="separator"
           aria-label={`Cambiar ancho de ${label}`}
@@ -84,7 +91,7 @@ export function TableHeaderCell({
           onClick={(event) => event.stopPropagation()}
           className="absolute right-0 top-0 h-full w-2 cursor-col-resize transition hover:bg-blue-200/70"
         />
-      )}
+      ) : null}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type {
   AppSettingsResponse,
   ColumnKey,
   FollowUp,
+  OperationalZone,
   SortDirection,
   Technician,
 } from "../types/followUpsPageTypes";
@@ -199,6 +200,54 @@ export function getTechnicianName(technician?: Technician | null) {
   return composedName?.trim() || technician.email || "Sin técnico asignado";
 }
 
+export function getOperationalZone(item: FollowUp): OperationalZone | null {
+  if (item.operational_zone) {
+    return item.operational_zone;
+  }
+
+  const directZoneId = item.operational_zone_id?.trim();
+
+  if (
+    directZoneId &&
+    item.installation?.operational_zone?.operational_zone_id === directZoneId
+  ) {
+    return item.installation.operational_zone;
+  }
+
+  if (
+    directZoneId &&
+    item.client?.operational_zone?.operational_zone_id === directZoneId
+  ) {
+    return item.client.operational_zone;
+  }
+
+  return (
+    item.installation?.operational_zone ?? item.client?.operational_zone ?? null
+  );
+}
+
+export function getOperationalZoneId(item: FollowUp) {
+  return (
+    item.operational_zone_id?.trim() ||
+    item.operational_zone?.operational_zone_id ||
+    item.installation?.operational_zone_id?.trim() ||
+    item.installation?.operational_zone?.operational_zone_id ||
+    item.client?.operational_zone_id?.trim() ||
+    item.client?.operational_zone?.operational_zone_id ||
+    null
+  );
+}
+
+export function getOperationalZoneName(item: FollowUp) {
+  const zoneName = getOperationalZone(item)?.name?.trim();
+
+  if (zoneName) {
+    return zoneName;
+  }
+
+  return getOperationalZoneId(item) ? "Zona sin nombre" : "Sin zona operativa";
+}
+
 export function formatMaintenanceType(value?: string | null) {
   if (!value) return "Mantenimiento general";
 
@@ -244,6 +293,8 @@ export function formatMoney(value: unknown, currency: string, locale: string) {
 }
 
 export function getSearchText(item: FollowUp) {
+  const operationalZone = getOperationalZone(item);
+
   return [
     getClientName(item.client),
     item.client?.phone_primary,
@@ -253,6 +304,8 @@ export function getSearchText(item: FollowUp) {
     item.billing_status,
     getTechnicianName(item.technician),
     formatMaintenanceType(item.maintenance_type),
+    getOperationalZoneName(item),
+    operationalZone?.reference_address,
   ]
     .filter(Boolean)
     .join(" ")

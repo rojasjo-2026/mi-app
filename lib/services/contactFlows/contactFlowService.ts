@@ -5,11 +5,20 @@ import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
 import { recordContactFlowCreatedActivitySafely } from "@/lib/services/whatsapp/whatsappActivityLogService";
 
 export const contactFlowInclude = {
-  client: true,
-  installation: true,
+  client: {
+    include: {
+      operational_zone: true,
+    },
+  },
+  installation: {
+    include: {
+      operational_zone: true,
+    },
+  },
   follow_up: {
     include: {
       follow_up_status: true,
+      operational_zone: true,
     },
   },
   messages: {
@@ -73,11 +82,15 @@ export function mapContactFlow(flow: ContactFlowWithRelations) {
       last_name_1: flow.client.last_name_1,
       last_name_2: flow.client.last_name_2,
       phone_primary: flow.client.phone_primary,
+      operational_zone_id: flow.client.operational_zone_id,
+      operational_zone: flow.client.operational_zone,
     },
     installation: flow.installation
       ? {
           installation_id: flow.installation.installation_id,
           description: flow.installation.description,
+          operational_zone_id: flow.installation.operational_zone_id,
+          operational_zone: flow.installation.operational_zone,
         }
       : null,
     follow_up: {
@@ -86,6 +99,8 @@ export function mapContactFlow(flow: ContactFlowWithRelations) {
       scheduled_date: flow.follow_up.scheduled_date,
       reason: flow.follow_up.reason,
       priority: flow.follow_up.priority,
+      operational_zone_id: flow.follow_up.operational_zone_id,
+      operational_zone: flow.follow_up.operational_zone,
       follow_up_status: flow.follow_up.follow_up_status,
     },
     last_message: flow.messages[0]

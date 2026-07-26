@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { CalendarDays, MapPin, UserRound, Wrench } from "lucide-react";
+
 import { COLUMN_LABELS } from "../constants/followUpsPageConstants";
 import type {
   ColumnKey,
@@ -19,6 +19,7 @@ import {
   getBillingStatusLabel,
   getClientName,
   getMainAmount,
+  getOperationalZoneName,
   getPriorityClasses,
   getPriorityLabel,
   getStatusClasses,
@@ -64,11 +65,16 @@ export function FollowUpTable({
   onResizeStart,
 }: FollowUpTableProps) {
   return (
-    <div className="overflow-x-auto">
-      <div style={{ minWidth: tableMinWidth }}>
+    <div className="min-h-0 flex-1 overflow-auto">
+      <div
+        style={{
+          minWidth: tableMinWidth,
+          width: "100%",
+        }}
+      >
         <div
           style={{ gridTemplateColumns }}
-          className="grid border-b border-slate-200 bg-slate-50"
+          className="sticky top-0 z-30 grid border-b border-slate-200 bg-slate-50"
         >
           {displayedColumns.map((column) => (
             <TableHeaderCell
@@ -86,23 +92,32 @@ export function FollowUpTable({
         <ul className="divide-y divide-slate-100">
           {items.map((item) => {
             const clientName = getClientName(item.client);
+
             const maintenanceType = formatMaintenanceType(
               item.maintenance_type,
             );
+
             const technicianName = getTechnicianName(item.technician);
+
+            const operationalZoneName = getOperationalZoneName(item);
+
             const targetDate = formatDateLabel(
               item.target_date,
               businessLocale,
             );
+
             const scheduledDate = formatDateLabel(
               item.scheduled_date,
               businessLocale,
             );
+
             const timingMeta = getTimingMeta(
               item.target_date,
               item.follow_up_status?.code,
             );
+
             const amount = getMainAmount(item);
+
             const isSelected = item.follow_up_id === selectedFollowUpId;
 
             return (
@@ -110,16 +125,19 @@ export function FollowUpTable({
                 key={item.follow_up_id}
                 role="button"
                 tabIndex={0}
+                data-selected={isSelected ? "true" : "false"}
+                data-follow-up-row="true"
                 onClick={() => onSelectFollowUp(item.follow_up_id)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
+
                     onSelectFollowUp(item.follow_up_id);
                   }
                 }}
                 style={{ gridTemplateColumns }}
                 className={[
-                  "group grid min-h-[76px] cursor-pointer transition hover:bg-blue-50/70",
+                  "group grid min-h-[76px] cursor-pointer transition hover:bg-blue-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300",
                   isSelected
                     ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
                     : "bg-white",
@@ -139,18 +157,12 @@ export function FollowUpTable({
                     </div>
 
                     <div className="min-w-0">
-                      <Link
-                        href={`/follow-ups/${item.follow_up_id}`}
-                        onClick={(event) => event.stopPropagation()}
-                        className="block"
+                      <h2
+                        title={clientName}
+                        className="truncate text-sm font-semibold text-slate-950"
                       >
-                        <h2
-                          title={clientName}
-                          className="truncate text-sm font-semibold text-slate-950 transition hover:text-blue-700"
-                        >
-                          {clientName}
-                        </h2>
-                      </Link>
+                        {clientName}
+                      </h2>
 
                       <p
                         title={maintenanceType}
@@ -162,7 +174,7 @@ export function FollowUpTable({
                   </div>
                 </TableBodyCell>
 
-                {visibleColumns.client && (
+                {visibleColumns.client ? (
                   <TableBodyCell columnKey="client" isSelected={isSelected}>
                     <div className="min-w-0">
                       <p
@@ -180,9 +192,9 @@ export function FollowUpTable({
                       </p>
                     </div>
                   </TableBodyCell>
-                )}
+                ) : null}
 
-                {visibleColumns.installation && (
+                {visibleColumns.installation ? (
                   <TableBodyCell
                     columnKey="installation"
                     isSelected={isSelected}
@@ -202,9 +214,32 @@ export function FollowUpTable({
                       </span>
                     </div>
                   </TableBodyCell>
-                )}
+                ) : null}
 
-                {visibleColumns.targetDate && (
+                {visibleColumns.operationalZone ? (
+                  <TableBodyCell
+                    columnKey="operationalZone"
+                    isSelected={isSelected}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <MapPin className="h-4 w-4 shrink-0 text-blue-500" />
+
+                      <span
+                        title={operationalZoneName}
+                        className={[
+                          "truncate text-sm font-medium",
+                          operationalZoneName === "Sin zona operativa"
+                            ? "text-slate-400"
+                            : "text-slate-700",
+                        ].join(" ")}
+                      >
+                        {operationalZoneName}
+                      </span>
+                    </div>
+                  </TableBodyCell>
+                ) : null}
+
+                {visibleColumns.targetDate ? (
                   <TableBodyCell columnKey="targetDate" isSelected={isSelected}>
                     <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-700">
                       <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
@@ -217,9 +252,9 @@ export function FollowUpTable({
                       </span>
                     </div>
                   </TableBodyCell>
-                )}
+                ) : null}
 
-                {visibleColumns.scheduledDate && (
+                {visibleColumns.scheduledDate ? (
                   <TableBodyCell
                     columnKey="scheduledDate"
                     isSelected={isSelected}
@@ -231,9 +266,9 @@ export function FollowUpTable({
                       {scheduledDate || "Sin agendar"}
                     </span>
                   </TableBodyCell>
-                )}
+                ) : null}
 
-                {visibleColumns.technician && (
+                {visibleColumns.technician ? (
                   <TableBodyCell columnKey="technician" isSelected={isSelected}>
                     <div className="flex min-w-0 items-center gap-2">
                       <UserRound className="h-4 w-4 shrink-0 text-slate-400" />
@@ -246,9 +281,9 @@ export function FollowUpTable({
                       </span>
                     </div>
                   </TableBodyCell>
-                )}
+                ) : null}
 
-                {visibleColumns.priority && (
+                {visibleColumns.priority ? (
                   <TableBodyCell columnKey="priority" isSelected={isSelected}>
                     <span
                       className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${getPriorityClasses(
@@ -258,9 +293,9 @@ export function FollowUpTable({
                       {getPriorityLabel(item.priority)}
                     </span>
                   </TableBodyCell>
-                )}
+                ) : null}
 
-                {visibleColumns.amount && (
+                {visibleColumns.amount ? (
                   <TableBodyCell columnKey="amount" isSelected={isSelected}>
                     <span
                       title={
@@ -279,9 +314,9 @@ export function FollowUpTable({
                         : formatMoney(amount, businessCurrency, businessLocale)}
                     </span>
                   </TableBodyCell>
-                )}
+                ) : null}
 
-                {visibleColumns.billing && (
+                {visibleColumns.billing ? (
                   <TableBodyCell columnKey="billing" isSelected={isSelected}>
                     <span
                       className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${getBillingStatusClasses(
@@ -291,9 +326,9 @@ export function FollowUpTable({
                       {getBillingStatusLabel(item.billing_status)}
                     </span>
                   </TableBodyCell>
-                )}
+                ) : null}
 
-                {visibleColumns.status && (
+                {visibleColumns.status ? (
                   <TableBodyCell columnKey="status" isSelected={isSelected}>
                     <div className="flex flex-wrap gap-2">
                       <span
@@ -311,7 +346,7 @@ export function FollowUpTable({
                       </span>
                     </div>
                   </TableBodyCell>
-                )}
+                ) : null}
               </li>
             );
           })}

@@ -9,6 +9,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import {
+  DEFAULT_COUNTRY_CODE,
   INITIAL_COLUMN_WIDTHS,
   INITIAL_VISIBLE_COLUMNS,
   MIN_COLUMN_WIDTHS,
@@ -22,6 +23,8 @@ import type {
   FollowUp,
   FollowUpFilter,
   FollowUpMetrics,
+  OperationalZoneFilter,
+  OperationalZoneOption,
   OptionalColumnKey,
   PaginationState,
   PriorityFilter,
@@ -55,11 +58,17 @@ export default function FollowUpsPage() {
   const [businessLocale, setBusinessLocale] = useState(
     defaultBusinessMeta.locale,
   );
+  const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
 
   const [statusFilter, setStatusFilter] = useState<FollowUpFilter>("all");
   const [timingFilter, setTimingFilter] = useState<TimingFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [billingFilter, setBillingFilter] = useState<BillingFilter>("all");
+  const [operationalZoneFilter, setOperationalZoneFilter] =
+    useState<OperationalZoneFilter>("all");
+  const [operationalZones, setOperationalZones] = useState<
+    OperationalZoneOption[]
+  >([]);
   const [sortKey, setSortKey] = useState<SortKey>("targetDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [searchTerm, setSearchTerm] = useState("");
@@ -151,9 +160,13 @@ export default function FollowUpsPage() {
         }
 
         const businessMeta = getBusinessCountryMeta(result.data);
+        const nextCountryCode =
+          result.data?.country_code?.trim().toUpperCase() ||
+          DEFAULT_COUNTRY_CODE;
 
         setBusinessCurrency(businessMeta.currency);
         setBusinessLocale(businessMeta.locale);
+        setCountryCode(nextCountryCode);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
@@ -161,12 +174,77 @@ export default function FollowUpsPage() {
       }
     }
 
+    void loadBusinessSettings();
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadOperationalZones() {
+      try {
+        const params = new URLSearchParams();
+
+        params.set("country_code", countryCode);
+        params.set("active_only", "true");
+
+        const response = await fetch(
+          `/api/operational-zones?${params.toString()}`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error("Failed to load operational zones");
+        }
+
+        const nextOperationalZones: OperationalZoneOption[] = Array.isArray(
+          result.data,
+        )
+          ? result.data
+          : [];
+
+        setOperationalZones(nextOperationalZones);
+
+        setOperationalZoneFilter((currentFilter) => {
+          if (currentFilter === "all" || currentFilter === "without") {
+            return currentFilter;
+          }
+
+          const zoneStillExists = nextOperationalZones.some(
+            (zone) => zone.operational_zone_id === currentFilter,
+          );
+
+          return zoneStillExists ? currentFilter : "all";
+        });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+
+        console.error("No se pudieron cargar las zonas operativas:", err);
+        setOperationalZones([]);
+        setOperationalZoneFilter("all");
+      }
+    }
+
+    void loadOperationalZones();
+
+    return () => controller.abort();
+  }, [countryCode]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
     async function loadFollowUps() {
       try {
         setLoading(true);
         setError("");
-
-        await loadBusinessSettings();
 
         const params = new URLSearchParams();
 
@@ -193,6 +271,10 @@ export default function FollowUpsPage() {
 
         if (billingFilter !== "all") {
           params.set("billingStatus", billingFilter);
+        }
+
+        if (operationalZoneFilter !== "all") {
+          params.set("operational_zone_id", operationalZoneFilter);
         }
 
         const res = await fetch(`/api/follow-ups?${params.toString()}`, {
@@ -230,17 +312,6 @@ export default function FollowUpsPage() {
           pendingBilling: Number(result.metrics?.pendingBilling ?? 0),
         });
 
-        setSelectedFollowUpId((currentSelectedId) => {
-          if (
-            currentSelectedId &&
-            nextItems.some((item) => item.follow_up_id === currentSelectedId)
-          ) {
-            return currentSelectedId;
-          }
-
-          return nextItems[0]?.follow_up_id ?? null;
-        });
-
         if (
           nextPagination.totalPages > 0 &&
           currentPage > nextPagination.totalPages
@@ -267,6 +338,7 @@ export default function FollowUpsPage() {
   }, [
     billingFilter,
     currentPage,
+    operationalZoneFilter,
     pageSize,
     priorityFilter,
     searchTerm,
@@ -287,7 +359,7 @@ export default function FollowUpsPage() {
         return currentSelectedId;
       }
 
-      return filteredItems[0]?.follow_up_id ?? null;
+      return null;
     });
   }, [filteredItems]);
 
@@ -295,6 +367,7 @@ export default function FollowUpsPage() {
     setCurrentPage(1);
   }, [
     billingFilter,
+    operationalZoneFilter,
     pageSize,
     priorityFilter,
     searchTerm,
@@ -323,6 +396,7 @@ export default function FollowUpsPage() {
     setTimingFilter("all");
     setPriorityFilter("all");
     setBillingFilter("all");
+    setOperationalZoneFilter("all");
     setSortKey("targetDate");
     setSortDirection("asc");
     setSearchTerm("");
@@ -450,6 +524,8 @@ export default function FollowUpsPage() {
           billingFilter={billingFilter}
           statusFilter={statusFilter}
           timingFilter={timingFilter}
+          operationalZoneFilter={operationalZoneFilter}
+          operationalZones={operationalZones}
           pageSize={pageSize}
           pageStartIndex={pageStartIndex}
           pageEndIndex={pageEndIndex}
@@ -464,66 +540,66 @@ export default function FollowUpsPage() {
           onBillingFilterChange={setBillingFilter}
           onStatusFilterChange={setStatusFilter}
           onTimingFilterChange={setTimingFilter}
+          onOperationalZoneFilterChange={setOperationalZoneFilter}
           onPageSizeChange={handlePageSizeChange}
           onToggleColumnMenu={() => setIsColumnMenuOpen((current) => !current)}
           onToggleColumn={toggleColumn}
           onClearFilters={clearFilters}
         />
 
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
-          {filteredItems.length === 0 ? (
-            <section className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-              <p className="text-base font-semibold text-slate-800">
-                No se encontraron mantenimientos
-              </p>
+        {filteredItems.length === 0 ? (
+          <section className="rounded-lg border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <p className="text-base font-semibold text-slate-800">
+              No se encontraron mantenimientos
+            </p>
 
-              <p className="mt-2 text-sm text-slate-500">
-                Prueba con otro filtro o registra un nuevo mantenimiento.
-              </p>
+            <p className="mt-2 text-sm text-slate-500">
+              Prueba con otro filtro o registra un nuevo mantenimiento.
+            </p>
 
-              <Link
-                href="/follow-ups/new"
-                className="mt-5 inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Crear mantenimiento
-              </Link>
-            </section>
-          ) : (
-            <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <FollowUpTable
-                items={filteredItems}
-                selectedFollowUpId={selectedFollowUpId}
-                displayedColumns={displayedColumns}
-                visibleColumns={visibleColumns}
-                gridTemplateColumns={gridTemplateColumns}
-                tableMinWidth={tableMinWidth}
-                pageStartIndex={pageStartIndex}
-                sortKey={sortKey}
-                sortDirection={sortDirection}
-                businessCurrency={businessCurrency}
-                businessLocale={businessLocale}
-                onSelectFollowUp={setSelectedFollowUpId}
-                onHeaderSort={handleHeaderSort}
-                onResizeStart={startColumnResize}
-              />
+            <Link
+              href="/follow-ups/new"
+              className="mt-5 inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Crear mantenimiento
+            </Link>
+          </section>
+        ) : (
+          <section className="flex h-[calc(100vh-390px)] min-h-[380px] min-w-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <FollowUpTable
+              items={filteredItems}
+              selectedFollowUpId={selectedFollowUpId}
+              displayedColumns={displayedColumns}
+              visibleColumns={visibleColumns}
+              gridTemplateColumns={gridTemplateColumns}
+              tableMinWidth={tableMinWidth}
+              pageStartIndex={pageStartIndex}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              businessCurrency={businessCurrency}
+              businessLocale={businessLocale}
+              onSelectFollowUp={setSelectedFollowUpId}
+              onHeaderSort={handleHeaderSort}
+              onResizeStart={startColumnResize}
+            />
 
-              <FollowUpPagination
-                pageStartIndex={pageStartIndex}
-                pageEndIndex={pageEndIndex}
-                visibleTotal={visibleTotal}
-                safeCurrentPage={safeCurrentPage}
-                totalPages={totalPages}
-                setCurrentPage={setCurrentPage}
-              />
-            </section>
-          )}
+            <FollowUpPagination
+              pageStartIndex={pageStartIndex}
+              pageEndIndex={pageEndIndex}
+              visibleTotal={visibleTotal}
+              safeCurrentPage={safeCurrentPage}
+              totalPages={totalPages}
+              setCurrentPage={setCurrentPage}
+            />
+          </section>
+        )}
 
-          <FollowUpPreviewPanel
-            item={selectedItem}
-            businessCurrency={businessCurrency}
-            businessLocale={businessLocale}
-          />
-        </div>
+        <FollowUpPreviewPanel
+          item={selectedItem}
+          businessCurrency={businessCurrency}
+          businessLocale={businessLocale}
+          onClose={() => setSelectedFollowUpId(null)}
+        />
       </section>
     </main>
   );

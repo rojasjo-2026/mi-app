@@ -2,17 +2,23 @@ import type { Prisma, WorkBillingStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const followUpInclude = {
-  client: true,
-  installation: true,
+  client: {
+    include: {
+      operational_zone: true,
+    },
+  },
+  installation: {
+    include: {
+      operational_zone: true,
+    },
+  },
+  operational_zone: true,
   follow_up_status: true,
   technician: true,
 };
 
 const followUpDetailInclude = {
-  client: true,
-  installation: true,
-  follow_up_status: true,
-  technician: true,
+  ...followUpInclude,
   contact_attempts: {
     orderBy: {
       attempt_datetime: "desc" as const,
@@ -62,6 +68,7 @@ export type FindFollowUpsSortKey =
   | "maintenance"
   | "client"
   | "installation"
+  | "operationalZone"
   | "targetDate"
   | "scheduledDate"
   | "technician"
@@ -111,6 +118,83 @@ function getTodayRange() {
   return { start, end };
 }
 
+function buildOperationalZoneWhere(
+  operationalZoneFilter: string,
+): Prisma.FollowUpWhereInput | null {
+  const operationalZoneId = operationalZoneFilter.trim();
+
+  if (!operationalZoneId) {
+    return null;
+  }
+
+  if (operationalZoneId === "without") {
+    return {
+      operational_zone_id: null,
+      AND: [
+        {
+          OR: [
+            { installation_id: null },
+            {
+              installation: {
+                is: {
+                  operational_zone_id: null,
+                },
+              },
+            },
+          ],
+        },
+        {
+          client: {
+            is: {
+              operational_zone_id: null,
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  return {
+    OR: [
+      {
+        operational_zone_id: operationalZoneId,
+      },
+      {
+        operational_zone_id: null,
+        installation: {
+          is: {
+            operational_zone_id: operationalZoneId,
+          },
+        },
+      },
+      {
+        operational_zone_id: null,
+        AND: [
+          {
+            OR: [
+              { installation_id: null },
+              {
+                installation: {
+                  is: {
+                    operational_zone_id: null,
+                  },
+                },
+              },
+            ],
+          },
+          {
+            client: {
+              is: {
+                operational_zone_id: operationalZoneId,
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function buildFollowUpWhere(params: FindFollowUpsParams) {
   const {
     client_id,
@@ -123,10 +207,19 @@ function buildFollowUpWhere(params: FindFollowUpsParams) {
     billingStatus,
   } = params;
 
+  const andFilters: Prisma.FollowUpWhereInput[] = [];
+
+  const operationalZoneWhere = operational_zone_id
+    ? buildOperationalZoneWhere(operational_zone_id)
+    : null;
+
+  if (operationalZoneWhere) {
+    andFilters.push(operationalZoneWhere);
+  }
+
   const where: Prisma.FollowUpWhereInput = {
     ...(client_id ? { client_id } : {}),
     ...(installation_id ? { installation_id } : {}),
-    ...(operational_zone_id ? { operational_zone_id } : {}),
     ...(priority !== undefined ? { priority } : {}),
     ...(status
       ? {
@@ -141,81 +234,151 @@ function buildFollowUpWhere(params: FindFollowUpsParams) {
   };
 
   if (search) {
-    where.OR = [
-      {
-        reason: {
-          contains: search,
-          mode: "insensitive",
-        },
-      },
-      {
-        maintenance_type: {
-          contains: search,
-          mode: "insensitive",
-        },
-      },
-      {
-        billing_notes: {
-          contains: search,
-          mode: "insensitive",
-        },
-      },
-      {
-        client: {
-          is: {
-            OR: [
-              {
-                first_name: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                last_name_1: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                last_name_2: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                phone_primary: {
-                  contains: search,
-                },
-              },
-            ],
+    andFilters.push({
+      OR: [
+        {
+          reason: {
+            contains: search,
+            mode: "insensitive",
           },
         },
-      },
-      {
-        installation: {
-          is: {
-            description: {
-              contains: search,
-              mode: "insensitive",
+        {
+          maintenance_type: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          billing_notes: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          client: {
+            is: {
+              OR: [
+                {
+                  first_name: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  last_name_1: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  last_name_2: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  phone_primary: {
+                    contains: search,
+                  },
+                },
+              ],
             },
           },
         },
-      },
-      {
-        follow_up_status: {
-          is: {
-            OR: [
-              {
-                code: {
-                  contains: search,
-                  mode: "insensitive",
-                },
+        {
+          installation: {
+            is: {
+              description: {
+                contains: search,
+                mode: "insensitive",
               },
-            ],
+            },
           },
         },
-      },
-    ];
+        {
+          follow_up_status: {
+            is: {
+              code: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+        {
+          operational_zone: {
+            is: {
+              OR: [
+                {
+                  name: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  reference_address: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+              ],
+            },
+          },
+        },
+        {
+          installation: {
+            is: {
+              operational_zone: {
+                is: {
+                  OR: [
+                    {
+                      name: {
+                        contains: search,
+                        mode: "insensitive",
+                      },
+                    },
+                    {
+                      reference_address: {
+                        contains: search,
+                        mode: "insensitive",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        {
+          client: {
+            is: {
+              operational_zone: {
+                is: {
+                  OR: [
+                    {
+                      name: {
+                        contains: search,
+                        mode: "insensitive",
+                      },
+                    },
+                    {
+                      reference_address: {
+                        contains: search,
+                        mode: "insensitive",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  if (andFilters.length > 0) {
+    where.AND = andFilters;
   }
 
   if (timing && timing !== "all") {
@@ -261,6 +424,10 @@ function buildOrderBy(
     ];
   }
 
+  if (sortKey === "operationalZone") {
+    return [{ operational_zone: { name: direction } }, { target_date: "asc" }];
+  }
+
   if (sortKey === "scheduledDate") {
     return [{ scheduled_date: direction }, { target_date: "asc" }];
   }
@@ -295,6 +462,7 @@ export async function findClientById(id: string) {
     },
     select: {
       client_id: true,
+      operational_zone_id: true,
     },
   });
 }

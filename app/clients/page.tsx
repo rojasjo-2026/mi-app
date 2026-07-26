@@ -410,7 +410,6 @@ export default function ClientsPage() {
       document.body.style.userSelect = "";
 
       window.removeEventListener("mousemove", handleMouseMove);
-
       window.removeEventListener("mouseup", handleMouseUp);
     }
 
@@ -518,10 +517,10 @@ export default function ClientsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900 lg:flex lg:h-[calc(100dvh-8.5rem)] lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <ClientListToast toast={toast} />
 
-      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-4">
+      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 lg:min-h-0 lg:flex-1">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
@@ -639,12 +638,12 @@ export default function ClientsPage() {
           }
         />
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:min-h-0 lg:flex-1">
           {clients.length === 0 ? (
             <ClientListEmptyState />
           ) : (
-            <div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="overflow-x-auto">
+            <div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+              <div className="overflow-x-auto lg:min-h-0 lg:flex-1 lg:overflow-auto">
                 <div
                   style={{
                     minWidth: tableWidth,
@@ -653,7 +652,7 @@ export default function ClientsPage() {
                 >
                   <div
                     style={{ gridTemplateColumns }}
-                    className="grid border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400"
+                    className="grid border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400 lg:sticky lg:top-0 lg:z-30"
                   >
                     <ResizableHeaderCell
                       label="Cliente"

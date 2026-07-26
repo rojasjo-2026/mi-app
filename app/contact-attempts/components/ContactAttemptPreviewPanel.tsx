@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import type { ContactFlowItem } from "../types";
 import {
   formatDate,
@@ -15,6 +17,7 @@ import {
 
 type ContactAttemptPreviewPanelProps = {
   flow: ContactFlowItem | null;
+  onClose: () => void;
   onOpenConversation: (flow: ContactFlowItem) => void;
 };
 
@@ -42,11 +45,12 @@ function DetailRow({
     value === null || value === undefined || value === "" ? "—" : String(value);
 
   return (
-    <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 py-2">
-      <p className="text-xs font-semibold text-slate-500">{label}</p>
+    <div className="grid grid-cols-[108px_minmax(0,1fr)] gap-3 py-2.5">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+
       <p
         title={displayValue}
-        className="truncate text-sm font-medium text-slate-800"
+        className="min-w-0 truncate text-right text-sm font-medium text-slate-800"
       >
         {displayValue}
       </p>
@@ -54,7 +58,7 @@ function DetailRow({
   );
 }
 
-function SmallStat({
+function OperationalRow({
   label,
   value,
   helper,
@@ -64,44 +68,71 @@ function SmallStat({
   helper?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-        {label}
-      </p>
+    <div className="flex items-center justify-between gap-4 py-2.5">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
 
-      <p
-        title={value}
-        className="mt-1 truncate text-sm font-semibold text-slate-950"
-      >
-        {value}
-      </p>
-
-      {helper && (
-        <p className="mt-1 truncate text-xs font-medium text-slate-500">
-          {helper}
+      <div className="min-w-0 text-right">
+        <p
+          title={value}
+          className="truncate text-sm font-semibold text-slate-900"
+        >
+          {value}
         </p>
-      )}
+
+        {helper ? (
+          <p className="mt-0.5 truncate text-[11px] text-slate-400">{helper}</p>
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+function getOperationalZoneName(flow: ContactFlowItem) {
+  return (
+    flow.follow_up.operational_zone?.name ||
+    flow.installation?.operational_zone?.name ||
+    flow.client.operational_zone?.name ||
+    "Sin zona operativa"
   );
 }
 
 export function ContactAttemptPreviewPanel({
   flow,
+  onClose,
   onOpenConversation,
 }: ContactAttemptPreviewPanelProps) {
-  if (!flow) {
-    return (
-      <aside className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-6">
-        <p className="text-sm font-semibold text-slate-800">
-          Detalle del intento
-        </p>
+  const panelRef = useRef<HTMLElement | null>(null);
 
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Selecciona un contacto de la lista para ver el estado, último mensaje
-          y acciones rápidas.
-        </p>
-      </aside>
-    );
+  useEffect(() => {
+    if (!flow) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Element)) return;
+      if (panelRef.current?.contains(target)) return;
+      if (target.closest('[data-contact-attempt-row="true"]')) return;
+
+      onClose();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [flow, onClose]);
+
+  if (!flow) {
+    return null;
   }
 
   const clientName = getClientFullName(flow.client);
@@ -118,175 +149,204 @@ export function ContactAttemptPreviewPanel({
     flow.selected_date || flow.follow_up.scheduled_date,
   );
   const lastInteraction = formatDateTime(flow.last_message_at);
+  const operationalZoneName = getOperationalZoneName(flow);
 
   return (
-    <aside className="sticky top-6 z-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-start justify-between gap-3 border-b border-slate-200 p-5">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-sm font-semibold text-white">
-            {initials}
+    <div className="pointer-events-none fixed inset-0 z-50">
+      <aside
+        ref={panelRef}
+        role="dialog"
+        aria-modal="false"
+        aria-label={`Detalle del intento de ${clientName}`}
+        className="pointer-events-auto absolute inset-y-0 right-0 flex w-full max-w-[430px] flex-col border-l border-slate-200 bg-white shadow-2xl"
+      >
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-blue-600 text-sm font-semibold text-white">
+              {initials}
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Detalle del intento
+              </p>
+
+              <h2
+                title={clientName}
+                className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-slate-950"
+              >
+                {clientName}
+              </h2>
+
+              {flow.client.phone_primary ? (
+                <a
+                  href={`tel:${flow.client.phone_primary}`}
+                  className="mt-1 inline-flex cursor-pointer text-xs font-medium text-slate-500 transition hover:text-blue-700"
+                >
+                  {flow.client.phone_primary}
+                </a>
+              ) : (
+                <p className="mt-1 text-xs text-slate-400">Sin teléfono</p>
+              )}
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-              Detalle del intento
-            </p>
+          <div className="flex shrink-0 items-center gap-2">
+            {unread ? (
+              <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white">
+                {flow.unread_count}
+              </span>
+            ) : null}
 
-            <h2
-              title={clientName}
-              className="mt-1 truncate text-base font-semibold tracking-tight text-slate-950"
-            >
-              {clientName}
-            </h2>
-
-            <p
-              title={flow.client.phone_primary}
-              className="mt-1 truncate text-sm text-slate-500"
-            >
-              {flow.client.phone_primary || "Sin teléfono"}
-            </p>
-          </div>
-        </div>
-
-        {unread && (
-          <span className="shrink-0 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white">
-            {flow.unread_count}
-          </span>
-        )}
-      </div>
-
-      <div className="space-y-4 p-5">
-        <div className="flex flex-wrap gap-2">
-          <span
-            className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getStatusClasses(
-              flow.status,
-            )}`}
-          >
-            {getStatusLabel(flow.status)}
-          </span>
-
-          <span
-            className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${risk.classes}`}
-          >
-            {risk.label}
-          </span>
-
-          <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
-            WhatsApp
-          </span>
-        </div>
-
-        <section>
-          <p className="mb-2 text-sm font-semibold text-slate-800">
-            Acciones rápidas
-          </p>
-
-          <div className="grid gap-2">
             <button
               type="button"
-              onClick={() => onOpenConversation(flow)}
-              className="inline-flex items-center justify-center rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              onClick={onClose}
+              aria-label="Cerrar detalle"
+              title="Cerrar"
+              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-lg leading-none text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
             >
-              Ver conversación
+              ×
             </button>
+          </div>
+        </div>
 
-            {flow.installation?.installation_id && (
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
+          <div className="flex flex-wrap gap-1.5">
+            <span
+              className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getStatusClasses(
+                flow.status,
+              )}`}
+            >
+              {getStatusLabel(flow.status)}
+            </span>
+
+            <span
+              className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${risk.classes}`}
+            >
+              {risk.label}
+            </span>
+
+            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+              WhatsApp
+            </span>
+          </div>
+
+          <section>
+            <p className="mb-2 text-xs font-semibold text-slate-700">
+              Acciones rápidas
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => onOpenConversation(flow)}
+                className="col-span-2 inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-slate-950 px-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Ver conversación
+              </button>
+
+              {flow.installation?.installation_id ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = `/installations/${flow.installation?.installation_id}`;
+                  }}
+                  className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                >
+                  Ver instalación
+                </button>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href = `/installations/${flow.installation?.installation_id}`;
+                  window.location.href = `/follow-ups/${flow.follow_up.follow_up_id}`;
                 }}
-                className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                className={[
+                  "inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100",
+                  flow.installation?.installation_id ? "" : "col-span-2",
+                ].join(" ")}
               >
-                Ver instalación
+                Ver mantenimiento
               </button>
-            )}
 
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = `/follow-ups/${flow.follow_up.follow_up_id}`;
-              }}
-              className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-            >
-              Ver mantenimiento
-            </button>
+              <button
+                type="button"
+                disabled
+                title="Pendiente de conexión con backend"
+                className="col-span-2 inline-flex h-9 cursor-not-allowed items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-400"
+              >
+                Marcar como gestionado
+              </button>
+            </div>
+          </section>
 
-            <button
-              type="button"
-              disabled
-              title="Pendiente de conexión con backend"
-              className="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-400"
-            >
-              Marcar como gestionado
-            </button>
-          </div>
-        </section>
-
-        <section>
-          <p className="mb-2 text-sm font-semibold text-slate-800">
-            Situación operativa
-          </p>
-
-          <div className="grid grid-cols-2 gap-2">
-            <SmallStat
-              label="Objetivo"
-              value={targetDate}
-              helper="Fecha objetivo"
-            />
-            <SmallStat
-              label="Agendada"
-              value={selectedDate}
-              helper="Fecha elegida"
-            />
-            <SmallStat
-              label="Interacción"
-              value={lastInteraction}
-              helper={lastMessageType}
-            />
-            <SmallStat
-              label="Estado"
-              value={getStatusLabel(flow.status)}
-              helper="Contacto"
-            />
-          </div>
-        </section>
-
-        <section>
-          <p className="mb-2 text-sm font-semibold text-slate-800">
-            Información general
-          </p>
-
-          <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white px-3">
-            <DetailRow label="Instalación" value={installationName} />
-            <DetailRow label="Objetivo" value="Conversación" />
-            <DetailRow label="Motivo" value={reason} />
-            <DetailRow label="Canal" value="WhatsApp" />
-          </div>
-        </section>
-
-        <section>
-          <p className="mb-2 text-sm font-semibold text-slate-800">
-            Último mensaje
-          </p>
-
-          <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-3">
-            <p className="line-clamp-4 text-sm leading-6 text-slate-700">
-              {lastMessage}
+          <section>
+            <p className="mb-2 text-xs font-semibold text-slate-700">
+              Situación operativa
             </p>
 
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-emerald-700">
-                {lastMessageType}
+            <div className="divide-y divide-slate-100 rounded-md border border-slate-200 bg-white px-3">
+              <OperationalRow
+                label="Fecha objetivo"
+                value={targetDate}
+                helper="Objetivo del contacto"
+              />
+              <OperationalRow
+                label="Fecha agendada"
+                value={selectedDate}
+                helper="Fecha elegida"
+              />
+              <OperationalRow
+                label="Última interacción"
+                value={lastInteraction}
+                helper={lastMessageType}
+              />
+              <OperationalRow
+                label="Estado"
+                value={getStatusLabel(flow.status)}
+                helper="Contacto"
+              />
+            </div>
+          </section>
+
+          <section>
+            <p className="mb-2 text-xs font-semibold text-slate-700">
+              Información general
+            </p>
+
+            <div className="divide-y divide-slate-100 rounded-md border border-slate-200 bg-white px-3">
+              <DetailRow label="Instalación" value={installationName} />
+              <DetailRow label="Zona operativa" value={operationalZoneName} />
+              <DetailRow label="Objetivo" value="Conversación" />
+              <DetailRow label="Motivo" value={reason} />
+              <DetailRow label="Canal" value="WhatsApp" />
+            </div>
+          </section>
+
+          <section>
+            <p className="mb-2 text-xs font-semibold text-slate-700">
+              Último mensaje
+            </p>
+
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
+              <p className="line-clamp-4 text-sm leading-5 text-slate-700">
+                {lastMessage}
               </p>
 
-              <p className="truncate text-xs text-slate-500">
-                {lastInteraction}
-              </p>
+              <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-200 pt-2">
+                <p className="text-xs font-medium text-slate-600">
+                  {lastMessageType}
+                </p>
+
+                <p className="truncate text-xs text-slate-400">
+                  {lastInteraction}
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
-      </div>
-    </aside>
+          </section>
+        </div>
+      </aside>
+    </div>
   );
 }

@@ -18,13 +18,13 @@ export function MetricCard({
   return (
     <article
       className={[
-        "rounded-xl border px-4 py-4 shadow-sm transition hover:border-slate-300 hover:shadow-md",
+        "rounded-lg border px-4 py-4 shadow-sm transition hover:border-slate-300 hover:shadow-md",
         bgClass,
       ].join(" ")}
     >
       <div className="flex items-center gap-3">
         {icon && (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70 text-base">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white/70 text-base">
             {icon}
           </div>
         )}

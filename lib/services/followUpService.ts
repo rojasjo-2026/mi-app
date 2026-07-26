@@ -347,6 +347,7 @@ export async function createFollowUpService(body: CreateFollowUpInput) {
   const operationalZoneId =
     toTrimmedStringOrFallback(body.operational_zone_id, null) ??
     installation?.operational_zone_id ??
+    client.operational_zone_id ??
     null;
 
   const pendingStatus = await findPendingFollowUpStatus();
@@ -447,6 +448,7 @@ export async function createFollowUpFromInstallationService(
   const operationalZoneId =
     toTrimmedStringOrFallback(body.operational_zone_id, null) ??
     installation.operational_zone_id ??
+    installation.client.operational_zone_id ??
     null;
 
   const followUp = await createFollowUp({

@@ -7,6 +7,23 @@ export type Technician = {
   email?: string | null;
 };
 
+export type OperationalZone = {
+  operational_zone_id: string;
+  name: string;
+  description?: string | null;
+  reference_address?: string | null;
+  color_label?: string | null;
+  is_active?: boolean | null;
+};
+
+export type OperationalZoneOption = {
+  operational_zone_id: string;
+  name: string;
+  is_active?: boolean | null;
+};
+
+export type OperationalZoneFilter = string;
+
 export type AppSettingsResponse = {
   success: boolean;
   data?: {
@@ -19,6 +36,7 @@ export type FollowUp = {
   follow_up_id: string;
   client_id: string;
   installation_id: string | null;
+  operational_zone_id?: string | null;
   target_date: string;
   scheduled_date?: string | null;
   due_date?: string | null;
@@ -33,6 +51,7 @@ export type FollowUp = {
   billing_notes?: string | null;
   technician_id?: string | null;
   technician?: Technician | null;
+  operational_zone?: OperationalZone | null;
   follow_up_status?: {
     code: string;
     name: string;
@@ -43,11 +62,15 @@ export type FollowUp = {
     last_name_1?: string | null;
     last_name_2?: string | null;
     phone_primary?: string | null;
+    operational_zone_id?: string | null;
+    operational_zone?: OperationalZone | null;
   } | null;
   installation?: {
     installation_id?: string;
     description?: string | null;
     installation_date?: string | null;
+    operational_zone_id?: string | null;
+    operational_zone?: OperationalZone | null;
   } | null;
 };
 
@@ -87,6 +110,7 @@ export type SortKey =
   | "maintenance"
   | "client"
   | "installation"
+  | "operationalZone"
   | "targetDate"
   | "scheduledDate"
   | "technician"
@@ -101,6 +125,7 @@ export type ColumnKey =
   | "maintenance"
   | "client"
   | "installation"
+  | "operationalZone"
   | "targetDate"
   | "scheduledDate"
   | "technician"
