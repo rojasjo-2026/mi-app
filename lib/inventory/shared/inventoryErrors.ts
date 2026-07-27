@@ -33,3 +33,10 @@ export function isPrismaRecordNotFoundError(error: unknown) {
     error.code === "P2025"
   );
 }
+
+export function isPrismaForeignKeyConstraintError(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2003"
+  );
+}
