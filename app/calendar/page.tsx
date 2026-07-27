@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppSettings } from "@/app/hooks/useAppSettings";
 
@@ -105,7 +105,7 @@ export default function CalendarPage() {
     setCurrentMonth(new Date(queryDate.getFullYear(), queryDate.getMonth(), 1));
   }, []);
 
-  async function loadCalendarEvents() {
+  const loadCalendarEvents = useCallback(async () => {
     try {
       setIsLoadingEvents(true);
 
@@ -171,72 +171,75 @@ export default function CalendarPage() {
     } finally {
       setIsLoadingEvents(false);
     }
-  }
+  }, [countryCode]);
 
-  async function loadAvailabilityForVisibleMonth(monthDate: Date) {
-    const startDate = new Date(
-      monthDate.getFullYear(),
-      monthDate.getMonth(),
-      1,
-    );
-
-    const endDate = new Date(
-      monthDate.getFullYear(),
-      monthDate.getMonth() + 1,
-      0,
-    );
-
-    const startDateKey = formatDateKey(startDate);
-    const days = getInclusiveDayCount(startDate, endDate);
-
-    try {
-      setIsLoadingAvailability(true);
-
-      const availabilitySearchParams = new URLSearchParams({
-        country_code: countryCode,
-        date: startDateKey,
-        days: String(days),
-      });
-
-      const response = await fetch(
-        `/api/availability/daily?${availabilitySearchParams.toString()}`,
-        { cache: "no-store" },
+  const loadAvailabilityForVisibleMonth = useCallback(
+    async (monthDate: Date) => {
+      const startDate = new Date(
+        monthDate.getFullYear(),
+        monthDate.getMonth(),
+        1,
       );
 
-      const result: AvailabilityRangeResponse = await response.json();
+      const endDate = new Date(
+        monthDate.getFullYear(),
+        monthDate.getMonth() + 1,
+        0,
+      );
 
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(
-          result.message || "No se pudo cargar la disponibilidad.",
+      const startDateKey = formatDateKey(startDate);
+      const days = getInclusiveDayCount(startDate, endDate);
+
+      try {
+        setIsLoadingAvailability(true);
+
+        const availabilitySearchParams = new URLSearchParams({
+          country_code: countryCode,
+          date: startDateKey,
+          days: String(days),
+        });
+
+        const response = await fetch(
+          `/api/availability/daily?${availabilitySearchParams.toString()}`,
+          { cache: "no-store" },
         );
+
+        const result: AvailabilityRangeResponse = await response.json();
+
+        if (!response.ok || !result.success || !result.data) {
+          throw new Error(
+            result.message || "No se pudo cargar la disponibilidad.",
+          );
+        }
+
+        let availabilityItems: CalendarAvailabilityDay[] = [];
+
+        if (isAvailabilityRangeData(result.data)) {
+          availabilityItems = Array.isArray(result.data.results)
+            ? result.data.results
+            : [];
+        } else if (isAvailabilityDayData(result.data)) {
+          availabilityItems = [result.data];
+        }
+
+        setAvailabilityByDate(mapAvailabilityByDate(availabilityItems));
+      } catch (error) {
+        console.error("Error loading calendar availability:", error);
+        setAvailabilityByDate({});
+      } finally {
+        setIsLoadingAvailability(false);
       }
-
-      let availabilityItems: CalendarAvailabilityDay[] = [];
-
-      if (isAvailabilityRangeData(result.data)) {
-        availabilityItems = Array.isArray(result.data.results)
-          ? result.data.results
-          : [];
-      } else if (isAvailabilityDayData(result.data)) {
-        availabilityItems = [result.data];
-      }
-
-      setAvailabilityByDate(mapAvailabilityByDate(availabilityItems));
-    } catch (error) {
-      console.error("Error loading calendar availability:", error);
-      setAvailabilityByDate({});
-    } finally {
-      setIsLoadingAvailability(false);
-    }
-  }
+    },
+    [countryCode],
+  );
 
   useEffect(() => {
     void loadCalendarEvents();
-  }, [countryCode]);
+  }, [loadCalendarEvents]);
 
   useEffect(() => {
     void loadAvailabilityForVisibleMonth(currentMonth);
-  }, [currentMonth, countryCode]);
+  }, [currentMonth, loadAvailabilityForVisibleMonth]);
 
   useEffect(() => {
     const closeContextMenu = () => setContextMenu(null);

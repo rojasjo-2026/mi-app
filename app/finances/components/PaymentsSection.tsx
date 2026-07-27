@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppSettings } from "@/app/hooks/useAppSettings";
 import type { FinanceInvoice } from "../types";
-import { getInvoiceCurrency, toSafeNumber } from "../utils";
+import { toSafeNumber } from "../utils";
 import SectionHeader from "./SectionHeader";
 import {
   DEFAULT_VISIBLE_COLUMNS,
@@ -91,7 +91,7 @@ export default function PaymentsSection() {
   const summaryCurrency =
     invoices.find((invoice) => invoice.currency)?.currency ?? businessCurrency;
 
-  async function loadInvoices() {
+  const loadInvoices = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -152,20 +152,20 @@ export default function PaymentsSection() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [
+    currentPage,
+    dateFrom,
+    dateTo,
+    pageSize,
+    search,
+    sortDirection,
+    sortKey,
+    status,
+  ]);
 
   useEffect(() => {
     void loadInvoices();
-  }, [
-    currentPage,
-    pageSize,
-    search,
-    status,
-    dateFrom,
-    dateTo,
-    sortKey,
-    sortDirection,
-  ]);
+  }, [loadInvoices]);
 
   useEffect(() => {
     setCurrentPage(1);

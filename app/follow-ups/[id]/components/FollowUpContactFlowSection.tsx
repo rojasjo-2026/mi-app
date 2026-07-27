@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 
 import ContactFlowConversation from "./contact-flow/ContactFlowConversation";
 import ContactFlowEmptyState from "./contact-flow/ContactFlowEmptyState";
@@ -114,7 +120,7 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
   const [rejectionReason, setRejectionReason] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  async function loadAutomationSettings() {
+  const loadAutomationSettings = useCallback(async () => {
     try {
       const response = await fetch("/api/settings", {
         cache: "no-store",
@@ -131,9 +137,9 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
     } catch {
       setSettings(null);
     }
-  }
+  }, []);
 
-  async function loadFollowUpContext() {
+  const loadFollowUpContext = useCallback(async () => {
     try {
       const response = await fetch(`/api/follow-ups/${followUpId}`, {
         cache: "no-store",
@@ -150,9 +156,9 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
     } catch {
       setFollowUpContext(null);
     }
-  }
+  }, [followUpId]);
 
-  async function loadMessages(contactFlowId: string) {
+  const loadMessages = useCallback(async (contactFlowId: string) => {
     try {
       setMessagesLoading(true);
       setMessagesError("");
@@ -174,103 +180,115 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
     } finally {
       setMessagesLoading(false);
     }
-  }
+  }, []);
 
-  async function loadDateReview(contactFlowId: string, showLoader = true) {
-    try {
-      if (showLoader) setDateReviewLoading(true);
+  const loadDateReview = useCallback(
+    async (contactFlowId: string, showLoader = true) => {
+      try {
+        if (showLoader) setDateReviewLoading(true);
 
-      setDateReviewError("");
+        setDateReviewError("");
 
-      const response = await fetch(
-        `/api/contact-flows/${contactFlowId}/date-review`,
-        {
-          cache: "no-store",
-        },
-      );
-
-      const result =
-        await readJsonResponse<ContactFlowDateReviewApiResponse>(response);
-
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(
-          result.message || "No se pudo cargar la revisión de fecha.",
+        const response = await fetch(
+          `/api/contact-flows/${contactFlowId}/date-review`,
+          {
+            cache: "no-store",
+          },
         );
+
+        const result =
+          await readJsonResponse<ContactFlowDateReviewApiResponse>(response);
+
+        if (!response.ok || !result.success || !result.data) {
+          throw new Error(
+            result.message || "No se pudo cargar la revisión de fecha.",
+          );
+        }
+
+        setDateReview(result.data);
+
+        const firstAlternativeDate =
+          result.data.available_dates.find(
+            (item) => item.visit_date !== result.data?.selected_date,
+          )?.visit_date ??
+          result.data.available_dates[0]?.visit_date ??
+          "";
+
+        setReplacementDate(firstAlternativeDate);
+      } catch (err) {
+        setDateReview(null);
+        setReplacementDate("");
+        setDateReviewError(
+          err instanceof Error
+            ? err.message
+            : "No se pudo cargar la revisión de fecha.",
+        );
+      } finally {
+        setDateReviewLoading(false);
       }
+    },
+    [],
+  );
 
-      setDateReview(result.data);
+  const loadContactFlow = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) setLoading(true);
 
-      const firstAlternativeDate =
-        result.data.available_dates.find(
-          (item) => item.visit_date !== result.data?.selected_date,
-        )?.visit_date ??
-        result.data.available_dates[0]?.visit_date ??
-        "";
+        setError("");
+        setActionError("");
 
-      setReplacementDate(firstAlternativeDate);
-    } catch (err) {
-      setDateReview(null);
-      setReplacementDate("");
-      setDateReviewError(
-        err instanceof Error
-          ? err.message
-          : "No se pudo cargar la revisión de fecha.",
-      );
-    } finally {
-      setDateReviewLoading(false);
-    }
-  }
+        await Promise.all([loadAutomationSettings(), loadFollowUpContext()]);
 
-  async function loadContactFlow(showLoader = true) {
-    try {
-      if (showLoader) setLoading(true);
+        const response = await fetch(
+          `/api/contact-flows?follow_up_id=${followUpId}`,
+          { cache: "no-store" },
+        );
 
-      setError("");
-      setActionError("");
+        const result = await readJsonResponse<ApiResponse>(response);
 
-      await Promise.all([loadAutomationSettings(), loadFollowUpContext()]);
+        if (!response.ok || !result.success) {
+          throw new Error("No se pudo cargar la gestión de contacto.");
+        }
 
-      const response = await fetch(
-        `/api/contact-flows?follow_up_id=${followUpId}`,
-        { cache: "no-store" },
-      );
+        const data = Array.isArray(result.data)
+          ? (result.data[0] ?? null)
+          : result.data;
 
-      const result = await readJsonResponse<ApiResponse>(response);
+        setFlow(data);
 
-      if (!response.ok || !result.success) {
-        throw new Error("No se pudo cargar la gestión de contacto.");
-      }
+        if (data?.contact_flow_id) {
+          const tasks: Promise<void>[] = [loadMessages(data.contact_flow_id)];
 
-      const data = Array.isArray(result.data)
-        ? (result.data[0] ?? null)
-        : result.data;
+          if (data.status === "MANUAL_REQUIRED" && data.selected_date) {
+            tasks.push(loadDateReview(data.contact_flow_id, false));
+          } else {
+            setDateReview(null);
+            setDateReviewError("");
+            setReplacementDate("");
+          }
 
-      setFlow(data);
-
-      if (data?.contact_flow_id) {
-        const tasks: Promise<void>[] = [loadMessages(data.contact_flow_id)];
-
-        if (data.status === "MANUAL_REQUIRED" && data.selected_date) {
-          tasks.push(loadDateReview(data.contact_flow_id, false));
+          await Promise.all(tasks);
         } else {
+          setMessages([]);
           setDateReview(null);
           setDateReviewError("");
           setReplacementDate("");
         }
-
-        await Promise.all(tasks);
-      } else {
-        setMessages([]);
-        setDateReview(null);
-        setDateReviewError("");
-        setReplacementDate("");
+      } catch {
+        setError("No se pudo cargar la gestión de contacto.");
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setError("No se pudo cargar la gestión de contacto.");
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+    [
+      followUpId,
+      loadAutomationSettings,
+      loadDateReview,
+      loadFollowUpContext,
+      loadMessages,
+    ],
+  );
 
   async function handleCreateManualFlow() {
     try {
@@ -311,7 +329,7 @@ export default function FollowUpContactFlowSection({ followUpId }: Props) {
 
   useEffect(() => {
     if (followUpId) void loadContactFlow();
-  }, [followUpId]);
+  }, [followUpId, loadContactFlow]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({

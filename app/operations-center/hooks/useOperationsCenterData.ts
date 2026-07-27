@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { resolveAppSettings } from "@/lib/config/app-settings";
 
@@ -146,142 +146,145 @@ export function useOperationsCenterData(
     );
   }, [selectedDateEvents]);
 
-  async function loadCalendarEvents(params?: {
-    startDate: string;
-    endDate: string;
-  }) {
-    try {
-      setLoadingEvents(true);
-      setError("");
+  const loadCalendarEvents = useCallback(
+    async (params?: { startDate: string; endDate: string }) => {
+      try {
+        setLoadingEvents(true);
+        setError("");
 
-      const nextParams =
-        params ??
-        (() => {
-          const rangeConfig = getRangeConfig({
-            selectedDate,
-            viewMode,
-          });
+        const nextParams =
+          params ??
+          (() => {
+            const rangeConfig = getRangeConfig({
+              selectedDate,
+              viewMode,
+            });
 
-          return {
-            startDate: rangeConfig.startDate,
-            endDate: addDays(rangeConfig.startDate, rangeConfig.days - 1),
-          };
-        })();
+            return {
+              startDate: rangeConfig.startDate,
+              endDate: addDays(rangeConfig.startDate, rangeConfig.days - 1),
+            };
+          })();
 
-      const response = await fetch(
-        buildCalendarUrl({
-          ...nextParams,
-          countryCode: activeCountryCode,
-        }),
-        {
-          cache: "no-store",
-        },
-      );
-
-      const result: CalendarApiResponse = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "No se pudo cargar el calendario.");
-      }
-
-      setEvents(Array.isArray(result.data) ? result.data : []);
-    } catch (err) {
-      setEvents([]);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Ocurrió un error al cargar los trabajos.",
-      );
-    } finally {
-      setLoadingEvents(false);
-    }
-  }
-
-  async function loadAvailability(date: string) {
-    try {
-      setLoadingAvailability(true);
-      setError("");
-
-      const response = await fetch(
-        `/api/availability/daily?country_code=${encodeURIComponent(
-          activeCountryCode,
-        )}&date=${encodeURIComponent(date)}`,
-        {
-          cache: "no-store",
-        },
-      );
-
-      const result: AvailabilityApiResponse = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(
-          result.message || "No se pudo cargar la disponibilidad.",
+        const response = await fetch(
+          buildCalendarUrl({
+            ...nextParams,
+            countryCode: activeCountryCode,
+          }),
+          {
+            cache: "no-store",
+          },
         );
-      }
 
-      const nextAvailability = result.data ?? null;
+        const result: CalendarApiResponse = await response.json();
 
-      setAvailability(nextAvailability);
-      setAvailabilityByDate(
-        nextAvailability ? { [nextAvailability.date]: nextAvailability } : {},
-      );
-    } catch (err) {
-      setAvailability(null);
-      setAvailabilityByDate({});
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Ocurrió un error al cargar la disponibilidad.",
-      );
-    } finally {
-      setLoadingAvailability(false);
-    }
-  }
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "No se pudo cargar el calendario.");
+        }
 
-  async function loadAvailabilityRange(params: {
-    startDate: string;
-    days: number;
-  }) {
-    try {
-      setLoadingAvailability(true);
-      setError("");
-
-      const response = await fetch(
-        `/api/availability/daily?country_code=${encodeURIComponent(
-          activeCountryCode,
-        )}&date=${encodeURIComponent(params.startDate)}&days=${encodeURIComponent(
-          String(params.days),
-        )}`,
-        {
-          cache: "no-store",
-        },
-      );
-
-      const result: AvailabilityRangeApiResponse = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(
-          result.message || "No se pudo cargar la disponibilidad del rango.",
+        setEvents(Array.isArray(result.data) ? result.data : []);
+      } catch (err) {
+        setEvents([]);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Ocurrió un error al cargar los trabajos.",
         );
+      } finally {
+        setLoadingEvents(false);
       }
+    },
+    [activeCountryCode, selectedDate, viewMode],
+  );
 
-      const rangeResults = result.data?.results ?? [];
-      const nextAvailabilityByDate = buildAvailabilityByDateMap(rangeResults);
+  const loadAvailability = useCallback(
+    async (date: string) => {
+      try {
+        setLoadingAvailability(true);
+        setError("");
 
-      setAvailabilityByDate(nextAvailabilityByDate);
-      setAvailability(nextAvailabilityByDate[selectedDate] ?? null);
-    } catch (err) {
-      setAvailability(null);
-      setAvailabilityByDate({});
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Ocurrió un error al cargar la disponibilidad del rango.",
-      );
-    } finally {
-      setLoadingAvailability(false);
-    }
-  }
+        const response = await fetch(
+          `/api/availability/daily?country_code=${encodeURIComponent(
+            activeCountryCode,
+          )}&date=${encodeURIComponent(date)}`,
+          {
+            cache: "no-store",
+          },
+        );
+
+        const result: AvailabilityApiResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message || "No se pudo cargar la disponibilidad.",
+          );
+        }
+
+        const nextAvailability = result.data ?? null;
+
+        setAvailability(nextAvailability);
+        setAvailabilityByDate(
+          nextAvailability ? { [nextAvailability.date]: nextAvailability } : {},
+        );
+      } catch (err) {
+        setAvailability(null);
+        setAvailabilityByDate({});
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Ocurrió un error al cargar la disponibilidad.",
+        );
+      } finally {
+        setLoadingAvailability(false);
+      }
+    },
+    [activeCountryCode],
+  );
+
+  const loadAvailabilityRange = useCallback(
+    async (params: { startDate: string; days: number }) => {
+      try {
+        setLoadingAvailability(true);
+        setError("");
+
+        const response = await fetch(
+          `/api/availability/daily?country_code=${encodeURIComponent(
+            activeCountryCode,
+          )}&date=${encodeURIComponent(params.startDate)}&days=${encodeURIComponent(
+            String(params.days),
+          )}`,
+          {
+            cache: "no-store",
+          },
+        );
+
+        const result: AvailabilityRangeApiResponse = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message || "No se pudo cargar la disponibilidad del rango.",
+          );
+        }
+
+        const rangeResults = result.data?.results ?? [];
+        const nextAvailabilityByDate = buildAvailabilityByDateMap(rangeResults);
+
+        setAvailabilityByDate(nextAvailabilityByDate);
+        setAvailability(nextAvailabilityByDate[selectedDate] ?? null);
+      } catch (err) {
+        setAvailability(null);
+        setAvailabilityByDate({});
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Ocurrió un error al cargar la disponibilidad del rango.",
+        );
+      } finally {
+        setLoadingAvailability(false);
+      }
+    },
+    [activeCountryCode, selectedDate],
+  );
 
   useEffect(() => {
     const rangeConfig = getRangeConfig({
@@ -293,7 +296,7 @@ export function useOperationsCenterData(
       startDate: rangeConfig.startDate,
       endDate: addDays(rangeConfig.startDate, rangeConfig.days - 1),
     });
-  }, [activeCountryCode, selectedDate, viewMode]);
+  }, [loadCalendarEvents, selectedDate, viewMode]);
 
   useEffect(() => {
     if (viewMode === "day") {
@@ -310,7 +313,7 @@ export function useOperationsCenterData(
       startDate: rangeConfig.startDate,
       days: rangeConfig.days,
     });
-  }, [activeCountryCode, selectedDate, viewMode]);
+  }, [loadAvailability, loadAvailabilityRange, selectedDate, viewMode]);
 
   return {
     selectedDate,

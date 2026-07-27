@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ContactAttemptPreviewPanel } from "./components/ContactAttemptPreviewPanel";
 import ContactFlowChat from "./components/ContactFlowChat";
@@ -71,6 +71,7 @@ export default function ContactAttemptsPage() {
     useState<ContactFlowItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -89,86 +90,93 @@ export default function ContactAttemptsPage() {
   const [sortKey, setSortKey] = useState<ContactFlowSortKey>("lastInteraction");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  async function loadFlows(showLoader = true) {
-    try {
-      if (showLoader) {
-        setLoading(true);
-      } else {
-        setRefreshing(true);
-      }
-
-      setError(null);
-
-      const params = new URLSearchParams();
-
-      params.set("page", String(currentPage));
-      params.set("pageSize", String(pageSize));
-
-      const apiFilter: FilterType =
-        filter === "active" || filter === "archived" ? "all" : filter;
-
-      params.set("filter", apiFilter);
-      params.set("sortKey", sortKey);
-      params.set("sortDirection", sortDirection);
-
-      const response = await fetch(`/api/contact-flows?${params.toString()}`, {
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error("No se pudo cargar la gestión de contactos.");
-      }
-
-      const result = (await response.json()) as ApiResponse & {
-        pagination?: PaginationState;
-        metrics?: Partial<ContactFlowMetrics>;
-      };
-
-      if (!result.success) {
-        throw new Error("La respuesta del servidor no fue exitosa.");
-      }
-
-      const nextFlows = result.data ?? [];
-
-      setFlows(nextFlows);
-      setPagination(
-        result.pagination ?? {
-          page: currentPage,
-          pageSize,
-          totalItems: nextFlows.length,
-          totalPages: 1,
-        },
-      );
-      setMetrics({
-        all: Number(result.metrics?.all ?? nextFlows.length),
-        unread: Number(result.metrics?.unread ?? 0),
-        waiting: Number(result.metrics?.waiting ?? 0),
-        confirmed: Number(result.metrics?.confirmed ?? 0),
-        manual: Number(result.metrics?.manual ?? 0),
-      });
-
-      setSelectedFlowId((currentSelectedId) => {
-        if (
-          currentSelectedId &&
-          nextFlows.some((flow) => flow.contact_flow_id === currentSelectedId)
-        ) {
-          return currentSelectedId;
+  const loadFlows = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) {
+          setLoading(true);
+        } else {
+          setRefreshing(true);
         }
 
-        return null;
-      });
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Ocurrió un error al cargar los contactos.",
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setHasLoadedOnce(true);
-    }
-  }
+        setError(null);
+
+        const params = new URLSearchParams();
+
+        params.set("page", String(currentPage));
+        params.set("pageSize", String(pageSize));
+
+        const apiFilter: FilterType =
+          filter === "active" || filter === "archived" ? "all" : filter;
+
+        params.set("filter", apiFilter);
+        params.set("sortKey", sortKey);
+        params.set("sortDirection", sortDirection);
+
+        const response = await fetch(
+          `/api/contact-flows?${params.toString()}`,
+          {
+            cache: "no-store",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("No se pudo cargar la gestión de contactos.");
+        }
+
+        const result = (await response.json()) as ApiResponse & {
+          pagination?: PaginationState;
+          metrics?: Partial<ContactFlowMetrics>;
+        };
+
+        if (!result.success) {
+          throw new Error("La respuesta del servidor no fue exitosa.");
+        }
+
+        const nextFlows = result.data ?? [];
+
+        setFlows(nextFlows);
+        setPagination(
+          result.pagination ?? {
+            page: currentPage,
+            pageSize,
+            totalItems: nextFlows.length,
+            totalPages: 1,
+          },
+        );
+        setMetrics({
+          all: Number(result.metrics?.all ?? nextFlows.length),
+          unread: Number(result.metrics?.unread ?? 0),
+          waiting: Number(result.metrics?.waiting ?? 0),
+          confirmed: Number(result.metrics?.confirmed ?? 0),
+          manual: Number(result.metrics?.manual ?? 0),
+        });
+
+        setSelectedFlowId((currentSelectedId) => {
+          if (
+            currentSelectedId &&
+            nextFlows.some((flow) => flow.contact_flow_id === currentSelectedId)
+          ) {
+            return currentSelectedId;
+          }
+
+          return null;
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Ocurrió un error al cargar los contactos.",
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        hasLoadedOnceRef.current = true;
+        setHasLoadedOnce(true);
+      }
+    },
+    [currentPage, filter, pageSize, sortDirection, sortKey],
+  );
 
   async function loadOperationalZones() {
     try {
@@ -201,8 +209,8 @@ export default function ContactAttemptsPage() {
   }
 
   useEffect(() => {
-    void loadFlows(!hasLoadedOnce);
-  }, [filter, currentPage, pageSize, sortDirection, sortKey]);
+    void loadFlows(!hasLoadedOnceRef.current);
+  }, [loadFlows]);
 
   useEffect(() => {
     void loadOperationalZones();
@@ -284,137 +292,152 @@ export default function ContactAttemptsPage() {
     setCurrentPage(1);
   }
 
-  function getOperationalZone(flow: ContactFlowItem) {
+  const getOperationalZone = useCallback((flow: ContactFlowItem) => {
     return (
       flow.follow_up.operational_zone ??
       flow.installation?.operational_zone ??
       flow.client.operational_zone ??
       null
     );
-  }
+  }, []);
 
-  function matchesSearch(flow: ContactFlowItem) {
-    const searchValue = searchTerm.trim().toLowerCase();
+  const matchesSearch = useCallback(
+    (flow: ContactFlowItem) => {
+      const searchValue = searchTerm.trim().toLowerCase();
 
-    if (!searchValue) return true;
+      if (!searchValue) return true;
 
-    const values = [
-      getClientFullName(flow.client),
-      flow.client.phone_primary,
-      flow.installation?.description,
-      flow.follow_up.reason,
-      getOperationalZone(flow)?.name,
-      getLastMessagePreview(flow.last_message),
-    ];
+      const values = [
+        getClientFullName(flow.client),
+        flow.client.phone_primary,
+        flow.installation?.description,
+        flow.follow_up.reason,
+        getOperationalZone(flow)?.name,
+        getLastMessagePreview(flow.last_message),
+      ];
 
-    return values
-      .filter(Boolean)
-      .some((value) => String(value).toLowerCase().includes(searchValue));
-  }
+      return values
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(searchValue));
+    },
+    [getOperationalZone, searchTerm],
+  );
 
-  function matchesRisk(flow: ContactFlowItem) {
-    if (riskFilter === "all") return true;
+  const matchesRisk = useCallback(
+    (flow: ContactFlowItem) => {
+      if (riskFilter === "all") return true;
 
-    const risk = getOperationalRisk(flow);
-    const normalizedLabel = risk.label.toLowerCase();
+      const risk = getOperationalRisk(flow);
+      const normalizedLabel = risk.label.toLowerCase();
 
-    if (riskFilter === "attention") {
-      return (
-        normalizedLabel.includes("atención") ||
-        normalizedLabel.includes("requerida")
-      );
-    }
+      if (riskFilter === "attention") {
+        return (
+          normalizedLabel.includes("atención") ||
+          normalizedLabel.includes("requerida")
+        );
+      }
 
-    if (riskFilter === "followUp") {
-      return (
-        normalizedLabel.includes("seguimiento") ||
-        normalizedLabel.includes("pendiente")
-      );
-    }
+      if (riskFilter === "followUp") {
+        return (
+          normalizedLabel.includes("seguimiento") ||
+          normalizedLabel.includes("pendiente")
+        );
+      }
 
-    if (riskFilter === "confirmed") {
-      return normalizedLabel.includes("confirm");
-    }
+      if (riskFilter === "confirmed") {
+        return normalizedLabel.includes("confirm");
+      }
 
-    return true;
-  }
-
-  function matchesObjective(flow: ContactFlowItem) {
-    if (objectiveFilter === "all") return true;
-
-    if (objectiveFilter === "conversation") {
       return true;
-    }
+    },
+    [riskFilter],
+  );
 
-    if (objectiveFilter === "installation") {
-      return Boolean(flow.installation?.installation_id);
-    }
+  const matchesObjective = useCallback(
+    (flow: ContactFlowItem) => {
+      if (objectiveFilter === "all") return true;
 
-    if (objectiveFilter === "maintenance") {
-      return Boolean(flow.follow_up?.follow_up_id);
-    }
+      if (objectiveFilter === "conversation") {
+        return true;
+      }
 
-    return true;
-  }
+      if (objectiveFilter === "installation") {
+        return Boolean(flow.installation?.installation_id);
+      }
 
-  function matchesOperationalZone(flow: ContactFlowItem) {
-    if (operationalZoneFilter === "all") return true;
+      if (objectiveFilter === "maintenance") {
+        return Boolean(flow.follow_up?.follow_up_id);
+      }
 
-    const operationalZone = getOperationalZone(flow);
+      return true;
+    },
+    [objectiveFilter],
+  );
 
-    if (operationalZoneFilter === "unassigned") {
-      return !operationalZone?.operational_zone_id;
-    }
+  const matchesOperationalZone = useCallback(
+    (flow: ContactFlowItem) => {
+      if (operationalZoneFilter === "all") return true;
 
-    return operationalZone?.operational_zone_id === operationalZoneFilter;
-  }
+      const operationalZone = getOperationalZone(flow);
 
-  function matchesDate(flow: ContactFlowItem) {
-    if (dateFilter === "all") return true;
+      if (operationalZoneFilter === "unassigned") {
+        return !operationalZone?.operational_zone_id;
+      }
 
-    const rawDate =
-      flow.selected_date ||
-      flow.follow_up.scheduled_date ||
-      flow.follow_up.target_date;
+      return operationalZone?.operational_zone_id === operationalZoneFilter;
+    },
+    [getOperationalZone, operationalZoneFilter],
+  );
 
-    if (!rawDate) return false;
+  const matchesDate = useCallback(
+    (flow: ContactFlowItem) => {
+      if (dateFilter === "all") return true;
 
-    const currentDate = new Date();
-    const targetDate = new Date(rawDate);
+      const rawDate =
+        flow.selected_date ||
+        flow.follow_up.scheduled_date ||
+        flow.follow_up.target_date;
 
-    if (Number.isNaN(targetDate.getTime())) return false;
+      if (!rawDate) return false;
 
-    const currentDay = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      currentDate.getDate(),
-    );
-    const targetDay = new Date(
-      targetDate.getFullYear(),
-      targetDate.getMonth(),
-      targetDate.getDate(),
-    );
+      const currentDate = new Date();
+      const targetDate = new Date(rawDate);
 
-    const diffMs = targetDay.getTime() - currentDay.getTime();
-    const diffDays = Math.round(diffMs / 86400000);
+      if (Number.isNaN(targetDate.getTime())) return false;
 
-    if (dateFilter === "today") {
-      return diffDays === 0;
-    }
-
-    if (dateFilter === "week") {
-      return diffDays >= 0 && diffDays <= 7;
-    }
-
-    if (dateFilter === "month") {
-      return (
-        targetDate.getFullYear() === currentDate.getFullYear() &&
-        targetDate.getMonth() === currentDate.getMonth()
+      const currentDay = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        currentDate.getDate(),
       );
-    }
+      const targetDay = new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth(),
+        targetDate.getDate(),
+      );
 
-    return true;
-  }
+      const diffMs = targetDay.getTime() - currentDay.getTime();
+      const diffDays = Math.round(diffMs / 86400000);
+
+      if (dateFilter === "today") {
+        return diffDays === 0;
+      }
+
+      if (dateFilter === "week") {
+        return diffDays >= 0 && diffDays <= 7;
+      }
+
+      if (dateFilter === "month") {
+        return (
+          targetDate.getFullYear() === currentDate.getFullYear() &&
+          targetDate.getMonth() === currentDate.getMonth()
+        );
+      }
+
+      return true;
+    },
+    [dateFilter],
+  );
 
   const filteredFlows = useMemo(() => {
     if (filter === "archived") {
@@ -430,13 +453,13 @@ export default function ContactAttemptsPage() {
         matchesDate(flow),
     );
   }, [
-    flows,
     filter,
-    searchTerm,
-    riskFilter,
-    objectiveFilter,
-    operationalZoneFilter,
-    dateFilter,
+    flows,
+    matchesDate,
+    matchesObjective,
+    matchesOperationalZone,
+    matchesRisk,
+    matchesSearch,
   ]);
 
   useEffect(() => {

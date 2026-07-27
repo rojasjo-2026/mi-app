@@ -36,10 +36,27 @@ function buildClientName(client: FinanceClient) {
   );
 }
 
-function getClientsFromResponse(result: any): FinanceClient[] {
-  if (Array.isArray(result?.data)) return result.data;
-  if (Array.isArray(result?.data?.clients)) return result.data.clients;
-  if (Array.isArray(result?.clients)) return result.clients;
+type ClientsApiResponse = {
+  data?: FinanceClient[] | { clients?: FinanceClient[] | null } | null;
+  clients?: FinanceClient[] | null;
+};
+
+function getClientsFromResponse(result: unknown): FinanceClient[] {
+  if (!result || typeof result !== "object") return [];
+
+  const response = result as ClientsApiResponse;
+
+  if (Array.isArray(response.data)) return response.data;
+
+  if (
+    response.data &&
+    !Array.isArray(response.data) &&
+    Array.isArray(response.data.clients)
+  ) {
+    return response.data.clients;
+  }
+
+  if (Array.isArray(response.clients)) return response.clients;
 
   return [];
 }

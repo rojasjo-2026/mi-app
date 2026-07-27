@@ -6,7 +6,6 @@ import {
   PERMISSION_GROUPS,
   ROLE_LABELS,
   STAFF_ROLES,
-  type UserFormData,
   type UserFormProps,
   type UserPermissions,
   type UserRole,
@@ -513,4 +512,3 @@ export default function UserForm({ mode, initialData = null }: UserFormProps) {
     </main>
   );
 }
-

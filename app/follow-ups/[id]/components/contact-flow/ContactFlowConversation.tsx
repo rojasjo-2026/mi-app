@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type KeyboardEvent, type RefObject } from "react";
 
 import {
@@ -239,9 +240,13 @@ export default function ContactFlowConversation({
               Cerrar
             </button>
 
-            <img
+            <Image
               src={previewImageUrl}
               alt="Vista ampliada"
+              width={1600}
+              height={1200}
+              sizes="100vw"
+              unoptimized
               className="max-h-[90vh] w-full rounded-md object-contain shadow-2xl"
             />
           </div>

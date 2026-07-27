@@ -1,4 +1,25 @@
-async function getContactAttempts(followUpId: string) {
+type ContactAttemptReference = {
+  name?: string | null;
+  code?: string | null;
+};
+
+type ContactAttempt = {
+  contact_attempt_id: string;
+  attempt_datetime?: string | null;
+  contact_channel?: ContactAttemptReference | null;
+  contact_result?: ContactAttemptReference | null;
+  note_text?: string | null;
+  next_action?: string | null;
+  next_target_date?: string | null;
+};
+
+type ContactAttemptsResponse = {
+  data?: ContactAttempt[] | null;
+};
+
+async function getContactAttempts(
+  followUpId: string,
+): Promise<ContactAttemptsResponse> {
   const res = await fetch(
     `http://localhost:3000/api/follow-ups/${followUpId}/contact-attempts`,
     {
@@ -11,7 +32,7 @@ async function getContactAttempts(followUpId: string) {
     throw new Error(`Error loading contact attempts: ${res.status} - ${text}`);
   }
 
-  return res.json();
+  return (await res.json()) as ContactAttemptsResponse;
 }
 
 type Props = {
@@ -30,7 +51,7 @@ export default async function ContactAttemptsList({ followUpId }: Props) {
 
   return (
     <div className="mt-3 space-y-2">
-      {attempts.map((attempt: any) => (
+      {attempts.map((attempt) => (
         <div
           key={attempt.contact_attempt_id}
           className="bg-white border rounded-xl p-4 shadow-sm"

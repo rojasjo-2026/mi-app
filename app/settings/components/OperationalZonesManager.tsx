@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import OperationalZonePlaceAutocomplete from "@/app/settings/components/OperationalZonePlaceAutocomplete";
@@ -160,7 +160,7 @@ export default function OperationalZonesManager({
     setSuccessMessage("");
   }
 
-  async function loadZones() {
+  const loadZones = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -190,7 +190,7 @@ export default function OperationalZonesManager({
     } finally {
       setLoading(false);
     }
-  }
+  }, [countryCode]);
 
   async function handleCreateZone() {
     const validationMessage = validateForm(form);
@@ -344,7 +344,7 @@ export default function OperationalZonesManager({
     setEditingForm(emptyForm);
     setExpandedVisitDatesZoneId(null);
     void loadZones();
-  }, [countryCode]);
+  }, [countryCode, loadZones]);
 
   function renderFormFields(
     currentForm: OperationalZoneForm,

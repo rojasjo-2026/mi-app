@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { resolveAppSettings } from "@/lib/config/app-settings";
 
@@ -60,7 +60,7 @@ export default function OperationalZoneSelect({
     [countryCode, defaultCountryCode],
   );
 
-  async function loadZones() {
+  const loadZones = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -91,11 +91,11 @@ export default function OperationalZoneSelect({
     } finally {
       setLoading(false);
     }
-  }
+  }, [normalizedCountryCode]);
 
   useEffect(() => {
     void loadZones();
-  }, [normalizedCountryCode]);
+  }, [loadZones]);
 
   return (
     <div>

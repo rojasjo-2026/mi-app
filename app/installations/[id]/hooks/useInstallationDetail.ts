@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { InstallationDetail } from "@/lib/installations/installation-detail.types";
-import { getSuggestedMaintenanceDate } from "../utils/installationDetailSelectors";
 
 type UseInstallationDetailParams = {
   id: string;

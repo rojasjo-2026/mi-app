@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import NotesSection from "@/components/installations/NotesSection";
 import { resolveAppSettings } from "@/lib/config/app-settings";
@@ -68,6 +68,22 @@ function formatNoteDate(value: string, locale: string) {
   return parsed.toLocaleString(locale);
 }
 
+async function parseResponse(res: Response) {
+  const contentType = res.headers.get("content-type") || "";
+  const raw = await res.text();
+
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `El endpoint devolvió una respuesta no válida (${res.status}). ${raw.slice(
+        0,
+        200,
+      )}`,
+    );
+  }
+
+  return JSON.parse(raw);
+}
+
 export default function TechnicalNotes({ installationId }: Props) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
@@ -101,23 +117,7 @@ export default function TechnicalNotes({ installationId }: Props) {
 
   const lastVisibleNote = Math.min(currentPage * NOTES_PER_PAGE, notes.length);
 
-  async function parseResponse(res: Response) {
-    const contentType = res.headers.get("content-type") || "";
-    const raw = await res.text();
-
-    if (!contentType.includes("application/json")) {
-      throw new Error(
-        `El endpoint devolvió una respuesta no válida (${res.status}). ${raw.slice(
-          0,
-          200,
-        )}`,
-      );
-    }
-
-    return JSON.parse(raw);
-  }
-
-  async function loadNotes() {
+  const loadNotes = useCallback(async () => {
     try {
       const res = await fetch(
         `/api/installations/${installationId}/technical-notes`,
@@ -136,11 +136,11 @@ export default function TechnicalNotes({ installationId }: Props) {
     } catch (error) {
       console.error("Error al cargar notas de trabajo:", error);
     }
-  }
+  }, [installationId]);
 
   useEffect(() => {
     void loadNotes();
-  }, [installationId]);
+  }, [loadNotes]);
 
   useEffect(() => {
     return () => {

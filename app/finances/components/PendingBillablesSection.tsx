@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import FinanceInvoiceDraftForm from "@/components/finance/FinanceInvoiceDraftForm";
-import type { PendingBillable, PendingBillablesResponse } from "../types";
 import {
   formatCurrency,
   formatDateLabel,

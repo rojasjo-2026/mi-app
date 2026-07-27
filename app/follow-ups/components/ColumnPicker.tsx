@@ -1,5 +1,4 @@
-﻿import { ChevronDown } from "lucide-react";
-import { OPTIONAL_COLUMNS } from "../constants/followUpsPageConstants";
+﻿import { OPTIONAL_COLUMNS } from "../constants/followUpsPageConstants";
 import type {
   OptionalColumnKey,
   VisibleColumns,
@@ -45,4 +44,3 @@ export function ColumnPicker({
     </div>
   );
 }
-

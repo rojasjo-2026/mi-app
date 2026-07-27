@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import type { ContactFlowMessage } from "./contactFlowTypes";
 import {
   getMessageFileName,
@@ -27,9 +29,13 @@ export default function MessageContent({
           onClick={() => onOpenImage?.(mediaUrl)}
           className="block w-full overflow-hidden rounded-xl"
         >
-          <img
+          <Image
             src={mediaUrl}
             alt="Imagen enviada"
+            width={800}
+            height={600}
+            sizes="(max-width: 768px) 280px, 320px"
+            unoptimized
             className="max-h-[260px] w-full rounded-xl object-cover transition hover:scale-[1.01]"
           />
         </button>

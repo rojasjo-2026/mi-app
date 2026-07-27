@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   buildInitialContactMessageTemplate,
@@ -66,9 +67,13 @@ function renderMessageContent(
           onClick={() => onOpenImage?.(mediaUrl)}
           className="block w-full overflow-hidden rounded-xl"
         >
-          <img
+          <Image
             src={mediaUrl}
             alt="Imagen enviada"
+            width={800}
+            height={600}
+            sizes="(max-width: 768px) 280px, 320px"
+            unoptimized
             className="max-h-[260px] w-full rounded-xl object-cover transition hover:scale-[1.01]"
           />
         </button>
@@ -151,44 +156,47 @@ export default function ContactFlowChat({
     installationName,
   });
 
-  async function loadMessages(showLoader = true) {
-    try {
-      if (showLoader) {
-        setLoading(true);
+  const loadMessages = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) {
+          setLoading(true);
+        }
+
+        setError(null);
+
+        const response = await fetch(
+          `/api/contact-flows/${contactFlowId}/messages`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          throw new Error("No se pudo cargar la conversación.");
+        }
+
+        const result: MessagesApiResponse = await response.json();
+
+        if (!result.success) {
+          throw new Error("No se pudo obtener la conversación.");
+        }
+
+        setMessages(result.data ?? []);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Ocurrió un error al cargar la conversación.",
+        );
+      } finally {
+        setLoading(false);
       }
-
-      setError(null);
-
-      const response = await fetch(
-        `/api/contact-flows/${contactFlowId}/messages`,
-        { cache: "no-store" },
-      );
-
-      if (!response.ok) {
-        throw new Error("No se pudo cargar la conversación.");
-      }
-
-      const result: MessagesApiResponse = await response.json();
-
-      if (!result.success) {
-        throw new Error("No se pudo obtener la conversación.");
-      }
-
-      setMessages(result.data ?? []);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Ocurrió un error al cargar la conversación.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+    [contactFlowId],
+  );
 
   useEffect(() => {
     void loadMessages();
-  }, [contactFlowId]);
+  }, [loadMessages]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -196,7 +204,7 @@ export default function ContactFlowChat({
     }, 5000);
 
     return () => window.clearInterval(interval);
-  }, [contactFlowId]);
+  }, [loadMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -511,9 +519,13 @@ export default function ContactFlowChat({
               Cerrar
             </button>
 
-            <img
+            <Image
               src={previewImageUrl}
               alt="Vista ampliada"
+              width={1600}
+              height={1200}
+              sizes="100vw"
+              unoptimized
               className="max-h-[90vh] w-full rounded-2xl object-contain shadow-2xl"
             />
           </div>

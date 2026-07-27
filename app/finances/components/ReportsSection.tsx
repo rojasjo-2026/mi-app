@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   resolveAppSettings,
@@ -415,35 +415,40 @@ export default function ReportsSection() {
     defaultBusinessMeta.locale,
   );
 
-  async function loadReports() {
-    setLoading(true);
-    setError("");
+  const loadReports = useCallback(
+    async (selectedDateFrom: string, selectedDateTo: string) => {
+      setLoading(true);
+      setError("");
 
-    try {
-      const params = new URLSearchParams();
+      try {
+        const params = new URLSearchParams();
 
-      if (dateFrom) params.set("dateFrom", dateFrom);
-      if (dateTo) params.set("dateTo", dateTo);
+        if (selectedDateFrom) params.set("dateFrom", selectedDateFrom);
+        if (selectedDateTo) params.set("dateTo", selectedDateTo);
 
-      const response = await fetch(`/api/dashboard/finance?${params}`, {
-        cache: "no-store",
-      });
+        const response = await fetch(`/api/dashboard/finance?${params}`, {
+          cache: "no-store",
+        });
 
-      const result: FinanceDashboardResponse = await response.json();
+        const result: FinanceDashboardResponse = await response.json();
 
-      if (!response.ok || !result.success || !result.data) {
-        throw new Error(result.message || "No se pudieron cargar los reportes");
+        if (!response.ok || !result.success || !result.data) {
+          throw new Error(
+            result.message || "No se pudieron cargar los reportes",
+          );
+        }
+
+        setDashboard(result.data);
+      } catch (err) {
+        console.error(err);
+        setError("No se pudieron cargar los reportes financieros");
+        setDashboard(null);
+      } finally {
+        setLoading(false);
       }
-
-      setDashboard(result.data);
-    } catch (err) {
-      console.error(err);
-      setError("No se pudieron cargar los reportes financieros");
-      setDashboard(null);
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+    [],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -477,8 +482,8 @@ export default function ReportsSection() {
   }, []);
 
   useEffect(() => {
-    void loadReports();
-  }, []);
+    void loadReports(defaultRange.dateFrom, defaultRange.dateTo);
+  }, [defaultRange.dateFrom, defaultRange.dateTo, loadReports]);
 
   const reportCurrency = dashboard?.currency || businessCurrency;
   const previousPeriod = dashboard?.previousPeriod;
@@ -495,7 +500,7 @@ export default function ReportsSection() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            onClick={loadReports}
+            onClick={() => void loadReports(dateFrom, dateTo)}
             disabled={loading}
             className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { getEventBadgeClasses, getEventTypeLabel } from "../../utils";
 import type { OperationsMonthDayData } from "./types";
@@ -67,11 +67,8 @@ export function OperationsMonthDayDetail({
   onOpenDay,
   onOpenCalendar,
 }: OperationsMonthDayDetailProps) {
-  const [showAllJobs, setShowAllJobs] = useState(false);
-
-  useEffect(() => {
-    setShowAllJobs(false);
-  }, [day.date]);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const showAllJobs = expandedDate === day.date;
 
   const status = getMonthAvailabilityStatus({
     availability: day.availability,
@@ -82,6 +79,12 @@ export function OperationsMonthDayDetail({
     () => (showAllJobs ? day.events : day.events.slice(0, 3)),
     [day.events, showAllJobs],
   );
+
+  function toggleAllJobs() {
+    setExpandedDate((currentDate) =>
+      currentDate === day.date ? null : day.date,
+    );
+  }
 
   return (
     <aside className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm xl:sticky xl:top-4 xl:max-h-[calc(100vh-96px)] xl:overflow-y-auto">
@@ -119,9 +122,7 @@ export function OperationsMonthDayDetail({
             </p>
 
             <p className="mt-1 text-lg font-semibold text-slate-950">
-              {loadingAvailability
-                ? "..."
-                : getRemainingCapacityLabel(day)}
+              {loadingAvailability ? "..." : getRemainingCapacityLabel(day)}
             </p>
           </div>
 
@@ -150,7 +151,7 @@ export function OperationsMonthDayDetail({
           {day.events.length > 3 ? (
             <button
               type="button"
-              onClick={() => setShowAllJobs((current) => !current)}
+              onClick={toggleAllJobs}
               className="cursor-pointer text-xs font-semibold text-blue-700 transition hover:text-blue-800"
             >
               {showAllJobs ? "Mostrar menos" : "Ver todos"}

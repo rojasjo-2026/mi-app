@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   emptyForm,
   ruleTemplates,
@@ -97,7 +97,7 @@ export default function AgendaRulesManager({
     setEditingForm(nextForm);
   }
 
-  async function loadRules() {
+  const loadRules = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -125,7 +125,7 @@ export default function AgendaRulesManager({
     } finally {
       setLoading(false);
     }
-  }
+  }, [countryCode]);
 
   async function handleCreateRule() {
     const currentTemplate = getTemplateForCreate();
@@ -345,7 +345,7 @@ export default function AgendaRulesManager({
     }
 
     void loadRules();
-  }, [countryCode]);
+  }, [countryCode, loadRules]);
 
   function renderRuleInfo(template: RuleTemplate | null) {
     if (!template) return null;
@@ -768,4 +768,3 @@ export default function AgendaRulesManager({
     </div>
   );
 }
-

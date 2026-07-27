@@ -1,5 +1,3 @@
-import { Prisma } from "@prisma/client";
-
 type DuplicateErrorInfo = {
   status: number;
   message: string;

@@ -123,12 +123,13 @@ export default function InstallationChangeLogSection({
     1,
     Math.ceil(groupedChangeLogs.length / GROUPS_PER_PAGE),
   );
+  const visiblePage = Math.min(currentPage, totalPages);
 
   const paginatedGroups = useMemo(() => {
-    const startIndex = (currentPage - 1) * GROUPS_PER_PAGE;
+    const startIndex = (visiblePage - 1) * GROUPS_PER_PAGE;
 
     return groupedChangeLogs.slice(startIndex, startIndex + GROUPS_PER_PAGE);
-  }, [currentPage, groupedChangeLogs]);
+  }, [groupedChangeLogs, visiblePage]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -150,12 +151,6 @@ export default function InstallationChangeLogSection({
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
-
   function openHistory() {
     setCurrentPage(1);
     setIsOpen(true);
@@ -166,11 +161,11 @@ export default function InstallationChangeLogSection({
   }
 
   function goToPreviousPage() {
-    setCurrentPage((page) => Math.max(1, page - 1));
+    setCurrentPage(Math.max(1, visiblePage - 1));
   }
 
   function goToNextPage() {
-    setCurrentPage((page) => Math.min(totalPages, page + 1));
+    setCurrentPage(Math.min(totalPages, visiblePage + 1));
   }
 
   return (
@@ -354,14 +349,14 @@ export default function InstallationChangeLogSection({
             {totalPages > 1 ? (
               <footer className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-slate-500">
-                  Página {currentPage} de {totalPages}
+                  Página {visiblePage} de {totalPages}
                 </p>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={goToPreviousPage}
-                    disabled={currentPage === 1}
+                    disabled={visiblePage === 1}
                     className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Anterior
@@ -370,7 +365,7 @@ export default function InstallationChangeLogSection({
                   <button
                     type="button"
                     onClick={goToNextPage}
-                    disabled={currentPage === totalPages}
+                    disabled={visiblePage === totalPages}
                     className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Siguiente

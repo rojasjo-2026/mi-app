@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import InvoicesSection from "./components/InvoicesSection";
 import NewInvoiceSection from "./components/NewInvoiceSection";
 import SearchInvoicesSection from "./components/SearchInvoicesSection";
@@ -155,7 +155,7 @@ export default function FinancesPage() {
   const [selectedBillable, setSelectedBillable] =
     useState<PendingBillable | null>(null);
 
-  async function loadInvoices() {
+  const loadInvoices = useCallback(async () => {
     setLoadingInvoices(true);
     setInvoiceError("");
 
@@ -232,9 +232,18 @@ export default function FinancesPage() {
     } finally {
       setLoadingInvoices(false);
     }
-  }
+  }, [
+    invoiceCurrentPage,
+    invoiceDateFrom,
+    invoiceDateTo,
+    invoicePageSize,
+    invoiceSearch,
+    invoiceSortDirection,
+    invoiceSortKey,
+    invoiceStatus,
+  ]);
 
-  async function loadPendingBillables() {
+  const loadPendingBillables = useCallback(async () => {
     setLoadingPendingBillables(true);
     setPendingBillablesError("");
 
@@ -315,7 +324,16 @@ export default function FinancesPage() {
     } finally {
       setLoadingPendingBillables(false);
     }
-  }
+  }, [
+    pendingCurrentPage,
+    pendingDateFrom,
+    pendingDateTo,
+    pendingPageSize,
+    pendingSearch,
+    pendingSortDirection,
+    pendingSortKey,
+    pendingStatus,
+  ]);
 
   function handleInvoiceSortChange(nextSortKey: InvoiceSortKey) {
     setInvoiceSortKey((currentSortKey) => {
@@ -354,18 +372,8 @@ export default function FinancesPage() {
   useEffect(() => {
     if (activeSection !== "Facturas") return;
 
-    loadInvoices();
-  }, [
-    activeSection,
-    invoiceCurrentPage,
-    invoicePageSize,
-    invoiceDateFrom,
-    invoiceDateTo,
-    invoiceSearch,
-    invoiceSortDirection,
-    invoiceSortKey,
-    invoiceStatus,
-  ]);
+    void loadInvoices();
+  }, [activeSection, loadInvoices]);
 
   useEffect(() => {
     setInvoiceCurrentPage(1);
@@ -382,18 +390,8 @@ export default function FinancesPage() {
   useEffect(() => {
     if (activeSection !== "Trabajos pendientes para facturar") return;
 
-    loadPendingBillables();
-  }, [
-    activeSection,
-    pendingCurrentPage,
-    pendingDateFrom,
-    pendingDateTo,
-    pendingPageSize,
-    pendingSearch,
-    pendingSortDirection,
-    pendingSortKey,
-    pendingStatus,
-  ]);
+    void loadPendingBillables();
+  }, [activeSection, loadPendingBillables]);
 
   useEffect(() => {
     setPendingCurrentPage(1);

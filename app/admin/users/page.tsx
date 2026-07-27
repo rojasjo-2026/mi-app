@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 type UserItem = {
@@ -20,13 +20,14 @@ export default function UsersPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
-  async function loadUsers() {
+  const loadUsers = useCallback(async (searchValue = "") => {
     try {
       setLoading(true);
       setError("");
 
-      const query = search.trim()
-        ? `/api/users?search=${encodeURIComponent(search.trim())}`
+      const normalizedSearch = searchValue.trim();
+      const query = normalizedSearch
+        ? `/api/users?search=${encodeURIComponent(normalizedSearch)}`
         : "/api/users";
 
       const res = await fetch(query, {
@@ -46,11 +47,11 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    void loadUsers();
+  }, [loadUsers]);
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -97,7 +98,7 @@ export default function UsersPage() {
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={loadUsers}
+                  onClick={() => void loadUsers(search)}
                   className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
                 >
                   Actualizar

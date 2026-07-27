@@ -155,7 +155,7 @@ export function ContactAttemptsTable({
                 role="button"
                 tabIndex={0}
                 data-contact-attempt-row="true"
-                aria-selected={selected}
+                aria-pressed={selected}
                 onClick={() => onSelectFlow(flow)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {

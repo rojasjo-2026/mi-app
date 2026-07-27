@@ -6,7 +6,6 @@ import {
   fallbackCountryPreset,
   normalizeCountryCode as normalizeConfiguredCountryCode,
 } from "@/lib/config/app-settings";
-import { prisma } from "@/lib/prisma";
 import {
   createAppSettings,
   findAppSettings,

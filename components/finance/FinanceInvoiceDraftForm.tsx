@@ -285,9 +285,11 @@ export default function FinanceInvoiceDraftForm({
 
       setMessage("Factura generada correctamente.");
       onInvoiceCreated?.(result.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || "No se pudo generar la factura");
+      setError(
+        err instanceof Error ? err.message : "No se pudo generar la factura",
+      );
     } finally {
       setSaving(false);
     }

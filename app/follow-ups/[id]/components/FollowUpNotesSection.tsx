@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppSettings } from "@/app/hooks/useAppSettings";
 
@@ -153,6 +153,22 @@ function getTranscriptFromRecognitionEvent(
   return transcriptParts.join(" ").trim();
 }
 
+async function parseResponse(res: Response): Promise<unknown> {
+  const contentType = res.headers.get("content-type") || "";
+  const raw = await res.text();
+
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `El endpoint devolvió una respuesta no válida (${res.status}). ${raw.slice(
+        0,
+        200,
+      )}`,
+    );
+  }
+
+  return JSON.parse(raw) as unknown;
+}
+
 export default function FollowUpNotesSection({
   followUpId,
 }: FollowUpNotesSectionProps) {
@@ -178,72 +194,59 @@ export default function FollowUpNotesSection({
     return `${notes.length} notas`;
   }, [notes.length]);
 
-  function showStatus(
-    message: string,
-    type: "success" | "error" | "info" = "info",
-  ) {
-    setStatusMessage(message);
-    setStatusType(type);
-  }
+  const showStatus = useCallback(
+    (message: string, type: "success" | "error" | "info" = "info") => {
+      setStatusMessage(message);
+      setStatusType(type);
+    },
+    [],
+  );
 
   function clearStatus() {
     setStatusMessage("");
   }
 
-  async function parseResponse(res: Response): Promise<unknown> {
-    const contentType = res.headers.get("content-type") || "";
-    const raw = await res.text();
+  const loadNotes = useCallback(
+    async (showLoadingMessage = false) => {
+      try {
+        setLoadingNotes(true);
 
-    if (!contentType.includes("application/json")) {
-      throw new Error(
-        `El endpoint devolvió una respuesta no válida (${res.status}). ${raw.slice(
-          0,
-          200,
-        )}`,
-      );
-    }
+        if (showLoadingMessage) {
+          showStatus("Actualizando notas...", "info");
+        }
 
-    return JSON.parse(raw) as unknown;
-  }
+        const res = await fetch(`/api/follow-ups/${followUpId}/notes`, {
+          cache: "no-store",
+        });
 
-  async function loadNotes(showLoadingMessage = false) {
-    try {
-      setLoadingNotes(true);
+        const data = await parseResponse(res);
 
-      if (showLoadingMessage) {
-        showStatus("Actualizando notas...", "info");
+        if (!res.ok) {
+          throw new Error(
+            getErrorMessage(data, "No se pudieron cargar las notas"),
+          );
+        }
+
+        setNotes(normalizeNotesPayload(data));
+
+        if (showLoadingMessage) {
+          showStatus("Notas actualizadas.", "success");
+        }
+      } catch (error) {
+        console.error("Error al cargar notas del mantenimiento:", error);
+        showStatus("No se pudieron cargar las notas.", "error");
+      } finally {
+        setLoadingNotes(false);
       }
-
-      const res = await fetch(`/api/follow-ups/${followUpId}/notes`, {
-        cache: "no-store",
-      });
-
-      const data = await parseResponse(res);
-
-      if (!res.ok) {
-        throw new Error(
-          getErrorMessage(data, "No se pudieron cargar las notas"),
-        );
-      }
-
-      setNotes(normalizeNotesPayload(data));
-
-      if (showLoadingMessage) {
-        showStatus("Notas actualizadas.", "success");
-      }
-    } catch (error) {
-      console.error("Error al cargar notas del mantenimiento:", error);
-      showStatus("No se pudieron cargar las notas.", "error");
-    } finally {
-      setLoadingNotes(false);
-    }
-  }
+    },
+    [followUpId, showStatus],
+  );
 
   useEffect(() => {
     if (!followUpId) return;
 
     void loadNotes();
-  }, [followUpId]);
+  }, [followUpId, loadNotes]);
 
   useEffect(() => {
     if (!statusMessage) return;

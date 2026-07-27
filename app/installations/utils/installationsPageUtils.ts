@@ -1,10 +1,8 @@
 ﻿import { getBusinessCountryMeta } from "@/lib/config/app-settings";
 
 import {
-  type AppSettingsResponse,
   type ColumnKey,
   type InstallationItem,
-  type SortDirection,
 } from "../config/installationsPageConfig";
 
 export { getBusinessCountryMeta };

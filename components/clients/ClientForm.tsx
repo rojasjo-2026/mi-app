@@ -43,7 +43,6 @@ import {
   GLOBAL_IDENTIFICATION_OPTIONS,
   currencyNames,
   type ClientComplianceProfile,
-  type ClientFormData,
   type ClientFormProps,
   type ClientType,
   type SectionKey,

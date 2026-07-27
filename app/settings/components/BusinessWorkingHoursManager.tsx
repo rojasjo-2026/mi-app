@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type BusinessWeekDayValue =
   | "MONDAY"
@@ -163,7 +163,7 @@ export default function BusinessWorkingHoursManager({
     [workingHours],
   );
 
-  async function loadWorkingHours() {
+  const loadWorkingHours = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -195,7 +195,7 @@ export default function BusinessWorkingHoursManager({
     } finally {
       setLoading(false);
     }
-  }
+  }, [operationalCountryCode]);
 
   async function handleCreateWorkingHour() {
     const validationMessage = validateForm(form);
@@ -409,7 +409,7 @@ export default function BusinessWorkingHoursManager({
     setEditingId(null);
     setEditingForm(buildEmptyForm(operationalCountryCode));
     void loadWorkingHours();
-  }, [operationalCountryCode]);
+  }, [loadWorkingHours, operationalCountryCode]);
 
   function renderFormFields(
     currentForm: WorkingHourForm,

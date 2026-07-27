@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent, TouchEvent } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -300,15 +301,30 @@ export default function EntityFilesSection({
       if (selectedFileIndex === null) return;
 
       if (e.key === "Escape") {
-        closeFileModal();
+        setSelectedFileIndex(null);
+        setTouchStartX(null);
+        return;
       }
 
       if (e.key === "ArrowLeft") {
-        goToPreviousFile();
+        setSelectedFileIndex((currentIndex) => {
+          if (currentIndex === null || sortedFiles.length === 0) {
+            return currentIndex;
+          }
+
+          return currentIndex === 0 ? sortedFiles.length - 1 : currentIndex - 1;
+        });
+        return;
       }
 
       if (e.key === "ArrowRight") {
-        goToNextFile();
+        setSelectedFileIndex((currentIndex) => {
+          if (currentIndex === null || sortedFiles.length === 0) {
+            return currentIndex;
+          }
+
+          return currentIndex === sortedFiles.length - 1 ? 0 : currentIndex + 1;
+        });
       }
     }
 
@@ -677,9 +693,12 @@ export default function EntityFilesSection({
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         {isPreviewImage(previewFile.file) ? (
-                          <img
+                          <Image
                             src={previewFile.previewUrl}
                             alt={previewFile.file.name}
+                            width={48}
+                            height={48}
+                            unoptimized
                             className="h-12 w-12 shrink-0 rounded-md border border-slate-200 object-cover"
                           />
                         ) : (
@@ -751,9 +770,13 @@ export default function EntityFilesSection({
                       className="overflow-hidden rounded-md border border-slate-200 bg-white"
                     >
                       {isPreviewImage(previewFile.file) ? (
-                        <img
+                        <Image
                           src={previewFile.previewUrl}
                           alt={previewFile.file.name}
+                          width={640}
+                          height={360}
+                          sizes="(max-width: 640px) 100vw, 33vw"
+                          unoptimized
                           className="h-36 w-full object-cover"
                         />
                       ) : (
@@ -861,9 +884,12 @@ export default function EntityFilesSection({
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     {isImage(file) ? (
-                      <img
+                      <Image
                         src={file.file_url}
                         alt={file.file_name}
+                        width={48}
+                        height={48}
+                        unoptimized
                         className="h-12 w-12 shrink-0 rounded-md border border-slate-200 object-cover"
                       />
                     ) : (
@@ -927,9 +953,13 @@ export default function EntityFilesSection({
                   className="cursor-pointer overflow-hidden rounded-md border border-slate-200 bg-white transition hover:border-slate-300"
                 >
                   {isImage(file) ? (
-                    <img
+                    <Image
                       src={file.file_url}
                       alt={file.file_name}
+                      width={640}
+                      height={360}
+                      sizes="(max-width: 640px) 100vw, 33vw"
+                      unoptimized
                       className="h-40 w-full object-cover"
                     />
                   ) : (
@@ -1044,9 +1074,13 @@ export default function EntityFilesSection({
               ) : null}
 
               {isImage(selectedFile) ? (
-                <img
+                <Image
                   src={selectedFile.file_url}
                   alt={selectedFile.file_name}
+                  width={1600}
+                  height={1200}
+                  sizes="100vw"
+                  unoptimized
                   className="max-h-full max-w-full object-contain"
                 />
               ) : isPdf(selectedFile) ? (

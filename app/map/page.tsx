@@ -312,8 +312,13 @@ export default function MapPage() {
     if (typeof window === "undefined") return;
 
     if (getGoogleMapsApi()) {
-      setMapsReady(true);
-      return;
+      const readyTimer = window.setTimeout(() => {
+        setMapsReady(true);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(readyTimer);
+      };
     }
 
     const existingScript = document.getElementById("google-maps-script");

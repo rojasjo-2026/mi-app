@@ -2,9 +2,48 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type SVGProps } from "react";
+import { useSyncExternalStore, type SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement>;
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "clarius-sidebar-collapsed";
+const SIDEBAR_COLLAPSED_EVENT = "clarius-sidebar-collapsed-change";
+
+function getSidebarCollapsedSnapshot() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
+}
+
+function getSidebarCollapsedServerSnapshot() {
+  return false;
+}
+
+function subscribeToSidebarCollapsed(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  function handleStorage(event: StorageEvent) {
+    if (event.key === SIDEBAR_COLLAPSED_STORAGE_KEY) {
+      onStoreChange();
+    }
+  }
+
+  function handleLocalChange() {
+    onStoreChange();
+  }
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(SIDEBAR_COLLAPSED_EVENT, handleLocalChange);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(SIDEBAR_COLLAPSED_EVENT, handleLocalChange);
+  };
+}
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: DashboardIcon },
@@ -34,29 +73,20 @@ function isActivePath(pathname: string, href: string) {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    const storedValue = window.localStorage.getItem(
-      "clarius-sidebar-collapsed",
-    );
-
-    if (storedValue === "true") {
-      setCollapsed(true);
-    }
-  }, []);
+  const collapsed = useSyncExternalStore(
+    subscribeToSidebarCollapsed,
+    getSidebarCollapsedSnapshot,
+    getSidebarCollapsedServerSnapshot,
+  );
 
   function toggleSidebar() {
-    setCollapsed((currentValue) => {
-      const nextValue = !currentValue;
+    const nextValue = !collapsed;
 
-      window.localStorage.setItem(
-        "clarius-sidebar-collapsed",
-        String(nextValue),
-      );
-
-      return nextValue;
-    });
+    window.localStorage.setItem(
+      SIDEBAR_COLLAPSED_STORAGE_KEY,
+      String(nextValue),
+    );
+    window.dispatchEvent(new Event(SIDEBAR_COLLAPSED_EVENT));
   }
 
   return (

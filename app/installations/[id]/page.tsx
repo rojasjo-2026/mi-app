@@ -164,14 +164,6 @@ function getBillingStatusLabel(status?: string | null) {
   return status || undefined;
 }
 
-function formatWarrantyMonths(value?: number | string | null) {
-  if (value === null || value === undefined || value === "") {
-    return undefined;
-  }
-
-  return String(value);
-}
-
 function parseDateOnly(value?: string | null) {
   if (!value) return null;
 

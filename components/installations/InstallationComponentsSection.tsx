@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ComponentFormModal from "./ComponentFormModal";
 
 type ComponentItem = {
@@ -29,7 +29,7 @@ export default function InstallationComponentsSection({
     useState<ComponentItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  async function fetchComponents() {
+  const fetchComponents = useCallback(async () => {
     try {
       const res = await fetch(
         `/api/installations/${installationId}/components`,
@@ -48,11 +48,11 @@ export default function InstallationComponentsSection({
     } finally {
       setLoading(false);
     }
-  }
+  }, [installationId]);
 
   useEffect(() => {
-    fetchComponents();
-  }, [installationId]);
+    void fetchComponents();
+  }, [fetchComponents]);
 
   function getStatusLabel(status: string) {
     switch (status) {

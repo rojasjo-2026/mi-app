@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { getOrCreateAppSettingsService } from "@/lib/services/settingsService";
 import { getBusinessCountryMeta } from "@/lib/settings/appSettingsUtils";
 
@@ -267,26 +269,26 @@ export default async function Home() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
-              <a
+              <Link
                 href="/clients/new"
                 className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
               >
                 Crear cliente
-              </a>
+              </Link>
 
-              <a
+              <Link
                 href="/follow-ups/new"
                 className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
               >
                 Agendar mantenimiento
-              </a>
+              </Link>
 
-              <a
+              <Link
                 href="/finances"
                 className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
               >
                 Nueva factura
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -335,12 +337,12 @@ export default async function Home() {
                 </p>
               </div>
 
-              <a
+              <Link
                 href="/calendar"
                 className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
                 Ver calendario
-              </a>
+              </Link>
             </div>
 
             <div className="mt-5 divide-y divide-slate-100">
@@ -374,12 +376,12 @@ export default async function Home() {
               ))}
             </div>
 
-            <a
+            <Link
               href="/calendar"
               className="mt-3 flex items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
             >
               Ver agenda completa →
-            </a>
+            </Link>
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -388,12 +390,12 @@ export default async function Home() {
                 Actividad reciente
               </h2>
 
-              <a
+              <Link
                 href="/clients"
                 className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
                 Ver todas
-              </a>
+              </Link>
             </div>
 
             <div className="mt-5 divide-y divide-slate-100">
@@ -427,12 +429,12 @@ export default async function Home() {
               ))}
             </div>
 
-            <a
+            <Link
               href="/clients"
               className="mt-3 flex items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
             >
               Ver toda la actividad →
-            </a>
+            </Link>
           </section>
 
           <div className="flex flex-col gap-5">
@@ -442,12 +444,12 @@ export default async function Home() {
                   Centro operativo
                 </h2>
 
-                <a
+                <Link
                   href="/operations-center"
                   className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                 >
                   Ver rutas
-                </a>
+                </Link>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-[1fr_160px]">
@@ -523,12 +525,12 @@ export default async function Home() {
                   Cobros / facturación
                 </h2>
 
-                <a
+                <Link
                   href="/finances"
                   className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                 >
                   Ver finanzas
-                </a>
+                </Link>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
