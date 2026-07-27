@@ -1,0 +1,165 @@
+// ======================================================
+// INVENTORY OPERATIONS
+// ======================================================
+
+model InventoryStockBalance {
+  inventory_stock_balance_id   String @id @default(uuid()) @db.Uuid
+  inventory_product_variant_id String @db.Uuid
+  inventory_location_id        String @db.Uuid
+
+  quantity_on_hand  Decimal @default(0) @db.Decimal(18, 6)
+  quantity_reserved Decimal @default(0) @db.Decimal(18, 6)
+  average_unit_cost Decimal @default(0) @db.Decimal(14, 4)
+
+  version Int @default(0)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  variant  InventoryProductVariant @relation(fields: [inventory_product_variant_id], references: [inventory_product_variant_id], onDelete: Restrict)
+  location InventoryLocation       @relation(fields: [inventory_location_id], references: [inventory_location_id], onDelete: Restrict)
+
+  @@unique([inventory_product_variant_id, inventory_location_id])
+  @@index([inventory_product_variant_id])
+  @@index([inventory_location_id])
+  @@index([quantity_on_hand])
+  @@index([quantity_reserved])
+  @@index([inventory_location_id, quantity_on_hand])
+}
+
+model InventoryDocument {
+  inventory_document_id   String  @id @default(uuid()) @db.Uuid
+  reversal_of_document_id String? @unique @db.Uuid
+  source_location_id      String? @db.Uuid
+  destination_location_id String? @db.Uuid
+
+  document_number String
+  document_type   InventoryDocumentType
+  status          InventoryDocumentStatus @default(DRAFT)
+
+  document_date DateTime @default(now())
+
+  reference_type   String?
+  reference_id     String?
+  reference_number String?
+
+  idempotency_key String? @unique
+
+  total_cost Decimal @default(0) @db.Decimal(16, 4)
+
+  notes               String?
+  cancellation_reason String?
+  reversal_reason     String?
+
+  created_by   String?
+  posted_by    String?
+  received_by  String?
+  cancelled_by String?
+  reversed_by  String?
+
+  posted_at    DateTime?
+  received_at  DateTime?
+  cancelled_at DateTime?
+  reversed_at  DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  source_location      InventoryLocation? @relation("InventoryDocumentSourceLocation", fields: [source_location_id], references: [inventory_location_id], onDelete: Restrict)
+  destination_location InventoryLocation? @relation("InventoryDocumentDestinationLocation", fields: [destination_location_id], references: [inventory_location_id], onDelete: Restrict)
+
+  reversal_of_document InventoryDocument? @relation("InventoryDocumentReversal", fields: [reversal_of_document_id], references: [inventory_document_id], onDelete: Restrict)
+  reversal_document    InventoryDocument? @relation("InventoryDocumentReversal")
+
+  lines     InventoryDocumentLine[]
+  movements InventoryMovement[]
+
+  @@unique([document_number])
+  @@index([document_type])
+  @@index([status])
+  @@index([source_location_id])
+  @@index([destination_location_id])
+  @@index([document_date])
+  @@index([reference_type, reference_id])
+  @@index([created_at])
+}
+
+model InventoryDocumentLine {
+  inventory_document_line_id   String  @id @default(uuid()) @db.Uuid
+  inventory_document_id        String  @db.Uuid
+  inventory_product_variant_id String  @db.Uuid
+  inventory_product_code_id    String? @db.Uuid
+  unit_of_measure_id           String  @db.Uuid
+
+  line_number Int
+
+  quantity          Decimal @db.Decimal(18, 6)
+  conversion_factor Decimal @default(1) @db.Decimal(18, 6)
+  stock_quantity    Decimal @db.Decimal(18, 6)
+
+  received_stock_quantity Decimal @default(0) @db.Decimal(18, 6)
+
+  unit_cost  Decimal @default(0) @db.Decimal(14, 4)
+  total_cost Decimal @default(0) @db.Decimal(16, 4)
+
+  product_name_snapshot String
+  variant_name_snapshot String?
+  unit_code_snapshot    String
+  code_snapshot         String?
+
+  notes String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  document        InventoryDocument       @relation(fields: [inventory_document_id], references: [inventory_document_id], onDelete: Cascade)
+  variant         InventoryProductVariant @relation(fields: [inventory_product_variant_id], references: [inventory_product_variant_id], onDelete: Restrict)
+  product_code    InventoryProductCode?   @relation(fields: [inventory_product_code_id], references: [inventory_product_code_id], onDelete: SetNull)
+  unit_of_measure UnitOfMeasure           @relation(fields: [unit_of_measure_id], references: [unit_of_measure_id], onDelete: Restrict)
+  movements       InventoryMovement[]
+
+  @@unique([inventory_document_id, line_number])
+  @@index([inventory_document_id])
+  @@index([inventory_product_variant_id])
+  @@index([inventory_product_code_id])
+  @@index([unit_of_measure_id])
+}
+
+model InventoryMovement {
+  inventory_movement_id        String  @id @default(uuid()) @db.Uuid
+  reversal_of_movement_id      String? @unique @db.Uuid
+  inventory_document_id        String  @db.Uuid
+  inventory_document_line_id   String  @db.Uuid
+  inventory_product_variant_id String  @db.Uuid
+  inventory_location_id        String  @db.Uuid
+
+  posting_key String @unique
+
+  movement_type InventoryMovementType
+
+  quantity_delta   Decimal @db.Decimal(18, 6)
+  unit_cost        Decimal @default(0) @db.Decimal(14, 4)
+  total_cost_delta Decimal @default(0) @db.Decimal(16, 4)
+
+  movement_at DateTime @default(now())
+
+  notes      String?
+  created_by String?
+  created_at DateTime @default(now())
+
+  document      InventoryDocument       @relation(fields: [inventory_document_id], references: [inventory_document_id], onDelete: Restrict)
+  document_line InventoryDocumentLine   @relation(fields: [inventory_document_line_id], references: [inventory_document_line_id], onDelete: Restrict)
+  variant       InventoryProductVariant @relation(fields: [inventory_product_variant_id], references: [inventory_product_variant_id], onDelete: Restrict)
+  location      InventoryLocation       @relation(fields: [inventory_location_id], references: [inventory_location_id], onDelete: Restrict)
+
+  reversal_of_movement InventoryMovement? @relation("InventoryMovementReversal", fields: [reversal_of_movement_id], references: [inventory_movement_id], onDelete: Restrict)
+  reversal_movement    InventoryMovement? @relation("InventoryMovementReversal")
+
+  @@index([inventory_document_id])
+  @@index([inventory_document_line_id])
+  @@index([inventory_product_variant_id])
+  @@index([inventory_location_id])
+  @@index([movement_type])
+  @@index([movement_at])
+  @@index([inventory_product_variant_id, inventory_location_id, movement_at])
+}

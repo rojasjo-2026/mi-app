@@ -1,0 +1,70 @@
+// ======================================================
+// INVENTORY ENUMS
+// ======================================================
+
+enum InventoryProductType {
+  STOCK_ITEM
+  CONSUMABLE
+  SPARE_PART
+  ASSET
+  RAW_MATERIAL
+  FINISHED_GOOD
+  KIT
+  SERVICE
+}
+
+enum InventoryTrackingMode {
+  NONE
+  SERIAL
+  LOT
+}
+
+enum InventoryLocationType {
+  WAREHOUSE
+  STORAGE_AREA
+  BRANCH
+  WORKSHOP
+  VEHICLE
+  STAFF
+  IN_TRANSIT
+  REPAIR
+  DAMAGED
+  VIRTUAL
+}
+
+enum InventoryCodeType {
+  SKU
+  BARCODE
+  QR
+  SUPPLIER
+  ALTERNATE
+}
+
+enum InventoryDocumentType {
+  OPENING_BALANCE
+  RECEIPT
+  ISSUE
+  TRANSFER
+  ADJUSTMENT_INCREASE
+  ADJUSTMENT_DECREASE
+  RETURN_IN
+  RETURN_OUT
+}
+
+enum InventoryDocumentStatus {
+  DRAFT
+  POSTED
+  IN_TRANSIT
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+  REVERSED
+}
+
+enum InventoryMovementType {
+  INBOUND
+  OUTBOUND
+  TRANSFER_DISPATCH
+  TRANSFER_RECEIPT
+  REVERSAL
+}

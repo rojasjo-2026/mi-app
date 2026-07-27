@@ -1,0 +1,49 @@
+// ======================================================
+// INVENTORY LOCATIONS
+// ======================================================
+
+model InventoryLocation {
+  inventory_location_id String  @id @default(uuid()) @db.Uuid
+  parent_location_id    String? @db.Uuid
+
+  location_code String
+  name          String
+  description   String?
+
+  location_type InventoryLocationType
+
+  country_code    String?
+  address_line    String?
+  reference_point String?
+  latitude        Decimal? @db.Decimal(10, 7)
+  longitude       Decimal? @db.Decimal(10, 7)
+
+  allows_stock Boolean @default(true)
+  is_default   Boolean @default(false)
+  sort_order   Int     @default(0)
+  is_active    Boolean @default(true)
+
+  metadata Json @default("{}")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  parent   InventoryLocation?  @relation("InventoryLocationHierarchy", fields: [parent_location_id], references: [inventory_location_id], onDelete: SetNull)
+  children InventoryLocation[] @relation("InventoryLocationHierarchy")
+
+  stock_balances        InventoryStockBalance[]
+  source_documents      InventoryDocument[]     @relation("InventoryDocumentSourceLocation")
+  destination_documents InventoryDocument[]     @relation("InventoryDocumentDestinationLocation")
+  movements             InventoryMovement[]
+
+  @@unique([location_code])
+  @@index([parent_location_id])
+  @@index([name])
+  @@index([location_type])
+  @@index([country_code])
+  @@index([allows_stock])
+  @@index([is_default])
+  @@index([sort_order])
+  @@index([is_active])
+  @@index([parent_location_id, is_active, sort_order])
+}
