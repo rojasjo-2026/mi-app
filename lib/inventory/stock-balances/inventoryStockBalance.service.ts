@@ -5,16 +5,26 @@ import type {
   InventoryServiceResult,
 } from "../shared/inventoryServiceResult.types";
 
-import { mapInventoryStockBalances } from "./inventoryStockBalance.mapper";
+import {
+  mapInventoryStockBalance,
+  mapInventoryStockBalances,
+} from "./inventoryStockBalance.mapper";
 
 import {
   countInventoryStockBalances,
+  findInventoryStockBalanceById,
   findInventoryStockBalances,
 } from "./inventoryStockBalance.repository";
 
-import type { InventoryStockBalanceListResponse } from "./inventoryStockBalance.types";
+import type {
+  InventoryStockBalanceListResponse,
+  InventoryStockBalanceResponse,
+} from "./inventoryStockBalance.types";
 
-import { normalizeInventoryStockBalanceQuery } from "./inventoryStockBalance.validators";
+import {
+  normalizeInventoryStockBalanceId,
+  normalizeInventoryStockBalanceQuery,
+} from "./inventoryStockBalance.validators";
 
 function successResult<T>(status: number, data: T): InventoryServiceResult<T> {
   return {
@@ -95,6 +105,28 @@ export async function getInventoryStockBalancesFromSearchParams(
         has_next_page: query.page < totalPages,
       },
     });
+  } catch (error) {
+    return handleStockBalanceServiceError(error);
+  }
+}
+
+export async function getInventoryStockBalanceById(
+  inventoryStockBalanceId: unknown,
+): Promise<InventoryServiceResult<InventoryStockBalanceResponse>> {
+  try {
+    const normalizedId = normalizeInventoryStockBalanceId(
+      inventoryStockBalanceId,
+    );
+
+    const balance = await findInventoryStockBalanceById(normalizedId);
+
+    if (!balance) {
+      return errorResult(404, "No se encontró el balance de inventario.", {
+        inventory_stock_balance_id: "El balance solicitado no existe.",
+      });
+    }
+
+    return successResult(200, mapInventoryStockBalance(balance));
   } catch (error) {
     return handleStockBalanceServiceError(error);
   }

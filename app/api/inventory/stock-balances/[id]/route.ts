@@ -1,7 +1,8 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+
+import { getInventoryStockBalanceById } from "@/lib/inventory/stock-balances/inventoryStockBalance.service";
 
 import type { InventoryServiceResult } from "@/lib/inventory/shared/inventoryServiceResult.types";
-import { getInventoryStockBalanceById } from "@/lib/inventory/stock/inventoryStockBalance.service";
 
 type InventoryStockBalanceRouteContext = {
   params: Promise<{

@@ -156,3 +156,7 @@ export function normalizeInventoryStockBalanceQuery(
     ),
   };
 }
+
+export function normalizeInventoryStockBalanceId(value: unknown) {
+  return normalizeCatalogUuid(value, "El id del balance de inventario");
+}

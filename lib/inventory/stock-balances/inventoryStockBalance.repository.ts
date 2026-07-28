@@ -194,3 +194,13 @@ export function countInventoryStockBalances(
     where: buildStockBalanceWhere(filters),
   });
 }
+
+export function findInventoryStockBalanceById(inventoryStockBalanceId: string) {
+  return prisma.inventoryStockBalance.findUnique({
+    where: {
+      inventory_stock_balance_id: inventoryStockBalanceId,
+    },
+
+    include: stockBalanceInclude,
+  });
+}
