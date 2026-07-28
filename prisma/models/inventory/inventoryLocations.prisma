@@ -32,9 +32,10 @@ model InventoryLocation {
   children InventoryLocation[] @relation("InventoryLocationHierarchy")
 
   stock_balances        InventoryStockBalance[]
-  source_documents      InventoryDocument[]     @relation("InventoryDocumentSourceLocation")
-  destination_documents InventoryDocument[]     @relation("InventoryDocumentDestinationLocation")
+  source_documents      InventoryDocument[]        @relation("InventoryDocumentSourceLocation")
+  destination_documents InventoryDocument[]        @relation("InventoryDocumentDestinationLocation")
   movements             InventoryMovement[]
+  reservation_lines     InventoryReservationLine[]
 
   @@unique([location_code])
   @@index([parent_location_id])

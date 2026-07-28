@@ -1,0 +1,109 @@
+// ======================================================
+// INVENTORY RESERVATIONS
+// ======================================================
+
+model InventoryReservation {
+  inventory_reservation_id String @id @default(uuid()) @db.Uuid
+
+  reservation_number String                     @unique
+  status             InventoryReservationStatus @default(DRAFT)
+
+  reference_type   String?
+  reference_id     String?
+  reference_number String?
+
+  idempotency_key String? @unique
+
+  expires_at DateTime?
+
+  notes String?
+
+  created_by   String?
+  activated_by String?
+  released_by  String?
+  expired_by   String?
+  cancelled_by String?
+
+  activated_at DateTime?
+  consumed_at  DateTime?
+  released_at  DateTime?
+  expired_at   DateTime?
+  cancelled_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  lines  InventoryReservationLine[]
+  events InventoryReservationEvent[]
+
+  @@index([status])
+  @@index([expires_at])
+  @@index([reference_type, reference_id])
+  @@index([reference_number])
+  @@index([created_at])
+}
+
+model InventoryReservationLine {
+  inventory_reservation_line_id String @id @default(uuid()) @db.Uuid
+  inventory_reservation_id      String @db.Uuid
+  inventory_product_variant_id  String @db.Uuid
+  inventory_location_id         String @db.Uuid
+
+  line_number Int
+
+  quantity_requested Decimal @db.Decimal(18, 6)
+  quantity_reserved  Decimal @default(0) @db.Decimal(18, 6)
+  quantity_consumed  Decimal @default(0) @db.Decimal(18, 6)
+  quantity_released  Decimal @default(0) @db.Decimal(18, 6)
+
+  notes String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  reservation InventoryReservation    @relation(fields: [inventory_reservation_id], references: [inventory_reservation_id], onDelete: Restrict)
+  variant     InventoryProductVariant @relation(fields: [inventory_product_variant_id], references: [inventory_product_variant_id], onDelete: Restrict)
+  location    InventoryLocation       @relation(fields: [inventory_location_id], references: [inventory_location_id], onDelete: Restrict)
+
+  events InventoryReservationEvent[]
+
+  @@unique([inventory_reservation_id, line_number])
+  @@unique([inventory_reservation_id, inventory_product_variant_id, inventory_location_id])
+  @@index([inventory_reservation_id])
+  @@index([inventory_product_variant_id])
+  @@index([inventory_location_id])
+  @@index([inventory_product_variant_id, inventory_location_id])
+}
+
+model InventoryReservationEvent {
+  inventory_reservation_event_id String  @id @default(uuid()) @db.Uuid
+  inventory_reservation_id       String  @db.Uuid
+  inventory_reservation_line_id  String? @db.Uuid
+
+  event_type InventoryReservationEventType
+
+  previous_status InventoryReservationStatus?
+  new_status      InventoryReservationStatus?
+
+  quantity Decimal? @db.Decimal(18, 6)
+
+  reference_type   String?
+  reference_id     String?
+  reference_number String?
+
+  reason   String?
+  metadata Json    @default("{}")
+
+  created_by String?
+  created_at DateTime @default(now())
+
+  reservation      InventoryReservation      @relation(fields: [inventory_reservation_id], references: [inventory_reservation_id], onDelete: Restrict)
+  reservation_line InventoryReservationLine? @relation(fields: [inventory_reservation_line_id], references: [inventory_reservation_line_id], onDelete: Restrict)
+
+  @@index([inventory_reservation_id])
+  @@index([inventory_reservation_line_id])
+  @@index([event_type])
+  @@index([created_at])
+  @@index([inventory_reservation_id, created_at])
+  @@index([reference_type, reference_id])
+}

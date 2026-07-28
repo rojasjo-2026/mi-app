@@ -114,9 +114,10 @@ model InventoryProductVariant {
   stock_unit UnitOfMeasure          @relation("InventoryVariantStockUnit", fields: [stock_unit_id], references: [unit_of_measure_id], onDelete: Restrict)
   codes      InventoryProductCode[]
 
-  stock_balances InventoryStockBalance[]
-  document_lines InventoryDocumentLine[]
-  movements      InventoryMovement[]
+  stock_balances    InventoryStockBalance[]
+  document_lines    InventoryDocumentLine[]
+  movements         InventoryMovement[]
+  reservation_lines InventoryReservationLine[]
 
   @@index([inventory_product_id])
   @@index([stock_unit_id])

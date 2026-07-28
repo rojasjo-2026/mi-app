@@ -68,3 +68,22 @@ enum InventoryMovementType {
   TRANSFER_RECEIPT
   REVERSAL
 }
+
+enum InventoryReservationStatus {
+  DRAFT
+  ACTIVE
+  PARTIALLY_CONSUMED
+  CONSUMED
+  RELEASED
+  EXPIRED
+  CANCELLED
+}
+
+enum InventoryReservationEventType {
+  CREATED
+  ACTIVATED
+  CONSUMED
+  RELEASED
+  EXPIRED
+  CANCELLED
+}
