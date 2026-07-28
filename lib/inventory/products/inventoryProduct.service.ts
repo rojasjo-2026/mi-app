@@ -17,6 +17,8 @@ import {
   findInventoryVariantStockUnitById,
 } from "../variants/inventoryVariant.repository";
 
+import { reactivateInventoryProductWithFallbackVariant } from "./inventoryProductActivation.repository";
+
 import {
   mapInventoryProductDetail,
   mapInventoryProducts,
@@ -141,9 +143,11 @@ function buildNoActiveVariantResponse<T>(): InventoryServiceResult<T> {
     status: 409,
     body: {
       success: false,
-      message: "El producto no tiene una variante activa disponible.",
+      message:
+        "El producto no tiene una variante disponible para reactivación.",
       errors: {
-        is_active: "Active al menos una variante antes de activar el producto.",
+        is_active:
+          "Debe existir al menos una variante con una unidad de inventario activa.",
       },
     },
   };
@@ -409,13 +413,13 @@ export async function updateInventoryProduct(
       }
     }
 
+    let requiresVariantReactivation = false;
+
     if (reactivatesProduct) {
       const activeVariants =
         await countActiveInventoryProductVariants(productId);
 
-      if (activeVariants === 0) {
-        return buildNoActiveVariantResponse();
-      }
+      requiresVariantReactivation = activeVariants === 0;
     }
 
     const deactivatesProduct =
@@ -436,7 +440,16 @@ export async function updateInventoryProduct(
       return buildStockExistsResponse();
     }
 
-    await updateInventoryProductRecord(productId, data);
+    if (requiresVariantReactivation) {
+      const reactivatedVariant =
+        await reactivateInventoryProductWithFallbackVariant(productId, data);
+
+      if (!reactivatedVariant) {
+        return buildNoActiveVariantResponse();
+      }
+    } else {
+      await updateInventoryProductRecord(productId, data);
+    }
 
     const product = await getProductDetail(productId);
 
