@@ -1,12 +1,17 @@
-import {
-  AlertTriangle,
-  CircleDashed,
-  Clock3,
-  PackageCheck,
-  type LucideIcon,
-} from "lucide-react";
+import { AlertTriangle, Boxes, CircleDashed, Clock3 } from "lucide-react";
 
-import type { InventoryReservationMetrics } from "../types";
+import type { LucideIcon } from "lucide-react";
+
+type InventoryReservationsMetricsProps = {
+  metrics: {
+    operational: number;
+    drafts: number;
+    upcoming: number;
+    overdue: number;
+  };
+
+  loading: boolean;
+};
 
 type MetricCardProps = {
   title: string;
@@ -28,54 +33,51 @@ function MetricCard({
   loading,
 }: MetricCardProps) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="min-w-0 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500">{title}</p>
+          <p className="truncate text-xs font-semibold text-slate-500">
+            {title}
+          </p>
 
           {loading ? (
-            <div className="mt-2 h-7 w-14 animate-pulse rounded bg-slate-100" />
+            <div className="mt-2 h-7 w-12 animate-pulse rounded bg-slate-100" />
           ) : (
-            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+            <p className="mt-1 text-2xl font-semibold leading-none tabular-nums text-slate-950">
               {value}
             </p>
           )}
-
-          <p className="mt-1 truncate text-xs font-medium text-slate-400">
-            {detail}
-          </p>
         </div>
 
         <div
           className={[
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
             iconBackgroundClassName,
-            iconClassName,
           ].join(" ")}
         >
-          <Icon className="h-4 w-4" aria-hidden="true" />
+          <Icon
+            className={["h-4 w-4", iconClassName].join(" ")}
+            aria-hidden="true"
+          />
         </div>
       </div>
+
+      <p className="mt-2 truncate text-xs text-slate-400">{detail}</p>
     </article>
   );
 }
-
-type InventoryReservationsMetricsProps = {
-  metrics: InventoryReservationMetrics;
-  loading: boolean;
-};
 
 export default function InventoryReservationsMetrics({
   metrics,
   loading,
 }: InventoryReservationsMetricsProps) {
   return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <MetricCard
         title="Reservas operativas"
         value={metrics.operational}
         detail="Activas o con consumo parcial"
-        icon={PackageCheck}
+        icon={Boxes}
         iconClassName="text-blue-700"
         iconBackgroundClassName="bg-blue-50"
         loading={loading}
@@ -84,17 +86,17 @@ export default function InventoryReservationsMetrics({
       <MetricCard
         title="Borradores"
         value={metrics.drafts}
-        detail="Aun no comprometen existencias"
+        detail="Aún no comprometen existencias"
         icon={CircleDashed}
-        iconClassName="text-slate-700"
+        iconClassName="text-slate-600"
         iconBackgroundClassName="bg-slate-100"
         loading={loading}
       />
 
       <MetricCard
-        title="Proximas a vencer"
+        title="Próximas a vencer"
         value={metrics.upcoming}
-        detail="Vencen durante los siguientes 7 dias"
+        detail="Vencen durante los siguientes 7 días"
         icon={Clock3}
         iconClassName="text-amber-700"
         iconBackgroundClassName="bg-amber-50"
@@ -104,7 +106,7 @@ export default function InventoryReservationsMetrics({
       <MetricCard
         title="Vencidas"
         value={metrics.overdue}
-        detail="Requieren revision operativa"
+        detail="Requieren revisión operativa"
         icon={AlertTriangle}
         iconClassName="text-red-700"
         iconBackgroundClassName="bg-red-50"

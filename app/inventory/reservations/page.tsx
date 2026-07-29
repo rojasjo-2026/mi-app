@@ -133,8 +133,8 @@ export default function InventoryReservationsPage() {
   const totalItems = data.pagination.total_items;
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 lg:flex lg:h-[calc(100dvh-8.5rem)] lg:min-h-0 lg:flex-col lg:overflow-hidden">
-      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 lg:min-h-0 lg:flex-1">
+    <main className="min-h-screen w-full min-w-0 max-w-full overflow-x-hidden bg-slate-50 text-slate-900">
+      <section className="mx-auto flex w-full min-w-0 max-w-[1800px] flex-col gap-4 pb-6">
         <InventoryModuleNav activeKey="reservations" />
 
         <InventoryReservationsHeader
