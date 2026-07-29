@@ -5,6 +5,7 @@ import { AlertCircle, Clock3, FileText, RefreshCw, X } from "lucide-react";
 import { useEffect } from "react";
 
 import InventoryReservationActions from "./InventoryReservationActions";
+import InventoryReservationOperationalActions from "./InventoryReservationOperationalActions";
 
 import type { InventoryReservationDetail } from "../types";
 
@@ -225,10 +226,18 @@ export default function InventoryReservationPreviewPanel({
           </div>
 
           {detail ? (
-            <InventoryReservationActions
-              reservation={detail}
-              onCompleted={onActionCompleted}
-            />
+            <>
+              <InventoryReservationActions
+                reservation={detail}
+                onCompleted={onActionCompleted}
+              />
+
+              <InventoryReservationOperationalActions
+                reservation={detail}
+                locale={locale}
+                onCompleted={onActionCompleted}
+              />
+            </>
           ) : null}
         </section>
 
@@ -553,8 +562,7 @@ export default function InventoryReservationPreviewPanel({
                             </p>
 
                             <p className="mt-1 text-xs font-medium text-slate-500">
-                              {document.document_type} Ãƒâ€šÃ‚Â·{" "}
-                              {document.status}
+                              {document.document_type} · {document.status}
                             </p>
                           </div>
 
@@ -566,7 +574,7 @@ export default function InventoryReservationPreviewPanel({
 
                         <p className="mt-3 text-xs text-slate-400">
                           {formatInventoryDate(document.document_date, locale)}{" "}
-                          Ãƒâ€šÃ‚Â· {document.lines_count} linea
+                          · {document.lines_count} linea
                           {document.lines_count === 1 ? "" : "s"}
                         </p>
                       </article>
@@ -624,7 +632,7 @@ export default function InventoryReservationPreviewPanel({
                           <p className="mt-1 text-xs font-medium text-slate-500">
                             {event.created_by || "Sistema"}
                             {event.quantity
-                              ? ` Ãƒâ€šÃ‚Â· ${formatInventoryQuantity(
+                              ? ` · ${formatInventoryQuantity(
                                   event.quantity,
                                   locale,
                                 )} unidades`

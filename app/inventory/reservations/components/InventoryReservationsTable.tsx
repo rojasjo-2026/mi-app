@@ -153,7 +153,7 @@ export default function InventoryReservationsTable({
 
                       <p className="mt-1 text-xs font-medium text-slate-400">
                         {reservation.line_count} linea
-                        {reservation.line_count === 1 ? "" : "s"} Â·{" "}
+                        {reservation.line_count === 1 ? "" : "s"} ·{" "}
                         {reservation.event_count} evento
                         {reservation.event_count === 1 ? "" : "s"}
                       </p>
@@ -305,7 +305,7 @@ export default function InventoryReservationsTable({
           <span className="font-semibold text-slate-700">
             {pagination.total_items}
           </span>{" "}
-          reservas Â· Pagina {currentPage} de {totalPages}
+          reservas · Pagina {currentPage} de {totalPages}
         </p>
 
         <div className="flex items-center gap-2">
