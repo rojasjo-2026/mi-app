@@ -134,14 +134,18 @@ export function getExpirationLabel(
   }
 
   if (expiration.is_overdue) {
-    const overdueDays = Math.abs(expiration.days_until_expiration ?? 0);
+    const expirationTime = new Date(expiresAt).getTime();
+
+    const overdueMilliseconds = Math.max(0, Date.now() - expirationTime);
+
+    const overdueDays = Math.floor(overdueMilliseconds / (24 * 60 * 60 * 1000));
 
     return {
       label: formatInventoryDate(expiresAt, locale),
       helper:
-        overdueDays === 0
-          ? "Vence hoy"
-          : `Vencida hace ${overdueDays} dia${overdueDays === 1 ? "" : "s"}`,
+        overdueDays < 1
+          ? "Vencida hace menos de 1 día"
+          : `Vencida hace ${overdueDays} día${overdueDays === 1 ? "" : "s"}`,
       className: "text-red-700",
     };
   }
@@ -302,7 +306,9 @@ export function getReservationSituationText(
       return `La cantidad pendiente fue liberada. El total liberado es ${released}.`;
 
     case "EXPIRED":
-      return `La reserva alcanzo su fecha de vencimiento y libero ${released} unidades.`;
+      return `La reserva alcanzó su fecha de vencimiento y liberó ${released} ${
+        released === "1" ? "unidad" : "unidades"
+      }.`;
 
     case "CANCELLED":
       return "La reserva fue cancelada antes de comprometer existencias.";

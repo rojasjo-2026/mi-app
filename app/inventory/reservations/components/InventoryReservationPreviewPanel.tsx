@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import InventoryReservationActions from "./InventoryReservationActions";
 import InventoryReservationOperationalActions from "./InventoryReservationOperationalActions";
+import InventoryReservationExpirationAction from "./InventoryReservationExpirationAction";
 
 import type { InventoryReservationDetail } from "../types";
 
@@ -233,6 +234,12 @@ export default function InventoryReservationPreviewPanel({
               />
 
               <InventoryReservationOperationalActions
+                reservation={detail}
+                locale={locale}
+                onCompleted={onActionCompleted}
+              />
+
+              <InventoryReservationExpirationAction
                 reservation={detail}
                 locale={locale}
                 onCompleted={onActionCompleted}
