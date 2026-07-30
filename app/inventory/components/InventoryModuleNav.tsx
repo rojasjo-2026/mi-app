@@ -21,7 +21,7 @@ const operationItems = [
     label: "Existencias",
     href: "/inventory/stock",
     icon: Boxes,
-    available: false,
+    available: true,
   },
   {
     key: "reservations",
