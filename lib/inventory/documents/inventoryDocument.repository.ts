@@ -1,10 +1,11 @@
-﻿import { InventoryDocumentStatus, type Prisma } from "@prisma/client";
+import { InventoryDocumentStatus, type Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
 import type {
   InventoryDocumentCreateData,
   InventoryDocumentFilters,
+  InventoryDocumentQuery,
   InventoryDocumentUpdateData,
 } from "./inventoryDocument.types";
 
@@ -168,9 +169,11 @@ function buildDocumentWhere(
   };
 }
 
-export function findInventoryDocuments(filters: InventoryDocumentFilters) {
+export function findInventoryDocuments(query: InventoryDocumentQuery) {
+  const skip = (query.page - 1) * query.pageSize;
+
   return prisma.inventoryDocument.findMany({
-    where: buildDocumentWhere(filters),
+    where: buildDocumentWhere(query.filters),
     include: documentListInclude,
     orderBy: [
       {
@@ -180,6 +183,14 @@ export function findInventoryDocuments(filters: InventoryDocumentFilters) {
         created_at: "desc",
       },
     ],
+    skip,
+    take: query.pageSize,
+  });
+}
+
+export function countInventoryDocuments(filters: InventoryDocumentFilters) {
+  return prisma.inventoryDocument.count({
+    where: buildDocumentWhere(filters),
   });
 }
 

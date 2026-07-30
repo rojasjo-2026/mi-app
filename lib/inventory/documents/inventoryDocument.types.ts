@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   InventoryDocument,
   InventoryDocumentStatus,
   InventoryDocumentType,
@@ -18,6 +18,12 @@ export type InventoryDocumentFilters = {
   destinationLocationId?: string;
   dateFrom?: Date;
   dateTo?: Date;
+};
+
+export type InventoryDocumentQuery = {
+  filters: InventoryDocumentFilters;
+  page: number;
+  pageSize: number;
 };
 
 export type InventoryDocumentCreateData = {
@@ -82,6 +88,20 @@ export type InventoryDocumentResponse = {
 
 export type InventoryDocumentDetailResponse = InventoryDocumentResponse & {
   lines: InventoryDocumentLineResponse[];
+};
+
+export type InventoryDocumentPaginationResponse = {
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+  has_previous_page: boolean;
+  has_next_page: boolean;
+};
+
+export type InventoryDocumentListResponse = {
+  items: InventoryDocumentResponse[];
+  pagination: InventoryDocumentPaginationResponse;
 };
 
 export type InventoryDocumentLocationRecord = {

@@ -1,4 +1,4 @@
-﻿import { InventoryDocumentStatus, InventoryDocumentType } from "@prisma/client";
+import { InventoryDocumentStatus, InventoryDocumentType } from "@prisma/client";
 
 import { InventoryValidationError } from "../shared/inventoryErrors";
 
@@ -16,6 +16,7 @@ import {
 import type {
   InventoryDocumentCreateData,
   InventoryDocumentFilters,
+  InventoryDocumentQuery,
   InventoryDocumentUpdateData,
 } from "./inventoryDocument.types";
 
@@ -192,11 +193,66 @@ export function validateInventoryDocumentLocationRules(
   }
 }
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 100;
+
+function normalizePositiveIntegerParameter(
+  searchParams: URLSearchParams,
+  parameterName: string,
+  defaultValue: number,
+  maximumValue?: number,
+) {
+  const rawValue = searchParams.get(parameterName);
+
+  if (rawValue === null) {
+    return defaultValue;
+  }
+
+  const cleanValue = rawValue.trim();
+
+  if (!/^\d+$/.test(cleanValue)) {
+    throw new InventoryValidationError(
+      `El parámetro ${parameterName} no es válido.`,
+      {
+        errors: {
+          [parameterName]: "Ingrese un número entero positivo.",
+        },
+      },
+    );
+  }
+
+  const parsedValue = Number(cleanValue);
+
+  if (!Number.isSafeInteger(parsedValue) || parsedValue < 1) {
+    throw new InventoryValidationError(
+      `El parámetro ${parameterName} no es válido.`,
+      {
+        errors: {
+          [parameterName]: "Ingrese un número entero mayor o igual a 1.",
+        },
+      },
+    );
+  }
+
+  if (maximumValue !== undefined && parsedValue > maximumValue) {
+    throw new InventoryValidationError(
+      `El parámetro ${parameterName} supera el máximo permitido.`,
+      {
+        errors: {
+          [parameterName]: `El valor máximo permitido es ${maximumValue}.`,
+        },
+      },
+    );
+  }
+
+  return parsedValue;
+}
 export function normalizeInventoryDocumentId(value: unknown) {
-  return normalizeCatalogUuid(value, "El id del documento");
+  return normalizeCatalogUuid(value, "El id de la operación de inventario");
 }
 
-export function normalizeInventoryDocumentFilters(
+function normalizeInventoryDocumentFiltersOnly(
   searchParams: URLSearchParams,
 ): InventoryDocumentFilters {
   const rawDocumentType = searchParams.get("document_type");
@@ -244,6 +300,22 @@ export function normalizeInventoryDocumentFilters(
   };
 }
 
+export function normalizeInventoryDocumentQuery(
+  searchParams: URLSearchParams,
+): InventoryDocumentQuery {
+  return {
+    filters: normalizeInventoryDocumentFiltersOnly(searchParams),
+
+    page: normalizePositiveIntegerParameter(searchParams, "page", DEFAULT_PAGE),
+
+    pageSize: normalizePositiveIntegerParameter(
+      searchParams,
+      "page_size",
+      DEFAULT_PAGE_SIZE,
+      MAX_PAGE_SIZE,
+    ),
+  };
+}
 export function normalizeInventoryDocumentCreateInput(
   input: unknown,
 ): InventoryDocumentCreateData {

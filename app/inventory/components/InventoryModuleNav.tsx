@@ -32,10 +32,10 @@ const operationItems = [
   },
   {
     key: "documents",
-    label: "Documentos",
+    label: "Operaciones",
     href: "/inventory/documents",
     icon: FileText,
-    available: false,
+    available: true,
   },
   {
     key: "movements",
@@ -52,7 +52,7 @@ const catalogItems = [
     icon: Package,
   },
   {
-    label: "Categorias",
+    label: "Categorías",
     icon: Tags,
   },
   {
@@ -70,13 +70,13 @@ export default function InventoryModuleNav({
 }: InventoryModuleNavProps) {
   return (
     <nav
-      aria-label="Navegacion del modulo de inventario"
+      aria-label="Navegación del módulo de inventario"
       className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
     >
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <p className="shrink-0 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Operacion
+            Inventario
           </p>
 
           <div className="flex min-w-0 flex-wrap gap-1.5">
@@ -121,7 +121,7 @@ export default function InventoryModuleNav({
 
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <p className="shrink-0 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Catalogo
+            Catálogo
           </p>
 
           <div className="flex min-w-0 flex-wrap gap-1.5">

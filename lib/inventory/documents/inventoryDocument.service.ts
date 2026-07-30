@@ -1,4 +1,4 @@
-﻿import {
+import {
   InventoryDocumentStatus,
   type InventoryDocumentType,
 } from "@prisma/client";
@@ -25,18 +25,20 @@ import {
   findInventoryDocumentByIdempotencyKey,
   findInventoryDocumentDetailById,
   findInventoryDocumentLocationById,
+  countInventoryDocuments,
   findInventoryDocuments,
   updateInventoryDocumentRecord,
 } from "./inventoryDocument.repository";
 
 import type {
   InventoryDocumentDetailResponse,
+  InventoryDocumentListResponse,
   InventoryDocumentResponse,
 } from "./inventoryDocument.types";
 
 import {
   normalizeInventoryDocumentCreateInput,
-  normalizeInventoryDocumentFilters,
+  normalizeInventoryDocumentQuery,
   normalizeInventoryDocumentId,
   normalizeInventoryDocumentUpdateInput,
   validateInventoryDocumentLocationRules,
@@ -180,7 +182,7 @@ export async function getInventoryDocumentsFromSearchParams(
   searchParams: URLSearchParams,
 ): Promise<InventoryServiceResult<InventoryDocumentResponse[]>> {
   try {
-    const filters = normalizeInventoryDocumentFilters(searchParams);
+    const filters = normalizeInventoryDocumentQuery(searchParams);
 
     const documents = await findInventoryDocuments(filters);
 
