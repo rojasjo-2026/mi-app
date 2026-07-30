@@ -11,6 +11,7 @@ import InventoryDocumentsFilters from "./components/InventoryDocumentsFilters";
 import InventoryDocumentsHeader from "./components/InventoryDocumentsHeader";
 import InventoryDocumentsMetrics from "./components/InventoryDocumentsMetrics";
 import InventoryDocumentsTable from "./components/InventoryDocumentsTable";
+import InventoryDocumentProcessDialog from "./components/InventoryDocumentProcessDialog";
 import InventoryDraftLinesDialog from "./components/InventoryDraftLinesDialog";
 import InventoryOperationCreateDialog from "./components/InventoryOperationCreateDialog";
 
@@ -60,6 +61,8 @@ export default function InventoryDocumentsPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const [draftLinesDialogOpen, setDraftLinesDialogOpen] = useState(false);
+
+  const [processDialogOpen, setProcessDialogOpen] = useState(false);
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null,
@@ -239,6 +242,27 @@ export default function InventoryDocumentsPage() {
           )}
         </div>
 
+        <InventoryDocumentProcessDialog
+          open={processDialogOpen}
+          detail={detail}
+          locale={locale}
+          currency={currency}
+          onClose={() => setProcessDialogOpen(false)}
+          onProcessed={(processedDocument) => {
+            setProcessDialogOpen(false);
+
+            setSelectedDocumentId(processedDocument.inventory_document_id);
+
+            setFilters((current) => ({
+              ...current,
+              status: "ALL",
+            }));
+
+            setPage(1);
+            handleRefresh();
+          }}
+        />
+
         <InventoryDraftLinesDialog
           open={draftLinesDialogOpen}
           detail={detail}
@@ -255,7 +279,11 @@ export default function InventoryDocumentsPage() {
         />
 
         <InventoryDocumentPreviewPanel
-          documentId={draftLinesDialogOpen ? null : selectedDocumentId}
+          documentId={
+            draftLinesDialogOpen || processDialogOpen
+              ? null
+              : selectedDocumentId
+          }
           detail={detail}
           loading={loadingDetail}
           error={detailError}
@@ -264,6 +292,7 @@ export default function InventoryDocumentsPage() {
           onClose={() => setSelectedDocumentId(null)}
           onRefresh={handleRefresh}
           onManageProducts={() => setDraftLinesDialogOpen(true)}
+          onProcess={() => setProcessDialogOpen(true)}
         />
       </section>
     </main>

@@ -37,6 +37,7 @@ type InventoryDocumentPreviewPanelProps = {
   onClose: () => void;
   onRefresh: () => void;
   onManageProducts: () => void;
+  onProcess: () => void;
 };
 
 type DetailRowProps = {
@@ -76,6 +77,7 @@ export default function InventoryDocumentPreviewPanel({
   onClose,
   onRefresh,
   onManageProducts,
+  onProcess,
 }: InventoryDocumentPreviewPanelProps) {
   useEffect(() => {
     if (!documentId) {
@@ -248,24 +250,37 @@ export default function InventoryDocumentPreviewPanel({
                   />
 
                   <h3 className="text-sm font-semibold text-slate-950">
-                    Ubicaciones
+                    {detail.document_type === "TRANSFER"
+                      ? "Ubicaciones"
+                      : "Ubicación afectada"}
                   </h3>
                 </div>
 
                 <dl className="mt-3">
-                  <DetailRow
-                    label="Origen"
-                    value={getInventoryDocumentLocationLabel(
-                      detail.source_location,
-                    )}
-                  />
+                  {detail.document_type === "TRANSFER" ? (
+                    <>
+                      <DetailRow
+                        label="Origen"
+                        value={getInventoryDocumentLocationLabel(
+                          detail.source_location,
+                        )}
+                      />
 
-                  <DetailRow
-                    label="Destino"
-                    value={getInventoryDocumentLocationLabel(
-                      detail.destination_location,
-                    )}
-                  />
+                      <DetailRow
+                        label="Destino"
+                        value={getInventoryDocumentLocationLabel(
+                          detail.destination_location,
+                        )}
+                      />
+                    </>
+                  ) : (
+                    <DetailRow
+                      label="Ubicación"
+                      value={getInventoryDocumentLocationLabel(
+                        detail.destination_location ?? detail.source_location,
+                      )}
+                    />
+                  )}
                 </dl>
               </section>
 
@@ -452,14 +467,27 @@ export default function InventoryDocumentPreviewPanel({
 
         <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-3">
           {detail?.status === "DRAFT" ? (
-            <button
-              type="button"
-              onClick={onManageProducts}
-              disabled={loading}
-              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Administrar productos
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={onManageProducts}
+                disabled={loading}
+                className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Administrar productos
+              </button>
+
+              <button
+                type="button"
+                onClick={onProcess}
+                disabled={loading}
+                className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {detail.document_type === "TRANSFER"
+                  ? "Despachar transferencia"
+                  : "Procesar operación"}
+              </button>
+            </div>
           ) : (
             <span />
           )}
