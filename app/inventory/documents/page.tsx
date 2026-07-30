@@ -11,6 +11,7 @@ import InventoryDocumentsFilters from "./components/InventoryDocumentsFilters";
 import InventoryDocumentsHeader from "./components/InventoryDocumentsHeader";
 import InventoryDocumentsMetrics from "./components/InventoryDocumentsMetrics";
 import InventoryDocumentsTable from "./components/InventoryDocumentsTable";
+import InventoryDraftLinesDialog from "./components/InventoryDraftLinesDialog";
 import InventoryOperationCreateDialog from "./components/InventoryOperationCreateDialog";
 
 import {
@@ -57,6 +58,8 @@ export default function InventoryDocumentsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  const [draftLinesDialogOpen, setDraftLinesDialogOpen] = useState(false);
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null,
@@ -236,6 +239,15 @@ export default function InventoryDocumentsPage() {
           )}
         </div>
 
+        <InventoryDraftLinesDialog
+          open={draftLinesDialogOpen}
+          detail={detail}
+          locale={locale}
+          currency={currency}
+          onClose={() => setDraftLinesDialogOpen(false)}
+          onChanged={handleRefresh}
+        />
+
         <InventoryOperationCreateDialog
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
@@ -243,7 +255,7 @@ export default function InventoryDocumentsPage() {
         />
 
         <InventoryDocumentPreviewPanel
-          documentId={selectedDocumentId}
+          documentId={draftLinesDialogOpen ? null : selectedDocumentId}
           detail={detail}
           loading={loadingDetail}
           error={detailError}
@@ -251,6 +263,7 @@ export default function InventoryDocumentsPage() {
           currency={currency}
           onClose={() => setSelectedDocumentId(null)}
           onRefresh={handleRefresh}
+          onManageProducts={() => setDraftLinesDialogOpen(true)}
         />
       </section>
     </main>

@@ -36,6 +36,7 @@ type InventoryDocumentPreviewPanelProps = {
   currency: string;
   onClose: () => void;
   onRefresh: () => void;
+  onManageProducts: () => void;
 };
 
 type DetailRowProps = {
@@ -74,6 +75,7 @@ export default function InventoryDocumentPreviewPanel({
   currency,
   onClose,
   onRefresh,
+  onManageProducts,
 }: InventoryDocumentPreviewPanelProps) {
   useEffect(() => {
     if (!documentId) {
@@ -448,7 +450,20 @@ export default function InventoryDocumentPreviewPanel({
           ) : null}
         </div>
 
-        <footer className="flex shrink-0 items-center justify-end border-t border-slate-200 bg-slate-50 px-5 py-3">
+        <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-3">
+          {detail?.status === "DRAFT" ? (
+            <button
+              type="button"
+              onClick={onManageProducts}
+              disabled={loading}
+              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Administrar productos
+            </button>
+          ) : (
+            <span />
+          )}
+
           <button
             type="button"
             onClick={onRefresh}
