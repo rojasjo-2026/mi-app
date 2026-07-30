@@ -1,14 +1,16 @@
-import { FileText, RefreshCw } from "lucide-react";
+import { FilePlus2, FileText, RefreshCw } from "lucide-react";
 
 type InventoryDocumentsHeaderProps = {
   loading: boolean;
   totalItems: number;
+  onCreate: () => void;
   onRefresh: () => void;
 };
 
 export default function InventoryDocumentsHeader({
   loading,
   totalItems,
+  onCreate,
   onRefresh,
 }: InventoryDocumentsHeaderProps) {
   return (
@@ -33,8 +35,8 @@ export default function InventoryDocumentsHeader({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-3">
-        <div className="text-right">
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="mr-1 text-right">
           <p className="text-xs font-medium text-slate-400">
             Operaciones encontradas
           </p>
@@ -55,6 +57,15 @@ export default function InventoryDocumentsHeader({
             aria-hidden="true"
           />
           Actualizar
+        </button>
+
+        <button
+          type="button"
+          onClick={onCreate}
+          className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+        >
+          <FilePlus2 className="h-4 w-4" aria-hidden="true" />
+          Nueva operación
         </button>
       </div>
     </header>

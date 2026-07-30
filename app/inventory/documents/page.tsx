@@ -11,6 +11,7 @@ import InventoryDocumentsFilters from "./components/InventoryDocumentsFilters";
 import InventoryDocumentsHeader from "./components/InventoryDocumentsHeader";
 import InventoryDocumentsMetrics from "./components/InventoryDocumentsMetrics";
 import InventoryDocumentsTable from "./components/InventoryDocumentsTable";
+import InventoryOperationCreateDialog from "./components/InventoryOperationCreateDialog";
 
 import {
   InventoryDocumentsEmptyState,
@@ -19,10 +20,10 @@ import {
 } from "./components/InventoryDocumentsStates";
 
 import { useInventoryDocumentDetail } from "./hooks/useInventoryDocumentDetail";
-
 import { useInventoryDocuments } from "./hooks/useInventoryDocuments";
 
 import type {
+  InventoryDocumentDetail,
   InventoryDocumentFilters as InventoryDocumentFiltersState,
   InventoryDocumentMetrics,
 } from "./types";
@@ -54,6 +55,8 @@ export default function InventoryDocumentsPage() {
   const [page, setPage] = useState(1);
 
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null,
@@ -149,6 +152,23 @@ export default function InventoryDocumentsPage() {
     setRefreshKey((current) => current + 1);
   }
 
+  function handleOperationCreated(operation: InventoryDocumentDetail) {
+    setSearchInput("");
+    setDebouncedSearch("");
+
+    setFilters((current) => ({
+      ...DEFAULT_FILTERS,
+      pageSize: current.pageSize,
+      status: "DRAFT",
+    }));
+
+    setPage(1);
+
+    setSelectedDocumentId(operation.inventory_document_id);
+
+    setRefreshKey((current) => current + 1);
+  }
+
   const totalItems = data.pagination.total_items;
 
   return (
@@ -159,6 +179,7 @@ export default function InventoryDocumentsPage() {
         <InventoryDocumentsHeader
           loading={loading}
           totalItems={totalItems}
+          onCreate={() => setCreateDialogOpen(true)}
           onRefresh={handleRefresh}
         />
 
@@ -214,6 +235,12 @@ export default function InventoryDocumentsPage() {
             />
           )}
         </div>
+
+        <InventoryOperationCreateDialog
+          open={createDialogOpen}
+          onClose={() => setCreateDialogOpen(false)}
+          onCreated={handleOperationCreated}
+        />
 
         <InventoryDocumentPreviewPanel
           documentId={selectedDocumentId}
