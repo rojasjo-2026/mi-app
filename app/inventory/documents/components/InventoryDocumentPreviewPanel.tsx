@@ -41,6 +41,8 @@ type InventoryDocumentPreviewPanelProps = {
   onProcess: () => void;
 
   onReceive: () => void;
+
+  onReverse: () => void;
 };
 
 type DetailRowProps = {
@@ -84,6 +86,8 @@ export default function InventoryDocumentPreviewPanel({
   onProcess,
 
   onReceive,
+
+  onReverse,
 }: InventoryDocumentPreviewPanelProps) {
   useEffect(() => {
     if (!documentId) {
@@ -456,6 +460,16 @@ export default function InventoryDocumentPreviewPanel({
                     />
                   ) : null}
 
+                  {detail.status === "REVERSED" || detail.reversed_at ? (
+                    <DetailRow
+                      label="Reversado"
+                      value={formatInventoryDocumentDateTime(
+                        detail.reversed_at,
+                        locale,
+                      )}
+                    />
+                  ) : null}
+
                   <DetailRow
                     label="Actualizado"
                     value={formatInventoryDocumentDateTime(
@@ -464,6 +478,18 @@ export default function InventoryDocumentPreviewPanel({
                     )}
                   />
                 </dl>
+
+                {detail.reversal_reason ? (
+                  <div className="mt-3 rounded-md border border-violet-200 bg-violet-50 p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-500">
+                      Motivo de reversión
+                    </p>
+
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-violet-800">
+                      {detail.reversal_reason}
+                    </p>
+                  </div>
+                ) : null}
 
                 {detail.cancellation_reason ? (
                   <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3">
@@ -534,6 +560,18 @@ export default function InventoryDocumentPreviewPanel({
               className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Recibir transferencia
+            </button>
+          ) : (detail?.document_type === "TRANSFER" &&
+              detail.status === "RECEIVED") ||
+            (detail?.document_type !== "TRANSFER" &&
+              detail?.status === "POSTED") ? (
+            <button
+              type="button"
+              onClick={onReverse}
+              disabled={loading}
+              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Reversar operación
             </button>
           ) : (
             <span />

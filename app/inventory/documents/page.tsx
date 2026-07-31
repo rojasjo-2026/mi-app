@@ -12,6 +12,7 @@ import InventoryDocumentsHeader from "./components/InventoryDocumentsHeader";
 import InventoryDocumentsMetrics from "./components/InventoryDocumentsMetrics";
 import InventoryDocumentsTable from "./components/InventoryDocumentsTable";
 import InventoryDocumentCancelDialog from "./components/InventoryDocumentCancelDialog";
+import InventoryDocumentReverseDialog from "./components/InventoryDocumentReverseDialog";
 import InventoryDocumentProcessDialog from "./components/InventoryDocumentProcessDialog";
 import InventoryTransferReceiveDialog from "./components/InventoryTransferReceiveDialog";
 import InventoryDraftLinesDialog from "./components/InventoryDraftLinesDialog";
@@ -69,6 +70,8 @@ export default function InventoryDocumentsPage() {
   const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
 
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+
+  const [reverseDialogOpen, setReverseDialogOpen] = useState(false);
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null,
@@ -248,6 +251,27 @@ export default function InventoryDocumentsPage() {
           )}
         </div>
 
+        <InventoryDocumentReverseDialog
+          open={reverseDialogOpen}
+          detail={detail}
+          locale={locale}
+          currency={currency}
+          onClose={() => setReverseDialogOpen(false)}
+          onReversed={(originalDocument) => {
+            setReverseDialogOpen(false);
+
+            setSelectedDocumentId(originalDocument.inventory_document_id);
+
+            setFilters((current) => ({
+              ...current,
+              status: "ALL",
+            }));
+
+            setPage(1);
+            handleRefresh();
+          }}
+        />
+
         <InventoryDocumentCancelDialog
           open={cancelDialogOpen}
           detail={detail}
@@ -331,7 +355,8 @@ export default function InventoryDocumentsPage() {
             draftLinesDialogOpen ||
             processDialogOpen ||
             receiveDialogOpen ||
-            cancelDialogOpen
+            cancelDialogOpen ||
+            reverseDialogOpen
               ? null
               : selectedDocumentId
           }
@@ -346,6 +371,7 @@ export default function InventoryDocumentsPage() {
           onManageProducts={() => setDraftLinesDialogOpen(true)}
           onProcess={() => setProcessDialogOpen(true)}
           onReceive={() => setReceiveDialogOpen(true)}
+          onReverse={() => setReverseDialogOpen(true)}
         />
       </section>
     </main>
