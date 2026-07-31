@@ -42,7 +42,7 @@ const operationItems = [
     label: "Movimientos",
     href: "/inventory/movements",
     icon: ArrowLeftRight,
-    available: false,
+    available: true,
   },
 ] as const;
 
