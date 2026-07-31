@@ -37,6 +37,7 @@ type InventoryDocumentPreviewPanelProps = {
   onClose: () => void;
   onRefresh: () => void;
   onManageProducts: () => void;
+  onCancel: () => void;
   onProcess: () => void;
 
   onReceive: () => void;
@@ -79,6 +80,7 @@ export default function InventoryDocumentPreviewPanel({
   onClose,
   onRefresh,
   onManageProducts,
+  onCancel,
   onProcess,
 
   onReceive,
@@ -444,6 +446,16 @@ export default function InventoryDocumentPreviewPanel({
                     )}
                   />
 
+                  {detail.status === "CANCELLED" || detail.cancelled_at ? (
+                    <DetailRow
+                      label="Cancelado"
+                      value={formatInventoryDocumentDateTime(
+                        detail.cancelled_at,
+                        locale,
+                      )}
+                    />
+                  ) : null}
+
                   <DetailRow
                     label="Actualizado"
                     value={formatInventoryDocumentDateTime(
@@ -452,6 +464,18 @@ export default function InventoryDocumentPreviewPanel({
                     )}
                   />
                 </dl>
+
+                {detail.cancellation_reason ? (
+                  <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-red-500">
+                      Motivo de cancelación
+                    </p>
+
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-red-800">
+                      {detail.cancellation_reason}
+                    </p>
+                  </div>
+                ) : null}
 
                 {detail.notes ? (
                   <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
@@ -474,9 +498,18 @@ export default function InventoryDocumentPreviewPanel({
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
+                onClick={onCancel}
+                disabled={loading}
+                className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancelar borrador
+              </button>
+
+              <button
+                type="button"
                 onClick={onManageProducts}
                 disabled={loading}
-                className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Administrar productos
               </button>
@@ -485,7 +518,7 @@ export default function InventoryDocumentPreviewPanel({
                 type="button"
                 onClick={onProcess}
                 disabled={loading}
-                className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-amber-600 px-3 text-sm font-semibold text-white transition hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {detail.document_type === "TRANSFER"
                   ? "Despachar transferencia"
