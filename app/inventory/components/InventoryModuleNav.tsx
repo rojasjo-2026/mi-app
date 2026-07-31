@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 type InventoryModuleNavProps = {
-  activeKey: "stock" | "reservations" | "documents" | "movements";
+  activeKey: "stock" | "reservations" | "documents" | "movements" | "products";
 };
 
 const operationItems = [
@@ -127,6 +127,27 @@ export default function InventoryModuleNav({
           <div className="flex min-w-0 flex-wrap gap-1.5">
             {catalogItems.map((item) => {
               const Icon = item.icon;
+
+              if (item.label === "Productos") {
+                const isActive = activeKey === "products";
+
+                return (
+                  <Link
+                    key={item.label}
+                    href="/inventory/products"
+                    aria-current={isActive ? "page" : undefined}
+                    className={[
+                      "inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                      isActive
+                        ? "border-blue-200 bg-blue-50 text-blue-700"
+                        : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950",
+                    ].join(" ")}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                    {item.label}
+                  </Link>
+                );
+              }
 
               return (
                 <button
