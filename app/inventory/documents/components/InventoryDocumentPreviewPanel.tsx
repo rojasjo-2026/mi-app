@@ -38,6 +38,8 @@ type InventoryDocumentPreviewPanelProps = {
   onRefresh: () => void;
   onManageProducts: () => void;
   onProcess: () => void;
+
+  onReceive: () => void;
 };
 
 type DetailRowProps = {
@@ -78,6 +80,8 @@ export default function InventoryDocumentPreviewPanel({
   onRefresh,
   onManageProducts,
   onProcess,
+
+  onReceive,
 }: InventoryDocumentPreviewPanelProps) {
   useEffect(() => {
     if (!documentId) {
@@ -488,6 +492,16 @@ export default function InventoryDocumentPreviewPanel({
                   : "Procesar operación"}
               </button>
             </div>
+          ) : detail?.document_type === "TRANSFER" &&
+            detail.status === "IN_TRANSIT" ? (
+            <button
+              type="button"
+              onClick={onReceive}
+              disabled={loading}
+              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Recibir transferencia
+            </button>
           ) : (
             <span />
           )}
