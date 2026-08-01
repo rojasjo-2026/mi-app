@@ -18,7 +18,8 @@ type InventoryModuleNavProps = {
     | "documents"
     | "movements"
     | "products"
-    | "categories";
+    | "categories"
+    | "units";
 };
 
 const operationItems = [
@@ -134,9 +135,17 @@ export default function InventoryModuleNav({
             {catalogItems.map((item) => {
               const Icon = item.icon;
 
-              if (item.label === "Productos" || item.label === "Categorías") {
+              if (
+                item.label === "Productos" ||
+                item.label === "Categorías" ||
+                item.label === "Unidades"
+              ) {
                 const itemKey =
-                  item.label === "Productos" ? "products" : "categories";
+                  item.label === "Productos"
+                    ? "products"
+                    : item.label === "Categorías"
+                      ? "categories"
+                      : "units";
 
                 const isActive = activeKey === itemKey;
 
@@ -146,7 +155,9 @@ export default function InventoryModuleNav({
                     href={
                       item.label === "Productos"
                         ? "/inventory/products"
-                        : "/inventory/categories"
+                        : item.label === "Categorías"
+                          ? "/inventory/categories"
+                          : "/inventory/units"
                     }
                     aria-current={isActive ? "page" : undefined}
                     className={[
