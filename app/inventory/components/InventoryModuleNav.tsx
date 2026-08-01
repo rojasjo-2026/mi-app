@@ -19,7 +19,8 @@ type InventoryModuleNavProps = {
     | "movements"
     | "products"
     | "categories"
-    | "units";
+    | "units"
+    | "locations";
 };
 
 const operationItems = [
@@ -69,6 +70,7 @@ const catalogItems = [
   {
     label: "Ubicaciones",
     icon: Warehouse,
+    available: true,
   },
 ] as const;
 
@@ -78,9 +80,9 @@ export default function InventoryModuleNav({
   return (
     <nav
       aria-label="Navegación del módulo de inventario"
-      className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+      className="overflow-x-auto whitespace-nowrap rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
     >
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex min-w-max items-center justify-between gap-8">
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <p className="shrink-0 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Inventario
@@ -138,14 +140,17 @@ export default function InventoryModuleNav({
               if (
                 item.label === "Productos" ||
                 item.label === "Categorías" ||
-                item.label === "Unidades"
+                item.label === "Unidades" ||
+                item.label === "Ubicaciones"
               ) {
                 const itemKey =
                   item.label === "Productos"
                     ? "products"
                     : item.label === "Categorías"
                       ? "categories"
-                      : "units";
+                      : item.label === "Unidades"
+                        ? "units"
+                        : "locations";
 
                 const isActive = activeKey === itemKey;
 
@@ -157,7 +162,9 @@ export default function InventoryModuleNav({
                         ? "/inventory/products"
                         : item.label === "Categorías"
                           ? "/inventory/categories"
-                          : "/inventory/units"
+                          : item.label === "Unidades"
+                            ? "/inventory/units"
+                            : "/inventory/locations"
                     }
                     aria-current={isActive ? "page" : undefined}
                     className={[
@@ -173,18 +180,7 @@ export default function InventoryModuleNav({
                 );
               }
 
-              return (
-                <button
-                  key={item.label}
-                  type="button"
-                  disabled
-                  title="Disponible en una siguiente fase del modulo"
-                  className="inline-flex h-9 cursor-not-allowed items-center gap-2 rounded-md border border-transparent px-3 text-sm font-semibold text-slate-400 opacity-70"
-                >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                  {item.label}
-                </button>
-              );
+              return null;
             })}
           </div>
         </div>
