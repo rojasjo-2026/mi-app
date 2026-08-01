@@ -135,7 +135,7 @@ export default function InventoryProductPreviewPanel({
         aria-label="Detalle del producto seleccionado"
         className="absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-slate-200 bg-white shadow-2xl"
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+        <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-slate-200 px-5 py-4">
           <div className="flex min-w-0 items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
               <Package className="h-5 w-5" aria-hidden="true" />
@@ -146,7 +146,7 @@ export default function InventoryProductPreviewPanel({
                 Producto seleccionado
               </p>
 
-              <h2 className="mt-1 truncate text-lg font-bold text-slate-950">
+              <h2 className="mt-1 break-words text-lg font-bold text-slate-950">
                 {detail?.name || "Detalle del producto"}
               </h2>
 
