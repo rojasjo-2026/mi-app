@@ -12,7 +12,13 @@ import {
 } from "lucide-react";
 
 type InventoryModuleNavProps = {
-  activeKey: "stock" | "reservations" | "documents" | "movements" | "products";
+  activeKey:
+    | "stock"
+    | "reservations"
+    | "documents"
+    | "movements"
+    | "products"
+    | "categories";
 };
 
 const operationItems = [
@@ -128,13 +134,20 @@ export default function InventoryModuleNav({
             {catalogItems.map((item) => {
               const Icon = item.icon;
 
-              if (item.label === "Productos") {
-                const isActive = activeKey === "products";
+              if (item.label === "Productos" || item.label === "Categorías") {
+                const itemKey =
+                  item.label === "Productos" ? "products" : "categories";
+
+                const isActive = activeKey === itemKey;
 
                 return (
                   <Link
                     key={item.label}
-                    href="/inventory/products"
+                    href={
+                      item.label === "Productos"
+                        ? "/inventory/products"
+                        : "/inventory/categories"
+                    }
                     aria-current={isActive ? "page" : undefined}
                     className={[
                       "inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
