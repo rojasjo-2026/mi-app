@@ -10,6 +10,9 @@ import InventoryProductFormPanel from "./components/InventoryProductFormPanel";
 import InventoryProductHeader from "./components/InventoryProductHeader";
 import InventoryProductMetrics from "./components/InventoryProductMetrics";
 import InventoryProductPreviewPanel from "./components/InventoryProductPreviewPanel";
+import InventoryCodeFormPanel from "./variant-management/components/InventoryCodeFormPanel";
+import InventoryVariantFormPanel from "./variant-management/components/InventoryVariantFormPanel";
+import { useInventoryVariantManagementController } from "./variant-management/hooks/useInventoryVariantManagementController";
 import InventoryProductStates from "./components/InventoryProductStates";
 import InventoryProductTable from "./components/InventoryProductTable";
 import { useInventoryProductCategories } from "./hooks/useInventoryProductCategories";
@@ -63,6 +66,10 @@ export default function InventoryProductsPage() {
     setRefreshKey((current) => current + 1);
   }, []);
 
+  const handleVariantManagementChanged = useCallback(() => {
+    setRefreshKey((current) => current + 1);
+  }, []);
+
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setDebouncedSearch(search.trim());
@@ -101,6 +108,12 @@ export default function InventoryProductsPage() {
     loading: variantsLoading,
     error: variantsError,
   } = useInventoryProductVariants(selectedProductId, refreshKey);
+
+  const variantManagementController = useInventoryVariantManagementController({
+    productId: selectedProductId,
+    variants,
+    onChanged: handleVariantManagementChanged,
+  });
 
   const {
     open: formOpen,
@@ -287,6 +300,7 @@ export default function InventoryProductsPage() {
         variants={variants}
         variantsLoading={variantsLoading}
         variantsError={variantsError}
+        variantManagementController={variantManagementController}
         locale={locale}
         currency={currency}
         onEdit={() => {
@@ -297,7 +311,20 @@ export default function InventoryProductsPage() {
         statusSubmitting={statusSubmitting}
         statusError={statusError}
         onToggleStatus={handleToggleProductStatus}
-        onClose={() => setSelectedProductId(null)}
+        onClose={() => {
+          variantManagementController.clearMessages();
+          setSelectedProductId(null);
+        }}
+      />
+
+      <InventoryVariantFormPanel
+        units={units}
+        controller={variantManagementController}
+      />
+
+      <InventoryCodeFormPanel
+        units={units}
+        controller={variantManagementController}
       />
     </main>
   );
